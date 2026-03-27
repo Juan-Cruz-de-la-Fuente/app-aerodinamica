@@ -33,6 +33,12 @@ def get_service():
                     creds = Credentials.from_authorized_user_info(secret_dict, SCOPES)
                 except Exception as json_e:
                     print("Error interpretando el JSON pegado en secrets:", json_e)
+        except Exception as st_e:
+            print(f"Error cargando secretos: {st_e}")
+            
+    if not creds:
+        print("No se encontraron credenciales de Google Drive (token.json). Ningun Token configurado.")
+        return None
     
     return build('drive', 'v3', credentials=creds)
 
