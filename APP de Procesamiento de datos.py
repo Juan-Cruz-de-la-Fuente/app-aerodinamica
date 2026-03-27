@@ -418,8 +418,8 @@ def login_page():
         st.markdown("<div style='margin-bottom: 1rem;'></div>", unsafe_allow_html=True)
         
         if st.button("Iniciar Sesión", type="primary", use_container_width=True):
-             # CREDENCIALES HARDCODEADAS PARA PRUEBA LOCAL + Soporte Auth
-            if auth.verify_user(username, password) or (username == "admin" and password == "1234"):
+             # VALIDACIÓN 100% DESDE LA BASE DE DATOS DRIVE
+            if auth.verify_user(username, password):
                 st.session_state.logged_in = True
                 st.session_state.username = username
                 st.rerun()
