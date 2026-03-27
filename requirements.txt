@@ -1,0 +1,13 @@
+streamlit
+pandas
+numpy
+matplotlib
+plotly
+scipy
+pyvista
+imageio
+kaleido
+google-api-python-client
+google-auth
+google-auth-httplib2
+google-auth-oauthlib
