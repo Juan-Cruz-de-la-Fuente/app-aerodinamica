@@ -2343,6 +2343,36 @@ elif st.session_state.seccion_actual == 'betz_2d':
     else:
         st.info("No hay sub-archivos generados aún. Subí y procesá archivos en Paso 2.")
 
+    # --- PASO 5: GUARDAR EN DRIVE (1D) ---
+    if st.session_state.sub_archivos_generados:
+        st.markdown("---")
+        st.markdown("""
+        <div class="section-card" style="margin-bottom: 20px;">
+            <h3 style="margin-top: 0; color: white;">&#x2601;&#xFE0F; PASO 5: GUARDAR EN DRIVE (1D)</h3>
+            <p style="color: #bbb; margin-bottom: 0;">Sube un sub-archivo procesado directamente a la carpeta <b>ENSAYO DE ESTELA / 1D</b> de tu Drive.</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        opciones_1d = list(st.session_state.sub_archivos_generados.keys())
+        clave_sel_1d = st.selectbox("Seleccionar sub-archivo para subir:", opciones_1d, key="sel_drive_1d")
+
+        if clave_sel_1d:
+            sub_sel = st.session_state.sub_archivos_generados[clave_sel_1d]
+            df_sub_sel = sub_sel['datos']
+            nombre_sub_sel = sub_sel.get('nombre_archivo', f"{clave_sel_1d}.csv")
+            csv_bytes_1d = df_sub_sel.to_csv(sep=';', index=False, decimal=',').encode('utf-8-sig')
+
+            col_1d_dl, col_1d_drive = st.columns(2)
+            with col_1d_dl:
+                st.download_button("&#x1F4E5; Descargar CSV", csv_bytes_1d,
+                                   file_name=nombre_sub_sel, mime="text/csv", key="dl_1d_final")
+            with col_1d_drive:
+                if st.button("&#x2601;&#xFE0F; Guardar en Drive (1D)", key="save_1d_drive", use_container_width=True):
+                    if auth.save_csv_1d(st.session_state.username, nombre_sub_sel, csv_bytes_1d):
+                        st.success(f"✅ Subido a Drive → ENSAYO DE ESTELA/1D/{nombre_sub_sel}")
+                    else:
+                        st.error("Error al subir a Drive")
+
     # Paso 4: Sección de Gráficos
     st.markdown("## 📈 Paso 4: Sección de Gráficos")
 
@@ -2831,6 +2861,28 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
                             st.info("💡 **Gráfico Físico Proporcional:** Los ejes representan dimensiones nativas (1 pixel unitario X = 1 pixel unitario Y). Usa la mini-calculadora de la izquierda para convertir tu medición `drawline` directamente a tamaño de Escala Cuerda [c] de la aeronave.")
                         except Exception as e:
                             st.error(f"Error trazando proyecciones cúbicas: {e}")
+
+            # --- GUARDAR MATRIZ 2D EN DRIVE ---
+            st.markdown("---")
+            st.markdown("""
+            <div class="section-card" style="margin-bottom: 20px;">
+                <h3 style="margin-top: 0; color: white;">&#x2601;&#xFE0F; PASO 4: GUARDAR MATRIZ EN DRIVE (2D)</h3>
+                <p style="color: #bbb; margin-bottom: 0;">Guarda la matriz de presiones del plano seleccionado en <b>ENSAYO DE ESTELA / 2D</b>.</p>
+            </div>
+            """, unsafe_allow_html=True)
+            if not df_matriz.empty:
+                nombre_csv_2d = f"{archivo_sel}_T{tiempo_sel}s_2D.csv"
+                csv_bytes_2d = df_matriz.to_csv(sep=';', index=False, decimal=',').encode('utf-8-sig')
+                col_2d_dl, col_2d_drive = st.columns(2)
+                with col_2d_dl:
+                    st.download_button("&#x1F4E5; Descargar Matriz 2D", csv_bytes_2d,
+                                       file_name=nombre_csv_2d, mime="text/csv", key="dl_2d_matriz")
+                with col_2d_drive:
+                    if st.button("&#x2601;&#xFE0F; Guardar en Drive (2D)", key="save_2d_drive", use_container_width=True):
+                        if auth.save_csv_2d(st.session_state.username, nombre_csv_2d, csv_bytes_2d):
+                            st.success(f"✅ Subido a Drive → ENSAYO DE ESTELA/2D/{nombre_csv_2d}")
+                        else:
+                            st.error("Error al subir a Drive")
 
 elif st.session_state.seccion_actual == 'ensayo_betz':
     st.markdown("""

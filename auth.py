@@ -200,6 +200,28 @@ def save_vtk_plano(username, filename, vtk_bytes):
     return file_id is not None
 
 
+def save_csv_1d(username, filename, csv_bytes):
+    """Sube un sub-archivo CSV de 1D a Drive → usuario/ENSAYO DE ESTELA/1D/."""
+    uid    = drive_api.get_user_root(username)
+    eid    = drive_api.get_or_create_folder(drive_api.FOLDER_ESTELA, uid)
+    fid    = drive_api.get_or_create_folder(drive_api.FOLDER_1D, eid)
+    if not fid:
+        return False
+    file_id = drive_api.upload_file(csv_bytes, filename, fid, mimetype='text/csv')
+    return file_id is not None
+
+
+def save_csv_2d(username, filename, csv_bytes):
+    """Sube un archivo CSV de matriz 2D a Drive → usuario/ENSAYO DE ESTELA/2D/."""
+    uid    = drive_api.get_user_root(username)
+    eid    = drive_api.get_or_create_folder(drive_api.FOLDER_ESTELA, uid)
+    fid    = drive_api.get_or_create_folder(drive_api.FOLDER_2D, eid)
+    if not fid:
+        return False
+    file_id = drive_api.upload_file(csv_bytes, filename, fid, mimetype='text/csv')
+    return file_id is not None
+
+
 def save_vtk_superficie(username, filename, vtk_bytes):
     """Sube un archivo VTK de superficie 3D a Drive → HERRAMIENTAS/ARCHIVOS VTK/SUPERFICIES 3D/."""
     folder_id = drive_api.get_folder_vtk_superf(username)
