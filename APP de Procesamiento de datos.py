@@ -422,6 +422,12 @@ def login_page():
             if auth.verify_user(username, password):
                 st.session_state.logged_in = True
                 st.session_state.username = username
+                # Inicializar estructura de carpetas en Drive para este usuario
+                try:
+                    import drive_api as _dapi
+                    _dapi.init_user_folders(username)
+                except Exception as _e:
+                    pass  # No bloquear el login si Drive falla
                 st.rerun()
             else:
                 st.error("Credenciales incorrectas")
@@ -1824,6 +1830,67 @@ def crear_vtk_superficie_3d_delaunay(df_matriz, nombre_base, posicion_x=0.0):
     except Exception as e:
         st.error(f"❌ Error al crear el archivo VTK de superficie 3D: {str(e)}")
         return None
+
+# ---------------------------------------------------------------------------
+# FUNCIÓN: VTK PLANO DE PRESIÓN 2D
+# Genera un archivo VTK ESTRUCTURADA plano (sin deformación en X).
+# La presión se guarda SOLO como dato escalar (color), no como geometría.
+# ---------------------------------------------------------------------------
+def crear_vtk_plano_presion_2d(df_matriz, nombre_base, posicion_x=0.0):
+    """
+    Genera un VTK 'STRUCTURED_GRID' plano en el plano YZ (X fijo = posicion_x).
+    La presión se codifica ÚNICAMENTE como escalar de color (POINT_DATA),
+    sin ninguna deformación geométrica. Ideal para visualizar contornos de
+    presión en ParaView con colormaps.
+    """
+    try:
+        if df_matriz.empty or not {"Y", "Z", "Presion"}.issubset(df_matriz.columns):
+            st.error("El DataFrame para VTK Plano está vacío o le faltan columnas (Y, Z, Presion).")
+            return None
+
+        y_vals = sorted(df_matriz['Y'].unique())
+        z_vals = sorted(df_matriz['Z'].unique())
+        ny, nz = len(y_vals), len(z_vals)
+
+        # Mapa rápido (Y, Z) → Presion
+        presion_map = {(float(row['Y']), float(row['Z'])): float(row['Presion'])
+                       for _, row in df_matriz.iterrows()
+                       if not (pd.isna(row['Y']) or pd.isna(row['Z']) or pd.isna(row['Presion']))}
+
+        lines = []
+        lines.append("# vtk DataFile Version 3.0")
+        lines.append("Plano de Presion 2D (YZ) - Solo Color")
+        lines.append("ASCII")
+        lines.append("DATASET STRUCTURED_GRID")
+        lines.append(f"DIMENSIONS 1 {ny} {nz}")
+        lines.append(f"POINTS {ny * nz} float")
+
+        presiones_ordenadas = []
+        for z in z_vals:
+            for y in y_vals:
+                lines.append(f"{posicion_x:.6f} {y:.6f} {z:.6f}")
+                # Presión para este punto (0.0 si no encontrado)
+                presiones_ordenadas.append(presion_map.get((float(y), float(z)), 0.0))
+
+        lines.append(f"\nPOINT_DATA {ny * nz}")
+        lines.append("SCALARS Presion float 1")
+        lines.append("LOOKUP_TABLE default")
+        for p in presiones_ordenadas:
+            lines.append(f"{p:.6f}")
+
+        vtk_str = "\n".join(lines)
+        nombre_archivo = f"{nombre_base}_plano2D_X{int(posicion_x)}.vtk"
+
+        with open(nombre_archivo, "w", encoding="ascii") as f:
+            f.write(vtk_str)
+
+        st.success(f"✅ VTK Plano 2D creado: {nombre_archivo}")
+        return nombre_archivo, vtk_str.encode('ascii')
+
+    except Exception as e:
+        st.error(f"❌ Error al crear VTK Plano 2D: {str(e)}")
+        return None
+
 
 # Sidebar (Legacy removed)
 
@@ -3314,7 +3381,7 @@ elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual 
         st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
         
         # 🔘 Checkbox para activar/desactivar puntos medidos
-        mostrar_puntos_3d = st.checkbox("🔘 Mostrar puntos originales (Nube de puntos)", value=True, key="mostrar_puntos_3d")
+        mostrar_puntos_3d = st.checkbox("🔘 Mostrar puntos originales (Nube de puntos)", value=False, key="mostrar_puntos_3d")
 
         if st.session_state.archivos_3d_cargados:
             st.markdown("#### 📂 Selección de Geometría a Visualizar")
@@ -4100,27 +4167,65 @@ elif st.session_state.seccion_actual == 'herramientas':
             
             # Botones de acción
             c_b1, c_b2 = st.columns(2)
+
+            # --- VTK INTERPOLADO CÚBICO (OCULTO - No borrar, solo silenciado) ---
+            # with c_b1:
+            #     if st.button("🚀 VTK Interpolado", use_container_width=True):
+            #          if df_matriz_vtk is not None:
+            #             meta = {"Temperatura_C": 20, "Humedad_Rel_Porc": 50, "Presion_Atm_hPa": 1013, "Velocidad_Ref_ms": 0}
+            #             res = crear_archivo_vtk_interpolado(df_matriz_vtk, nombre_vtk, resolucion_factor, meta, posicion_x_vtk)
+            #             if res:
+            #                 with open(res, "rb") as f:
+            #                     st.download_button("📥 Bajar VTK", f.read(), f"{nombre_vtk}.vtk")
+            #          else:
+            #             st.error("No Data")
+
             with c_b1:
-                if st.button("🚀 VTK Interpolado", use_container_width=True):
-                     if df_matriz_vtk is not None:
-                        # Dummy metadata defaults for quick tool use
-                        meta = {"Temperatura_C": 20, "Humedad_Rel_Porc": 50, "Presion_Atm_hPa": 1013, "Velocidad_Ref_ms": 0}
-                        res = crear_archivo_vtk_interpolado(df_matriz_vtk, nombre_vtk, resolucion_factor, meta, posicion_x_vtk)
-                        if res:
-                            with open(res, "rb") as f:
-                                st.download_button("📥 Bajar VTK", f.read(), f"{nombre_vtk}.vtk")
-                     else:
-                        st.error("No Data")
-            
+                if st.button("🗺️ VTK Plano 2D", use_container_width=True,
+                             help="Plano YZ plano (X fijo). Presión solo como color, sin deformación geométrica."):
+                    if df_matriz_vtk is not None:
+                        resultado = crear_vtk_plano_presion_2d(df_matriz_vtk, nombre_vtk, posicion_x_vtk)
+                        if resultado:
+                            vtk_path, vtk_bytes = resultado
+                            col_dl1, col_dl2 = st.columns(2)
+                            with col_dl1:
+                                st.download_button("📥 Descargar VTK Plano", vtk_bytes,
+                                                   file_name=os.path.basename(vtk_path),
+                                                   mime="application/octet-stream", key="dl_vtk_plano")
+                            with col_dl2:
+                                if st.button("☁️ Guardar en Drive", key="save_vtk_plano_drive"):
+                                    if auth.save_vtk_plano(st.session_state.username,
+                                                           os.path.basename(vtk_path), vtk_bytes):
+                                        st.success("✅ Subido → HERRAMIENTAS/ARCHIVOS VTK/PLANOS DE PRESION")
+                                    else:
+                                        st.error("Error al subir a Drive")
+                    else:
+                        st.error("❌ No hay datos de matriz cargados")
+
             with c_b2:
-                if st.button("🕸️ VTK Malla (Delaunay)", use_container_width=True):
+                if st.button("🕸️ VTK 3D (Malla Delaunay)", use_container_width=True,
+                             help="Triangula los puntos medidos con Delaunay. Fiel a los datos reales, ideal para CFD."):
                      if df_matriz_vtk is not None:
                         res = crear_vtk_superficie_3d_delaunay(df_matriz_vtk, nombre_vtk, posicion_x_vtk)
                         if res:
-                            with open(res, "rb") as f:
-                                st.download_button("📥 Bajar Mesh", f.read(), f"{nombre_vtk}_mesh.vtk")
+                            with open(res, "rb") as vtk_f:
+                                vtk_bytes_3d = vtk_f.read()
+                            col_dl3, col_dl4 = st.columns(2)
+                            with col_dl3:
+                                st.download_button("📥 Descargar VTK 3D", vtk_bytes_3d,
+                                                   file_name=f"{nombre_vtk}_3D.vtk",
+                                                   mime="application/octet-stream", key="dl_vtk_3d")
+                            with col_dl4:
+                                if st.button("☁️ Guardar en Drive", key="save_vtk_3d_drive"):
+                                    if auth.save_vtk_superficie(st.session_state.username,
+                                                                f"{nombre_vtk}_3D.vtk", vtk_bytes_3d):
+                                        st.success("✅ Subido → HERRAMIENTAS/ARCHIVOS VTK/SUPERFICIES 3D")
+                                    else:
+                                        st.error("Error al subir a Drive")
                      else:
-                        st.error("No Data")
+                        st.error("❌ No hay datos de matriz cargados")
+
+
 
 
 

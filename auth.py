@@ -6,15 +6,14 @@ DB_NAME = "users.db"
 
 def init_db():
     import drive_api
-    import os
-    # Intentar descargar users.db desde Drive si existe en la carpeta general
+    # Intentar descargar users.db desde Drive si existe en la carpeta raíz
     db_file_id = None
     files = drive_api.list_files(drive_api.ROOT_FOLDER_ID)
     for f in files:
         if f.get('name') == DB_NAME:
             db_file_id = f['id']
             break
-            
+
     if db_file_id:
         try:
             db_data = drive_api.download_file(db_file_id)
@@ -22,7 +21,7 @@ def init_db():
                 f.write(db_data)
         except Exception as e:
             print("No se pudo descargar data DB de Drive. Usando el local si existe: ", e)
-    
+
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
     c.execute('''
@@ -46,9 +45,8 @@ def create_user(username, password):
         ret = False
     finally:
         conn.close()
-        
+
     if ret:
-        # Sincronizar hacia Google Drive
         import drive_api
         try:
             with open(DB_NAME, 'rb') as f:
@@ -56,7 +54,7 @@ def create_user(username, password):
             drive_api.upload_file(db_data, DB_NAME, drive_api.ROOT_FOLDER_ID, mimetype='application/x-sqlite3')
         except Exception as e:
             print("Error subiendo DB a Drive:", e)
-            
+
     return ret
 
 def verify_user(username, password):
@@ -68,9 +66,9 @@ def verify_user(username, password):
     conn.close()
     return user is not None
 
-# Initialize DB on module load (will be called explicitly if imported, but safe here)
+# Initialize DB on module load
 init_db()
-# Create a default admin user if not exists (for initial access)
+# Create a default admin user if not exists
 create_user("admin", "admin123")
 
 
@@ -78,93 +76,94 @@ create_user("admin", "admin123")
 import drive_api
 import json
 
+
 def init_data_table():
-    # SQLite tables para surfaces y objects ya no se usan.
-    pass
+    pass  # No longer uses SQLite for data
+
+
+# ---------------------------------------------------------------------------
+# SUPERFICIES  →  usuario / ENSAYO DE ESTELA / 3D /
+# ---------------------------------------------------------------------------
 
 def save_surface_data(username, filename, x_position, data_json):
-    """Saves a surface matrix (JSON string) for a user to Google Drive."""
-    user_folder_id = drive_api.get_or_create_folder(username)
-    surf_folder_id = drive_api.get_or_create_folder("Superficies", user_folder_id)
-    
-    # Encode metadata in filename: SURF____filename____x_position.json
+    """Guarda una superficie (JSON) en Drive → usuario/ENSAYO DE ESTELA/3D/."""
+    folder_id = drive_api.get_folder_3d(username)
+    if not folder_id:
+        return False
+
     safe_filename = str(filename).replace("/", "-").replace("____", "_")
     drive_filename = f"SURF____{safe_filename}____{x_position}.json"
-    
-    file_id = drive_api.upload_file(data_json, drive_filename, surf_folder_id)
+
+    file_id = drive_api.upload_file(data_json, drive_filename, folder_id)
     return file_id is not None
 
+
 def get_user_surfaces(username):
-    """Returns list of (id, filename, x_position, created_at, data_json) for a user."""
-    user_folder_id = drive_api.get_or_create_folder(username)
-    surf_folder_id = drive_api.get_or_create_folder("Superficies", user_folder_id)
-    
-    files = drive_api.list_files(surf_folder_id)
-    results = []
-    
+    """Devuelve lista de (id, filename, x_position, created_at, data_json)."""
     import streamlit as st
-    # Para evitar descargar TODOS los archivos siempre, devolvemos data_json=None
-    # y haremos que el Frontend no explote si le mandamos data=None, o descargamos en demanda.
-    # Actually if the frontend expects `d_json` we MUST provide it or it will crash ONLY IF it tries to parse it. 
-    # Miremos como lo usa:
-    # `for obj_id, name, o_type, d_json, f_date in saved_objs:`
-    # It just iterates, so we can return empty string or None for d_json if it's large, but wait, the frontend DOES:
-    # `json_str = s[4]` in the 2D logic probably?
-    
-    # We will fetch on demand inside `get_user_surfaces` for now but cache it!
+    folder_id = drive_api.get_folder_3d(username)
+    if not folder_id:
+        return []
+
     @st.cache_data(ttl=300, show_spinner=False)
-    def fetch_all_surfaces(folder_id):
+    def fetch_all_surfaces(fid):
         all_res = []
-        fs = drive_api.list_files(folder_id)
+        fs = drive_api.list_files(fid)
         for f in fs:
             name = f.get('name', '')
             if name.startswith('SURF____'):
                 parts = name.replace('.json', '').split('____')
                 if len(parts) >= 3:
                     fname = parts[1]
-                    try: x_pos = float(parts[2])
-                    except: x_pos = 0.0
-                    
+                    try:
+                        x_pos = float(parts[2])
+                    except Exception:
+                        x_pos = 0.0
                     data_bytes = drive_api.download_file(f['id'])
                     data_str = data_bytes.decode('utf-8') if data_bytes else "{}"
-                    
                     all_res.append((f['id'], fname, x_pos, f.get('createdTime'), data_str))
-        return sorted(all_res, key=lambda x: x[2]) # sort by x_pos
-        
-    return fetch_all_surfaces(surf_folder_id)
+        return sorted(all_res, key=lambda x: x[2])
+
+    return fetch_all_surfaces(folder_id)
+
 
 def delete_user_surface(surface_id):
     drive_api.delete_file(surface_id)
 
+
 def rename_user_surface(surface_id, new_filename):
-    # We must fetch the old name to keep the metadata... or just rename the file in drive.
-    # Without old metadata, we might break the structure SURF____filename____x_pos.
-    # For now, just a direct rename (Streamlit frontend provides just the display name)
-    # If the user renames from UI, we assume new_filename doesn't have metadata. We'll reconstruct:
-    # Actually, it's safer to just skip renaming or implement it gracefully:
-    pass # Renaming via Drive ID requires reading old name first.
+    # Requiere leer el nombre antiguo para mantener metadata; por ahora no implementado
+    pass
+
+
+# ---------------------------------------------------------------------------
+# OBJETOS 3D  →  usuario / MODELOS 3D /
+# ---------------------------------------------------------------------------
 
 def save_user_object(username, name, obj_type, data_json):
-    """Saves a 3D object (JSON string) for a user to Drive."""
-    user_folder_id = drive_api.get_or_create_folder(username)
-    obj_folder_id = drive_api.get_or_create_folder("Objetos", user_folder_id)
-    
+    """Guarda un objeto 3D (JSON) en Drive → usuario/MODELOS 3D/."""
+    folder_id = drive_api.get_folder_modelos(username)
+    if not folder_id:
+        return False
+
     safe_name = str(name).replace("/", "-").replace("____", "_")
     drive_filename = f"OBJ____{safe_name}____{obj_type}.json"
-    
-    file_id = drive_api.upload_file(data_json, drive_filename, obj_folder_id)
+
+    file_id = drive_api.upload_file(data_json, drive_filename, folder_id)
     return file_id is not None
 
+
 def get_user_objects(username):
-    """Returns list of (id, name, obj_type, data_json, created_at) for a user."""
+    """Devuelve lista de (id, name, obj_type, data_json, created_at)."""
     import streamlit as st
-    user_folder_id = drive_api.get_or_create_folder(username)
-    obj_folder_id = drive_api.get_or_create_folder("Objetos", user_folder_id)
-    
+    folder_id = drive_api.get_folder_modelos(username)
+    if not folder_id:
+        return []
+
     @st.cache_data(ttl=300, show_spinner=False)
-    def fetch_all_objs(folder_id):
+    def fetch_all_objs(fid):
         all_res = []
-        fs = drive_api.list_files(folder_id)
+        fs = drive_api.list_files(fid)
         for f in fs:
             name_d = f.get('name', '')
             if name_d.startswith('OBJ____'):
@@ -172,17 +171,39 @@ def get_user_objects(username):
                 if len(parts) >= 3:
                     obj_name = parts[1]
                     obj_type = parts[2]
-                    
                     data_bytes = drive_api.download_file(f['id'])
                     data_str = data_bytes.decode('utf-8') if data_bytes else "{}"
-                    
                     all_res.append((f['id'], obj_name, obj_type, data_str, f.get('createdTime')))
-        return sorted(all_res, key=lambda x: x[4], reverse=True) # sort by date desc
-        
-    return fetch_all_objs(obj_folder_id)
+        return sorted(all_res, key=lambda x: x[4], reverse=True)
+
+    return fetch_all_objs(folder_id)
+
 
 def delete_user_object(object_id):
     drive_api.delete_file(object_id)
 
+
 def rename_user_object(object_id, new_name):
     pass
+
+
+# ---------------------------------------------------------------------------
+# VTK  →  usuario / HERRAMIENTAS / ARCHIVOS VTK / PLANOS DE PRESION  o  SUPERFICIES 3D
+# ---------------------------------------------------------------------------
+
+def save_vtk_plano(username, filename, vtk_bytes):
+    """Sube un archivo VTK de plano 2D a Drive → HERRAMIENTAS/ARCHIVOS VTK/PLANOS DE PRESION/."""
+    folder_id = drive_api.get_folder_vtk_planos(username)
+    if not folder_id:
+        return False
+    file_id = drive_api.upload_file(vtk_bytes, filename, folder_id, mimetype='application/octet-stream')
+    return file_id is not None
+
+
+def save_vtk_superficie(username, filename, vtk_bytes):
+    """Sube un archivo VTK de superficie 3D a Drive → HERRAMIENTAS/ARCHIVOS VTK/SUPERFICIES 3D/."""
+    folder_id = drive_api.get_folder_vtk_superf(username)
+    if not folder_id:
+        return False
+    file_id = drive_api.upload_file(vtk_bytes, filename, folder_id, mimetype='application/octet-stream')
+    return file_id is not None

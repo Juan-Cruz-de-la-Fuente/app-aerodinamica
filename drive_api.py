@@ -7,24 +7,33 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload, MediaIoBaseDownload
 
 SCOPES = ['https://www.googleapis.com/auth/drive']
-# ID de la carpeta en Google Drive donde se guardará todo
+# ID de la carpeta raíz en Google Drive donde se guardará todo
 ROOT_FOLDER_ID = '1mkmYGx0uNmWxxvHTKKrUfGUDZlqTfeOs'
+
+# --- Nombres de carpetas (MAYÚSCULAS) ---
+FOLDER_ESTELA        = 'ENSAYO DE ESTELA'
+FOLDER_1D            = '1D'
+FOLDER_2D            = '2D'
+FOLDER_3D            = '3D'
+FOLDER_4D            = '4D'
+FOLDER_HERRAMIENTAS  = 'HERRAMIENTAS'
+FOLDER_VTK           = 'ARCHIVOS VTK'
+FOLDER_VTK_PLANOS    = 'PLANOS DE PRESION'
+FOLDER_VTK_SUPERF    = 'SUPERFICIES 3D'
+FOLDER_MODELOS       = 'MODELOS 3D'
+
 
 def get_service():
     creds = None
-    # Intentamos usar el token OAuth local (token.json)
     token_path = 'token.json'
     if os.path.exists(token_path):
         creds = Credentials.from_authorized_user_file(token_path, SCOPES)
     else:
         try:
-            # Si no existe local, intentamos buscarlo en los Secrets de Streamlit Cloud
             import streamlit as st
-            # Intentar leer desde formato TOML diccionario
             if "gcp_service_account" in st.secrets:
                 secret_dict = dict(st.secrets["gcp_service_account"])
                 creds = Credentials.from_authorized_user_info(secret_dict, SCOPES)
-            # Intentar leer desde formato Texto/JSON crudo pegado 
             elif "google_token_json" in st.secrets:
                 try:
                     import json
@@ -35,24 +44,26 @@ def get_service():
                     print("Error interpretando el JSON pegado en secrets:", json_e)
         except Exception as st_e:
             print(f"Error cargando secretos: {st_e}")
-            
+
     if not creds:
         print("No se encontraron credenciales de Google Drive (token.json). Ningun Token configurado.")
         return None
-    
+
     return build('drive', 'v3', credentials=creds)
+
 
 def get_or_create_folder(folder_name, parent_id=ROOT_FOLDER_ID):
     """Busca una carpeta por nombre. Si no existe, la crea y devuelve su ID."""
     service = get_service()
-    if not service: return None
-    
+    if not service:
+        return None
+
     query = f"name='{folder_name}' and mimeType='application/vnd.google-apps.folder' and '{parent_id}' in parents and trashed=false"
-    results = service.files().list(q=query, spaces='drive', supportsAllDrives=True, includeItemsFromAllDrives=True, fields='files(id, name)').execute()
+    results = service.files().list(q=query, spaces='drive', supportsAllDrives=True,
+                                   includeItemsFromAllDrives=True, fields='files(id, name)').execute()
     items = results.get('files', [])
-    
+
     if not items:
-        # Crear la carpeta si no existe
         file_metadata = {
             'name': folder_name,
             'mimeType': 'application/vnd.google-apps.folder',
@@ -62,49 +73,126 @@ def get_or_create_folder(folder_name, parent_id=ROOT_FOLDER_ID):
         return folder.get('id')
     return items[0].get('id')
 
-def upload_file(file_content, filename, parent_id, mimetype='application/json'):
-    """Sube un archivo a Google Drive dentro de un parent_id (Folder ID) específico."""
-    service = get_service()
-    if not service: return None
-    
-    file_metadata = {
-        'name': filename,
-        'parents': [parent_id]
+
+def init_user_folders(username):
+    """
+    Crea toda la jerarquía de carpetas para un usuario si no existen.
+    Estructura:
+      root / username /
+          ENSAYO DE ESTELA / 1D, 2D, 3D, 4D
+          HERRAMIENTAS / ARCHIVOS VTK / PLANOS DE PRESION
+                                      / SUPERFICIES 3D
+          MODELOS 3D
+    """
+    user_id       = get_or_create_folder(username, ROOT_FOLDER_ID)
+    if not user_id:
+        return {}
+
+    estela_id     = get_or_create_folder(FOLDER_ESTELA, user_id)
+    herr_id       = get_or_create_folder(FOLDER_HERRAMIENTAS, user_id)
+    modelos_id    = get_or_create_folder(FOLDER_MODELOS, user_id)
+
+    folder_1d     = get_or_create_folder(FOLDER_1D, estela_id)
+    folder_2d     = get_or_create_folder(FOLDER_2D, estela_id)
+    folder_3d     = get_or_create_folder(FOLDER_3D, estela_id)
+    folder_4d     = get_or_create_folder(FOLDER_4D, estela_id)
+
+    vtk_id        = get_or_create_folder(FOLDER_VTK, herr_id)
+    vtk_planos_id = get_or_create_folder(FOLDER_VTK_PLANOS, vtk_id)
+    vtk_superf_id = get_or_create_folder(FOLDER_VTK_SUPERF, vtk_id)
+
+    return {
+        'user':         user_id,
+        'estela':       estela_id,
+        '1d':           folder_1d,
+        '2d':           folder_2d,
+        '3d':           folder_3d,
+        '4d':           folder_4d,
+        'herr':         herr_id,
+        'vtk':          vtk_id,
+        'vtk_planos':   vtk_planos_id,
+        'vtk_superf':   vtk_superf_id,
+        'modelos':      modelos_id,
     }
-    
-    # Manejar el contenido si es string vs bytes
+
+
+# --- Helpers de acceso rápido a carpetas específicas ---
+
+def get_user_root(username):
+    return get_or_create_folder(username, ROOT_FOLDER_ID)
+
+def get_folder_3d(username):
+    uid = get_user_root(username)
+    eid = get_or_create_folder(FOLDER_ESTELA, uid)
+    return get_or_create_folder(FOLDER_3D, eid)
+
+def get_folder_modelos(username):
+    uid = get_user_root(username)
+    return get_or_create_folder(FOLDER_MODELOS, uid)
+
+def get_folder_vtk_planos(username):
+    uid    = get_user_root(username)
+    hid    = get_or_create_folder(FOLDER_HERRAMIENTAS, uid)
+    vtk_id = get_or_create_folder(FOLDER_VTK, hid)
+    return get_or_create_folder(FOLDER_VTK_PLANOS, vtk_id)
+
+def get_folder_vtk_superf(username):
+    uid    = get_user_root(username)
+    hid    = get_or_create_folder(FOLDER_HERRAMIENTAS, uid)
+    vtk_id = get_or_create_folder(FOLDER_VTK, hid)
+    return get_or_create_folder(FOLDER_VTK_SUPERF, vtk_id)
+
+
+# --- Operaciones de archivo ---
+
+def upload_file(file_content, filename, parent_id, mimetype='application/json'):
+    """Sube un archivo a Google Drive dentro de un parent_id específico."""
+    service = get_service()
+    if not service:
+        return None
+
+    file_metadata = {'name': filename, 'parents': [parent_id]}
+
     if isinstance(file_content, str):
         file_content_io = io.BytesIO(file_content.encode('utf-8'))
     else:
         file_content_io = io.BytesIO(file_content)
-        
+
     media = MediaIoBaseUpload(file_content_io, mimetype=mimetype, resumable=True)
-    
-    # Revisar si ya hay un archivo con este nombre para sobrescribirlo y no duplicar
+
+    # Sobrescribir si ya existe
     query = f"name='{filename}' and '{parent_id}' in parents and trashed=false"
-    results = service.files().list(q=query, spaces='drive', supportsAllDrives=True, includeItemsFromAllDrives=True, fields='files(id, name)').execute()
+    results = service.files().list(q=query, spaces='drive', supportsAllDrives=True,
+                                   includeItemsFromAllDrives=True, fields='files(id, name)').execute()
     items = results.get('files', [])
-    
+
     if items:
         file_id = items[0].get('id')
         service.files().update(fileId=file_id, media_body=media, supportsAllDrives=True).execute()
         return file_id
     else:
-        created_file = service.files().create(body=file_metadata, media_body=media, fields='id', supportsAllDrives=True).execute()
+        created_file = service.files().create(body=file_metadata, media_body=media,
+                                              fields='id', supportsAllDrives=True).execute()
         return created_file.get('id')
+
 
 def list_files(parent_id):
     """Devuelve la lista de archivos dentro de una carpeta."""
     service = get_service()
-    if not service: return []
+    if not service:
+        return []
     query = f"'{parent_id}' in parents and mimeType!='application/vnd.google-apps.folder' and trashed=false"
-    results = service.files().list(q=query, spaces='drive', supportsAllDrives=True, includeItemsFromAllDrives=True, fields='files(id, name, createdTime)').execute()
+    results = service.files().list(q=query, spaces='drive', supportsAllDrives=True,
+                                   includeItemsFromAllDrives=True,
+                                   fields='files(id, name, createdTime)').execute()
     return results.get('files', [])
 
+
 def download_file(file_id):
-    """Descarga un archivo dado su ID y lo devuelve como bytes o string."""
+    """Descarga un archivo dado su ID y lo devuelve como bytes."""
     service = get_service()
-    if not service: return None
+    if not service:
+        return None
     request = service.files().get_media(fileId=file_id)
     fh = io.BytesIO()
     downloader = MediaIoBaseDownload(fh, request)
@@ -113,19 +201,23 @@ def download_file(file_id):
         status, done = downloader.next_chunk()
     return fh.getvalue()
 
+
 def delete_file(file_id):
-    """Mueve un archivo a la papelera (para no borrarlo permanentemente por error)."""
+    """Mueve un archivo a la papelera."""
     service = get_service()
-    if not service: return
+    if not service:
+        return
     try:
         service.files().update(fileId=file_id, body={'trashed': True}).execute()
     except Exception as e:
         print(f"Error borrando archivo: {e}")
 
+
 def rename_file(file_id, new_name):
     """Renombra un archivo manteniendo su ID intacto."""
     service = get_service()
-    if not service: return
+    if not service:
+        return
     try:
         service.files().update(fileId=file_id, body={'name': new_name}).execute()
     except Exception as e:
