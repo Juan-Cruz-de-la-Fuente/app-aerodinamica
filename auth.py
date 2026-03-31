@@ -85,21 +85,40 @@ def init_data_table():
 # SUPERFICIES  →  usuario / ENSAYO DE ESTELA / 3D /
 # ---------------------------------------------------------------------------
 
-def save_surface_data(username, filename, x_position, data_json):
-    """Guarda una superficie (JSON) en Drive → usuario/ENSAYO DE ESTELA/3D/."""
+def save_surface_data(username, filename, data_json):
+    """Guarda una superficie 3D (JSON) en Drive → usuario/ENSAYO DE ESTELA/3D/.
+    Formato: 3D____nombre.json  (sin posición X — el plano es independiente del espacio)
+    """
     folder_id = drive_api.get_folder_3d(username)
     if not folder_id:
         return False
 
     safe_filename = str(filename).replace("/", "-").replace("____", "_")
-    drive_filename = f"SURF____{safe_filename}____{x_position}.json"
+    drive_filename = f"3D____{safe_filename}.json"
+
+    file_id = drive_api.upload_file(data_json, drive_filename, folder_id)
+    return file_id is not None
+
+
+def save_surface_data_4d(username, filename, x_position, data_json):
+    """Guarda un plano 4D (JSON) en Drive → usuario/ENSAYO DE ESTELA/4D/.
+    Formato: 4D____nombre____xpos.json  (incluye posición X en el espacio)
+    """
+    folder_id = drive_api.get_folder_4d(username)
+    if not folder_id:
+        return False
+
+    safe_filename = str(filename).replace("/", "-").replace("____", "_")
+    drive_filename = f"4D____{safe_filename}____{x_position}.json"
 
     file_id = drive_api.upload_file(data_json, drive_filename, folder_id)
     return file_id is not None
 
 
 def get_user_surfaces(username):
-    """Devuelve lista de (id, filename, x_position, created_at, data_json)."""
+    """Devuelve lista de (id, filename, x_position, created_at, data_json) de la carpeta 3D.
+    Compatible con archivos viejos (SURF____) y nuevos (3D____).
+    """
     import streamlit as st
     folder_id = drive_api.get_folder_3d(username)
     if not folder_id:
@@ -111,7 +130,15 @@ def get_user_surfaces(username):
         fs = drive_api.list_files(fid)
         for f in fs:
             name = f.get('name', '')
-            if name.startswith('SURF____'):
+            # Nuevo formato: 3D____nombre.json
+            if name.startswith('3D____'):
+                parts = name.replace('.json', '').split('____')
+                fname = parts[1] if len(parts) >= 2 else name
+                data_bytes = drive_api.download_file(f['id'])
+                data_str = data_bytes.decode('utf-8') if data_bytes else '{}'
+                all_res.append((f['id'], fname, 0.0, f.get('createdTime'), data_str))
+            # Formato viejo: SURF____nombre____xpos.json  (retrocompatibilidad)
+            elif name.startswith('SURF____'):
                 parts = name.replace('.json', '').split('____')
                 if len(parts) >= 3:
                     fname = parts[1]
@@ -120,11 +147,40 @@ def get_user_surfaces(username):
                     except Exception:
                         x_pos = 0.0
                     data_bytes = drive_api.download_file(f['id'])
-                    data_str = data_bytes.decode('utf-8') if data_bytes else "{}"
+                    data_str = data_bytes.decode('utf-8') if data_bytes else '{}'
                     all_res.append((f['id'], fname, x_pos, f.get('createdTime'), data_str))
-        return sorted(all_res, key=lambda x: x[2])
+        return sorted(all_res, key=lambda x: x[3] or '', reverse=True)
 
     return fetch_all_surfaces(folder_id)
+
+
+def get_user_surfaces_4d(username):
+    """Devuelve lista de (id, filename, x_position, created_at, data_json) de la carpeta 4D."""
+    import streamlit as st
+    folder_id = drive_api.get_folder_4d(username)
+    if not folder_id:
+        return []
+
+    @st.cache_data(ttl=300, show_spinner=False)
+    def fetch_all_4d(fid):
+        all_res = []
+        fs = drive_api.list_files(fid)
+        for f in fs:
+            name = f.get('name', '')
+            if name.startswith('4D____'):
+                parts = name.replace('.json', '').split('____')
+                if len(parts) >= 3:
+                    fname = parts[1]
+                    try:
+                        x_pos = float(parts[2])
+                    except Exception:
+                        x_pos = 0.0
+                    data_bytes = drive_api.download_file(f['id'])
+                    data_str = data_bytes.decode('utf-8') if data_bytes else '{}'
+                    all_res.append((f['id'], fname, x_pos, f.get('createdTime'), data_str))
+        return sorted(all_res, key=lambda x: x[2])  # ordenado por posición X
+
+    return fetch_all_4d(folder_id)
 
 
 def delete_user_surface(surface_id):
@@ -132,8 +188,9 @@ def delete_user_surface(surface_id):
 
 
 def rename_user_surface(surface_id, new_filename):
-    # Requiere leer el nombre antiguo para mantener metadata; por ahora no implementado
-    pass
+    # El nombre en Drive incluye metadata codificada en el prefijo;
+    # el renombrado simple ya funciona via drive_api.rename_file (cambia el nombre visible)
+    drive_api.rename_file(surface_id, new_filename)
 
 
 # ---------------------------------------------------------------------------

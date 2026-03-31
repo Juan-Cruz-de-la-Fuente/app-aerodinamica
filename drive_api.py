@@ -130,6 +130,11 @@ def get_folder_modelos(username):
     uid = get_user_root(username)
     return get_or_create_folder(FOLDER_MODELOS, uid)
 
+def get_folder_4d(username):
+    uid = get_user_root(username)
+    eid = get_or_create_folder(FOLDER_ESTELA, uid)
+    return get_or_create_folder(FOLDER_4D, eid)
+
 def get_folder_vtk_planos(username):
     uid    = get_user_root(username)
     hid    = get_or_create_folder(FOLDER_HERRAMIENTAS, uid)

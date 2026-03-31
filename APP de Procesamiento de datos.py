@@ -3644,44 +3644,33 @@ elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual 
                 
                 col_g1, col_g2 = st.columns(2)
                 nombre_surf = col_g1.text_input("Nombre identificador:", value=nombre_base_sugerido, key="nombre_surf_bd")
-                pos_x_surf = col_g2.number_input("Posición X (Estación) [mm]:", value=x_detectado, step=10.0, key="pos_x_bd")
+                col_g2.info("💡 La posición X se asigna en BETZ 4D al colocar esta superficie en el espacio.")
                 
                 if st.button("💾 Guardar en Base de Datos", key="btn_guardar_bd"):
-                    # Convertir a matriz
+                    # Convertir a matriz (Y, Z, Presion)
                     results_g = []
-                    # Recorrer filas (cada fila es un instante/posicion con N sensores)
                     for _, row in df_filtrado_g.iterrows():
-                         y_trav = row.get('Pos_Y_Traverser')
-                         z_base = row.get('Pos_Z_Base')
-                         
-                         for col in df_filtrado_g.columns:
-                             num_sensor = obtener_numero_sensor_desde_columna(col)
-                             if num_sensor is not None:
-                                 val_presion = row[col]
-                                 if pd.isna(val_presion): continue
-                                 
-                                 # Calcular altura Z real
-                                 z_real = calcular_altura_absoluta_z(
-                                     num_sensor, 
-                                     z_base, 
-                                     st.session_state.configuracion_3d.get('distancia_toma_12', -120),
-                                     st.session_state.configuracion_3d.get('distancia_entre_tomas', 10.91),
-                                     12, # n_sensores default
-                                     st.session_state.configuracion_3d.get('orden', 'asc')
-                                 )
-                                 
-                                 results_g.append({
-                                     'Y': y_trav,
-                                     'Z': z_real,
-                                     'Presion': val_presion
-                                 })
-                    
+                        y_trav = row.get('Pos_Y_Traverser')
+                        z_base = row.get('Pos_Z_Base')
+                        for col in df_filtrado_g.columns:
+                            num_sensor = obtener_numero_sensor_desde_columna(col)
+                            if num_sensor is not None:
+                                val_presion = row[col]
+                                if pd.isna(val_presion): continue
+                                z_real = calcular_altura_absoluta_z(
+                                    num_sensor, z_base,
+                                    st.session_state.configuracion_3d.get('distancia_toma_12', -120),
+                                    st.session_state.configuracion_3d.get('distancia_entre_tomas', 10.91),
+                                    12,
+                                    st.session_state.configuracion_3d.get('orden', 'asc')
+                                )
+                                results_g.append({'Y': y_trav, 'Z': z_real, 'Presion': val_presion})
+
                     df_final_g = pd.DataFrame(results_g)
-                    
                     if not df_final_g.empty:
                         json_str = df_final_g.to_json(orient='records')
-                        if auth.save_surface_data(st.session_state.username, nombre_surf, pos_x_surf, json_str):
-                            st.success(f"✅ Superficie guardada en BD: {nombre_surf} en X={pos_x_surf}")
+                        if auth.save_surface_data(st.session_state.username, nombre_surf, json_str):
+                            st.success(f"✅ Superficie 3D guardada: **{nombre_surf}**")
                         else:
                             st.error("Error al guardar en base de datos.")
                     else:
@@ -3702,17 +3691,93 @@ elif st.session_state.seccion_actual == 'betz_4d':
         </h2>
     </div>
     """, unsafe_allow_html=True)
-    
-    # Cargar superficies del usuario de la BD
+
+    # ══════════════════════════════════════════════════
+    # PASO 1: GUARDAR PLANO 4D EN DRIVE
+    # ══════════════════════════════════════════════════
+    with st.expander("💾 PASO 1: Cargar y Guardar Plano 4D en Base de Datos", expanded=True):
+        st.markdown("""
+        <div class="section-card" style="margin-bottom: 12px;">
+            <h3 style="margin-top:0; color:white;">💾 PASO 1: GUARDAR PLANO 4D</h3>
+            <p style="color:#bbb; margin-bottom:0;">
+                Procese un archivo de incertidumbre y guárdelo en la carpeta <strong>4D</strong> del Drive con su posición X.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # --- Config sensores ---
+        config_4d = mostrar_configuracion_sensores("4d")
+
+        # --- Upload ---
+        archivo_4d = st.file_uploader(
+            "📂 Subir archivo CSV de incertidumbre (4D):",
+            type=['csv'], key="upload_4d_paso1"
+        )
+
+        if archivo_4d and config_4d:
+            datos_4d = procesar_promedios(archivo_4d, config_4d.get('orden', 'asc'))
+
+            if datos_4d is not None:
+                tiempos_4d = sorted(datos_4d['Tiempo_s'].dropna().unique())
+                t4d_sel = st.selectbox("Seleccionar Tiempo:", tiempos_4d, key="t4d_sel")
+                df_4d_filtrado = datos_4d[datos_4d['Tiempo_s'] == t4d_sel].copy()
+
+                x_pos_4d = st.number_input(
+                    "📍 Posición X (Estación) [mm]:",
+                    value=0.0, step=10.0, key="x_pos_4d"
+                )
+
+                nombre_sugerido_4d = f"{os.path.splitext(archivo_4d.name)[0]}_T{int(t4d_sel)}s"
+                nombre_4d = st.text_input("Nombre identificador 4D:", value=nombre_sugerido_4d, key="nombre_4d_inp")
+
+                if st.button("💾 Guardar Plano 4D en Drive", key="btn_guardar_4d"):
+                    results_4d = []
+                    for _, row in df_4d_filtrado.iterrows():
+                        y_trav = row.get('Pos_Y_Traverser')
+                        z_base = row.get('Pos_Z_Base')
+                        for col4 in df_4d_filtrado.columns:
+                            num_s = obtener_numero_sensor_desde_columna(col4)
+                            if num_s is not None:
+                                val_p = row[col4]
+                                if pd.isna(val_p): continue
+                                z_real = calcular_altura_absoluta_z(
+                                    num_s, z_base,
+                                    config_4d.get('distancia_toma_12', -120),
+                                    config_4d.get('distancia_entre_tomas', 10.91),
+                                    12,
+                                    config_4d.get('orden', 'asc')
+                                )
+                                results_4d.append({'Y': y_trav, 'Z': z_real, 'Presion': val_p})
+
+                    df_4d_final = pd.DataFrame(results_4d)
+                    if not df_4d_final.empty:
+                        json_4d = df_4d_final.to_json(orient='records')
+                        if auth.save_surface_data_4d(st.session_state.username, nombre_4d, x_pos_4d, json_4d):
+                            st.success(f"✅ Plano 4D guardado: **{nombre_4d}** en X={x_pos_4d} mm")
+                            st.cache_data.clear()
+                        else:
+                            st.error("❌ Error al guardar el plano 4D.")
+                    else:
+                        st.error("No se pudieron extraer datos válidos.")
+
+    st.markdown("---")
+
+    # ══════════════════════════════════════════════════
+    # PASO 2: VISUALIZACIÓN Y ANIMACIÓN 4D
+    # ══════════════════════════════════════════════════
+    st.markdown("### 🌌 Paso 2: Visualización y Animación")
+
+    # Cargar superficies 4D del usuario
     try:
-        mis_superficies = auth.get_user_surfaces(st.session_state.username)
+        mis_superficies = auth.get_user_surfaces_4d(st.session_state.username)
     except AttributeError:
-        st.error("Error conectando con base de datos (función get_user_surfaces no encontrada).")
+        st.error("Error conectando con base de datos (función get_user_surfaces_4d no encontrada).")
         mis_superficies = []
 
     if not mis_superficies:
-        st.info("⚠️ No tienes superficies guardadas. Ve a 'BETZ 3D' > Paso 5 para guardar superficies procesadas.")
+        st.info("⚠️ No tienes planos 4D guardados. Usá el Paso 1 para procesar y guardar planos.")
     else:
+
         # Dictionary for selection: Label -> Data Tuple
         # Data Tuple: (id, filename, x_pos, created_at, data_json)
         dict_superficies = {f"{s[1]} (X={s[2]}) [{s[3]}]": s for s in mis_superficies}
