@@ -4282,15 +4282,8 @@ elif st.session_state.seccion_actual == 'herramientas':
         </div>
         """, unsafe_allow_html=True)
 
-        # sub-banner VTK 2D
-        st.markdown("""
-        <div style="border-left: 3px solid #06b6d4; background: rgba(6,182,212,0.05);
-                    padding: 8px 14px; border-radius: 4px; margin: 16px 0 8px 0;">
-            <span style="color:#06b6d4; font-weight:700; font-size:0.95rem;">🗺️ VTK 2D — Plano de Presión</span>
-            <span style="color:#888; font-size:0.82rem; margin-left:10px;">Plano YZ plano (X fijo). Presión como color, sin deformación geométrica.</span>
-        </div>
-        """, unsafe_allow_html=True)
-        with st.container():
+        # ─── VTK 2D ─────────────────────────────────────────────────────
+        with st.expander("🗺️ VTK 2D — Plano de Presión  |  Plano YZ (X fijo). Presión como color.", expanded=True):
 
             fuente_2d = st.radio(
                 "Fuente de datos:",
@@ -4299,18 +4292,21 @@ elif st.session_state.seccion_actual == 'herramientas':
             )
 
             df_vtk2d = None
+            fname_2d_drive = None          # nombre original del archivo en Drive
+
             if fuente_2d == "📂 Drive 2D (base de datos)":
                 archivos_2d = auth.get_user_files_2d(st.session_state.username)
                 if archivos_2d:
                     dict_2d = {f"{a[1]} [{a[2][:10] if a[2] else ''}]": a for a in archivos_2d}
                     sel_2d = st.selectbox("Seleccionar archivo 2D:", list(dict_2d.keys()), key="sel_drive2d_vtk")
                     if sel_2d:
-                        fid_2d, fname_2d = dict_2d[sel_2d][0], dict_2d[sel_2d][1]
+                        fid_2d = dict_2d[sel_2d][0]
+                        fname_2d_drive = dict_2d[sel_2d][1]          # ej: 2D-X500-OAO10-T5s.csv
                         raw_2d = auth.download_file_2d(fid_2d)
                         if raw_2d:
                             import io
                             df_vtk2d = pd.read_csv(io.BytesIO(raw_2d), sep=';', decimal=',')
-                            st.success(f"✅ Cargado desde Drive: **{fname_2d}**")
+                            st.success(f"✅ Cargado desde Drive: **{fname_2d_drive}**")
                 else:
                     st.info("No hay archivos 2D en Drive. Guardá desde BETZ 2D → Paso 4.")
 
@@ -4331,15 +4327,17 @@ elif st.session_state.seccion_actual == 'herramientas':
                         st.error(f"Error leyendo CSV: {e}")
 
             if df_vtk2d is not None:
-                c2d_x, c2d_aoa, c2d_res = st.columns(3)
-                x_vtk2d  = c2d_x.number_input("📍 Posición X [mm]:", value=0.0, step=10.0, key="x_vtk2d")
-                aoa_vtk2d = c2d_aoa.number_input("Ángulo de Ataque [°]:", value=0.0, step=0.5, format="%.1f", key="aoa_vtk2d")
-                res_vtk2d = c2d_res.slider("Suavizado:", 1, 5, 2, key="res_vtk2d")
+                x_vtk2d = st.number_input("📍 Posición X [mm]:", value=0.0, step=10.0, key="x_vtk2d")
+                res_vtk2d = st.slider("Suavizado:", 1, 5, 2, key="res_vtk2d")
 
-                _aoa2d = str(int(aoa_vtk2d)) if aoa_vtk2d == int(aoa_vtk2d) else f"{aoa_vtk2d:.1f}"
-                nombre_auto_vtk2d = f"VTK-X{int(x_vtk2d)}-OAO{_aoa2d}-2D"
+                # Nombre auto: si viene de Drive reemplazamos prefijo, sino usamos X
+                if fname_2d_drive:
+                    stem_2d = os.path.splitext(fname_2d_drive)[0]      # 2D-X500-OAO10-T5s
+                    nombre_auto_vtk2d = "VTK-" + stem_2d[stem_2d.index("-")+1:] if "-" in stem_2d else f"VTK-{stem_2d}"
+                else:
+                    nombre_auto_vtk2d = f"VTK-X{int(x_vtk2d)}-2D"
 
-                c2d_chk, c2d_nom = st.columns([0.15, 0.85])
+                c2d_chk, c2d_nom = st.columns([0.18, 0.82])
                 if c2d_chk.checkbox("Nombre libre", key="chk_vtk2d"):
                     nombre_vtk2d = c2d_nom.text_input("Nombre:", placeholder=nombre_auto_vtk2d, key="nom_vtk2d")
                     if not nombre_vtk2d: nombre_vtk2d = nombre_auto_vtk2d
@@ -4366,15 +4364,8 @@ elif st.session_state.seccion_actual == 'herramientas':
                     else:
                         st.error("❌ No se pudo generar el VTK.")
 
-        # sub-banner VTK 3D
-        st.markdown("""
-        <div style="border-left: 3px solid #8b5cf6; background: rgba(139,92,246,0.05);
-                    padding: 8px 14px; border-radius: 4px; margin: 16px 0 8px 0;">
-            <span style="color:#8b5cf6; font-weight:700; font-size:0.95rem;">🕸️ VTK 3D — Malla Delaunay</span>
-            <span style="color:#888; font-size:0.82rem; margin-left:10px;">Triangulación 3D fiel a los datos. Ideal para exportar a CFD.</span>
-        </div>
-        """, unsafe_allow_html=True)
-        with st.container():
+        # ─── VTK 3D ─────────────────────────────────────────────────────
+        with st.expander("🕸️ VTK 3D — Malla Delaunay  |  Triangulación 3D fiel a los datos. Ideal para CFD.", expanded=True):
 
             fuente_3d = st.radio(
                 "Fuente de datos:",
@@ -4383,6 +4374,8 @@ elif st.session_state.seccion_actual == 'herramientas':
             )
 
             df_vtk3d = None
+            fname_3d_drive = None
+
             if fuente_3d == "📂 Drive 3D (base de datos)":
                 archivos_3d = auth.get_user_surfaces(st.session_state.username)
                 if archivos_3d:
@@ -4390,10 +4383,10 @@ elif st.session_state.seccion_actual == 'herramientas':
                     sel_3d = st.selectbox("Seleccionar plano 3D:", list(dict_3d.keys()), key="sel_drive3d_vtk")
                     if sel_3d:
                         import json as _json
+                        fname_3d_drive = dict_3d[sel_3d][1]          # ej: 3D-X500-OAO10
                         data_str_3d = dict_3d[sel_3d][4]
                         df_vtk3d = pd.DataFrame(_json.loads(data_str_3d))
-                        st.success(f"✅ Cargado: **{dict_3d[sel_3d][1]}**")
-                        x_suggested_3d = 0.0
+                        st.success(f"✅ Cargado: **{fname_3d_drive}**")
                 else:
                     st.info("No hay planos 3D en Drive. Guardá desde BETZ 3D → Paso 5.")
 
@@ -4414,14 +4407,15 @@ elif st.session_state.seccion_actual == 'herramientas':
                         st.error(f"Error: {e}")
 
             if df_vtk3d is not None:
-                c3d_x, c3d_aoa = st.columns(2)
-                x_vtk3d   = c3d_x.number_input("📍 Posición X [mm]:", value=0.0, step=10.0, key="x_vtk3d")
-                aoa_vtk3d = c3d_aoa.number_input("Ángulo de Ataque [°]:", value=0.0, step=0.5, format="%.1f", key="aoa_vtk3d")
+                x_vtk3d = st.number_input("📍 Posición X [mm]:", value=0.0, step=10.0, key="x_vtk3d")
 
-                _aoa3d = str(int(aoa_vtk3d)) if aoa_vtk3d == int(aoa_vtk3d) else f"{aoa_vtk3d:.1f}"
-                nombre_auto_vtk3d = f"VTK-X{int(x_vtk3d)}-OAO{_aoa3d}-3D"
+                if fname_3d_drive:
+                    stem_3d = os.path.splitext(fname_3d_drive)[0]
+                    nombre_auto_vtk3d = "VTK-" + stem_3d[stem_3d.index("-")+1:] if "-" in stem_3d else f"VTK-{stem_3d}"
+                else:
+                    nombre_auto_vtk3d = f"VTK-X{int(x_vtk3d)}-3D"
 
-                c3d_chk, c3d_nom = st.columns([0.15, 0.85])
+                c3d_chk, c3d_nom = st.columns([0.18, 0.82])
                 if c3d_chk.checkbox("Nombre libre", key="chk_vtk3d"):
                     nombre_vtk3d = c3d_nom.text_input("Nombre:", placeholder=nombre_auto_vtk3d, key="nom_vtk3d")
                     if not nombre_vtk3d: nombre_vtk3d = nombre_auto_vtk3d
@@ -4449,15 +4443,8 @@ elif st.session_state.seccion_actual == 'herramientas':
                     else:
                         st.error("❌ No se pudo generar el VTK.")
 
-        # sub-banner VTK 4D
-        st.markdown("""
-        <div style="border-left: 3px solid #ec4899; background: rgba(236,72,153,0.05);
-                    padding: 8px 14px; border-radius: 4px; margin: 16px 0 8px 0;">
-            <span style="color:#ec4899; font-weight:700; font-size:0.95rem;">🌌 VTK 4D — Multi-plano</span>
-            <span style="color:#888; font-size:0.82rem; margin-left:10px;">Genera un VTK Delaunay por cada plano 4D, ubicado en su estación X.</span>
-        </div>
-        """, unsafe_allow_html=True)
-        with st.container():
+        # ─── VTK 4D ─────────────────────────────────────────────────────
+        with st.expander("🌌 VTK 4D — Multi-plano  |  Genera un VTK Delaunay por cada plano 4D, en su estación X.", expanded=True):
 
             archivos_4d_vtk = auth.get_user_surfaces_4d(st.session_state.username)
             if not archivos_4d_vtk:
@@ -4466,31 +4453,52 @@ elif st.session_state.seccion_actual == 'herramientas':
                 dict_4d_vtk = {f"{s[1]} (X={s[2]}mm) [{s[3][:10] if s[3] else ''}]": s for s in archivos_4d_vtk}
                 sels_4d = st.multiselect("Seleccionar planos 4D:", list(dict_4d_vtk.keys()), key="sels_4d_vtk")
 
-                aoa_vtk4d = st.number_input("Ángulo de Ataque [°]:", value=0.0, step=0.5, format="%.1f", key="aoa_vtk4d")
-                _aoa4d = str(int(aoa_vtk4d)) if aoa_vtk4d == int(aoa_vtk4d) else f"{aoa_vtk4d:.1f}"
+                if sels_4d:
+                    rename_4d = st.checkbox("Personalizar nombres de salida", key="chk_rename_4d")
 
-                if sels_4d and st.button("🌌 Generar VTK por cada plano", key="btn_gen_vtk4d", type="primary"):
-                    import json as _json4
-                    for lab in sels_4d:
-                        s4 = dict_4d_vtk[lab]
-                        df_s4 = pd.DataFrame(_json4.loads(s4[4]))
-                        x_s4  = s4[2]
-                        nom_s4 = f"VTK-X{int(x_s4)}-OAO{_aoa4d}-4D-{s4[1]}"
-                        with st.spinner(f"Generando {nom_s4}.vtk..."):
-                            res_s4 = crear_vtk_superficie_3d_delaunay(df_s4, nom_s4, x_s4)
-                        if res_s4:
-                            with open(res_s4, "rb") as f4:
-                                bytes_s4 = f4.read()
-                            st.download_button(
-                                f"📥 {nom_s4}.vtk",
-                                bytes_s4,
-                                file_name=f"{nom_s4}.vtk",
-                                mime="application/octet-stream",
-                                key=f"dl_vtk4d_{s4[1]}"
+                    if rename_4d:
+                        custom_names_4d = {}
+                        for lab in sels_4d:
+                            s4 = dict_4d_vtk[lab]
+                            stem_4d = s4[1]
+                            auto_4d = "VTK-" + stem_4d[stem_4d.index("-")+1:] if "-" in stem_4d else f"VTK-{stem_4d}"
+                            custom_names_4d[lab] = st.text_input(
+                                f"🏷️ Nombre para {s4[1]}:", value=auto_4d, key=f"nom4d_{s4[1]}"
                             )
-                            st.success(f"✅ {nom_s4}.vtk generado")
-                        else:
-                            st.error(f"Error generando VTK para {s4[1]}")
+                    else:
+                        # Mostrar los nombres automáticos como preview
+                        for lab in sels_4d:
+                            s4 = dict_4d_vtk[lab]
+                            stem_4d = s4[1]
+                            auto_4d = "VTK-" + stem_4d[stem_4d.index("-")+1:] if "-" in stem_4d else f"VTK-{stem_4d}"
+                            st.code(f"{auto_4d}.vtk", language=None)
+
+                    if st.button("🌌 Generar VTK por cada plano", key="btn_gen_vtk4d", type="primary"):
+                        import json as _json4
+                        for lab in sels_4d:
+                            s4 = dict_4d_vtk[lab]
+                            df_s4 = pd.DataFrame(_json4.loads(s4[4]))
+                            x_s4  = s4[2]
+                            stem_4d = s4[1]
+                            auto_4d = "VTK-" + stem_4d[stem_4d.index("-")+1:] if "-" in stem_4d else f"VTK-{stem_4d}"
+                            nom_s4 = custom_names_4d.get(lab, auto_4d) if rename_4d else auto_4d
+                            with st.spinner(f"Generando {nom_s4}.vtk..."):
+                                res_s4 = crear_vtk_superficie_3d_delaunay(df_s4, nom_s4, x_s4)
+                            if res_s4:
+                                with open(res_s4, "rb") as f4:
+                                    bytes_s4 = f4.read()
+                                st.download_button(
+                                    f"📥 {nom_s4}.vtk",
+                                    bytes_s4,
+                                    file_name=f"{nom_s4}.vtk",
+                                    mime="application/octet-stream",
+                                    key=f"dl_vtk4d_{s4[1]}"
+                                )
+                                st.success(f"✅ {nom_s4}.vtk generado")
+                            else:
+                                st.error(f"Error generando VTK para {s4[1]}")
+
+
 
 
 
