@@ -4335,64 +4335,154 @@ elif st.session_state.seccion_actual == 'configuracion':
         """, unsafe_allow_html=True)
 
     st.markdown("---")
-    st.markdown("### 🗃️ Gestión de Datos de Perfil")
-    st.info("Administre las superficies guardadas y los modelos 3D asociados a su cuenta.")
-    
-    try:
-        sup_perfil = auth.get_user_surfaces(st.session_state.username)
-        obj_perfil = auth.get_user_objects(st.session_state.username)
-    except Exception as e:
-        sup_perfil = []
-        obj_perfil = []
-        st.error(f"Error accediendo a datos de perfil: {e}")
-        
-    tab_p1, tab_p2 = st.tabs(["📊 Superficies Guardadas (CSVs)", "📦 Modelos 3D Guardados"])
-    
-    with tab_p1:
-        if not sup_perfil:
-            st.write("No tienes superficies guardadas.")
-        else:
-            sup_dict = {f"{s[1]} (X={s[2]}) [{s[3]}]": s[0] for s in sup_perfil}
-            sel_sup_label = st.selectbox("Seleccionar Superficie:", list(sup_dict.keys()), key="sel_sup_perfil")
-            sel_sup_id = sup_dict[sel_sup_label]
-            
-            cp1, cp2 = st.columns(2)
-            with cp1:
-                nuevo_nombre_sup = st.text_input("Nuevo Nombre (Archivo):", value=sel_sup_label.split(" (")[0], key="ren_sup_inp")
-                if st.button("Renombrar Superficie", key="btn_ren_sup"):
-                    auth.rename_user_surface(sel_sup_id, nuevo_nombre_sup)
-                    st.success("✅ Nombre actualizado.")
-                    st.rerun()
-            with cp2:
-                st.write("")
-                st.write("")
-                if st.button("🗑️ Eliminar Superficie", type="primary", key="btn_del_sup"):
-                    auth.delete_user_surface(sel_sup_id)
-                    st.success("✅ Superficie eliminada.")
-                    st.rerun()
+    st.markdown("### 🗃️ Explorador de Archivos en Drive")
+    st.info("Navegá entre carpetas, renombrá o eliminá archivos de tu cuenta en Google Drive.")
 
-    with tab_p2:
-        if not obj_perfil:
-            st.write("No tienes modelos 3D guardados.")
+    import drive_api as _dapi
+
+    # --- Inicializar session state del explorador ---
+    if 'drive_folder_path' not in st.session_state:
+        st.session_state.drive_folder_path = []   # Lista de (id, nombre)
+    if 'drive_current_folder_id' not in st.session_state:
+        st.session_state.drive_current_folder_id = None
+    if 'drive_rename_file_id' not in st.session_state:
+        st.session_state.drive_rename_file_id = None
+    if 'drive_confirm_delete_id' not in st.session_state:
+        st.session_state.drive_confirm_delete_id = None
+
+    # --- Obtener la carpeta raíz del usuario la primera vez ---
+    if st.session_state.drive_current_folder_id is None:
+        with st.spinner("Conectando con Google Drive..."):
+            user_root_id = _dapi.get_user_root(st.session_state.username)
+        if user_root_id:
+            st.session_state.drive_current_folder_id = user_root_id
+            st.session_state.drive_folder_path = [(user_root_id, f"📁 {st.session_state.username}")]
         else:
-            obj_dict = {f"{o[1]} [{o[4]}]": o[0] for o in obj_perfil}
-            sel_obj_label = st.selectbox("Seleccionar Modelo 3D:", list(obj_dict.keys()), key="sel_obj_perfil")
-            sel_obj_id = obj_dict[sel_obj_label]
-            
-            cp3, cp4 = st.columns(2)
-            with cp3:
-                nuevo_nombre_obj = st.text_input("Nuevo Nombre (Objeto):", value=sel_obj_label.split(" [")[0], key="ren_obj_inp")
-                if st.button("Renombrar Modelo 3D", key="btn_ren_obj"):
-                    auth.rename_user_object(sel_obj_id, nuevo_nombre_obj)
-                    st.success("✅ Nombre actualizado.")
-                    st.rerun()
-            with cp4:
-                st.write("")
-                st.write("")
-                if st.button("🗑️ Eliminar Modelo 3D", type="primary", key="btn_del_obj"):
-                    auth.delete_user_object(sel_obj_id)
-                    st.success("✅ Modelo 3D eliminado.")
-                    st.rerun()
+            st.error("❌ No se pudo conectar con Google Drive. Verificá las credenciales.")
+            user_root_id = None
+
+    current_folder_id = st.session_state.drive_current_folder_id
+
+    if current_folder_id:
+        # --- BREADCRUMB ---
+        breadcrumb_cols = st.columns(len(st.session_state.drive_folder_path) * 2)
+        for i, (fid, fname) in enumerate(st.session_state.drive_folder_path):
+            with breadcrumb_cols[i * 2]:
+                is_last = (i == len(st.session_state.drive_folder_path) - 1)
+                if is_last:
+                    st.markdown(f"<span style='color:#60a5fa; font-weight:bold;'>{fname}</span>", unsafe_allow_html=True)
+                else:
+                    if st.button(fname, key=f"bread_{fid}"):
+                        # Navegar hacia atrás a esta carpeta
+                        idx = next((j for j, (x, _) in enumerate(st.session_state.drive_folder_path) if x == fid), None)
+                        if idx is not None:
+                            st.session_state.drive_folder_path = st.session_state.drive_folder_path[:idx + 1]
+                            st.session_state.drive_current_folder_id = fid
+                            st.session_state.drive_rename_file_id = None
+                            st.session_state.drive_confirm_delete_id = None
+                            st.rerun()
+            if i < len(st.session_state.drive_folder_path) - 1:
+                with breadcrumb_cols[i * 2 + 1]:
+                    st.markdown("<span style='color:#555;'> › </span>", unsafe_allow_html=True)
+
+        st.markdown("<hr style='border-color:#222; margin: 0.5rem 0;'>", unsafe_allow_html=True)
+
+        # --- CARGAR CONTENIDO DE LA CARPETA ACTUAL ---
+        with st.spinner("Cargando contenido..."):
+            contenido = _dapi.list_folder_contents(current_folder_id)
+
+        FOLDER_MIME = 'application/vnd.google-apps.folder'
+        carpetas = [f for f in contenido if f.get('mimeType') == FOLDER_MIME]
+        archivos = [f for f in contenido if f.get('mimeType') != FOLDER_MIME]
+
+        if not contenido:
+            st.markdown("<p style='color:#666; font-style:italic;'>Esta carpeta está vacía.</p>", unsafe_allow_html=True)
+        else:
+            # --- MOSTRAR CARPETAS ---
+            for carpeta in carpetas:
+                c_icon, c_name, c_btn = st.columns([0.05, 0.75, 0.2])
+                with c_icon:
+                    st.markdown("📁")
+                with c_name:
+                    st.markdown(f"<span style='color:#fbbf24;'>{carpeta['name']}</span>", unsafe_allow_html=True)
+                with c_btn:
+                    if st.button("Abrir →", key=f"open_{carpeta['id']}"):
+                        st.session_state.drive_folder_path.append((carpeta['id'], f"📁 {carpeta['name']}"))
+                        st.session_state.drive_current_folder_id = carpeta['id']
+                        st.session_state.drive_rename_file_id = None
+                        st.session_state.drive_confirm_delete_id = None
+                        st.rerun()
+
+            if carpetas and archivos:
+                st.markdown("<div style='border-top: 1px solid #222; margin: 0.3rem 0;'></div>", unsafe_allow_html=True)
+
+            # --- MOSTRAR ARCHIVOS ---
+            for archivo in archivos:
+                fid  = archivo['id']
+                fname = archivo['name']
+                created = archivo.get('createdTime', '')[:10] if archivo.get('createdTime') else ''
+
+                is_renaming = (st.session_state.drive_rename_file_id == fid)
+                is_confirming_delete = (st.session_state.drive_confirm_delete_id == fid)
+
+                if is_renaming:
+                    # --- MODO RENOMBRAR ---
+                    r_col1, r_col2, r_col3 = st.columns([0.6, 0.2, 0.2])
+                    with r_col1:
+                        nuevo_nombre = st.text_input("Nuevo nombre:", value=fname, key=f"inp_rename_{fid}", label_visibility="collapsed")
+                    with r_col2:
+                        if st.button("✅ Guardar", key=f"confirm_rename_{fid}"):
+                            with st.spinner("Renombrando..."):
+                                ok = _dapi.rename_file(fid, nuevo_nombre)
+                            if ok:
+                                st.success(f"✅ Renombrado a '{nuevo_nombre}'")
+                            else:
+                                st.error("❌ Error al renombrar.")
+                            st.session_state.drive_rename_file_id = None
+                            st.rerun()
+                    with r_col3:
+                        if st.button("✖ Cancelar", key=f"cancel_rename_{fid}"):
+                            st.session_state.drive_rename_file_id = None
+                            st.rerun()
+
+                elif is_confirming_delete:
+                    # --- MODO CONFIRMACIÓN BORRADO ---
+                    st.warning(f"⚠️ ¿Seguro que querés eliminar **{fname}**? Esta acción es irreversible.")
+                    d_col1, d_col2 = st.columns(2)
+                    with d_col1:
+                        if st.button("🗑️ Sí, eliminar", type="primary", key=f"confirm_del_{fid}"):
+                            with st.spinner("Eliminando..."):
+                                ok = _dapi.delete_file(fid)
+                            if ok:
+                                st.success(f"✅ '{fname}' eliminado.")
+                            else:
+                                st.error("❌ Error al eliminar.")
+                            st.session_state.drive_confirm_delete_id = None
+                            st.rerun()
+                    with d_col2:
+                        if st.button("Cancelar", key=f"cancel_del_{fid}"):
+                            st.session_state.drive_confirm_delete_id = None
+                            st.rerun()
+
+                else:
+                    # --- MODO NORMAL ---
+                    f_col1, f_col2, f_col3, f_col4 = st.columns([0.05, 0.65, 0.15, 0.15])
+                    with f_col1:
+                        st.markdown("📄")
+                    with f_col2:
+                        st.markdown(f"<span style='color:#e5e7eb;'>{fname}</span>"
+                                    f"<br><span style='color:#555; font-size:0.75rem;'>{created}</span>",
+                                    unsafe_allow_html=True)
+                    with f_col3:
+                        if st.button("✏️ Renombrar", key=f"ren_{fid}"):
+                            st.session_state.drive_rename_file_id = fid
+                            st.session_state.drive_confirm_delete_id = None
+                            st.rerun()
+                    with f_col4:
+                        if st.button("🗑️ Eliminar", key=f"del_{fid}"):
+                            st.session_state.drive_confirm_delete_id = fid
+                            st.session_state.drive_rename_file_id = None
+                            st.rerun()
 
     st.markdown("---")
     st.markdown("### 👥 Gestión de Usuarios")

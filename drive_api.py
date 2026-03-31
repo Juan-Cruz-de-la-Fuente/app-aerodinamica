@@ -177,7 +177,7 @@ def upload_file(file_content, filename, parent_id, mimetype='application/json'):
 
 
 def list_files(parent_id):
-    """Devuelve la lista de archivos dentro de una carpeta."""
+    """Devuelve la lista de archivos (sin carpetas) dentro de una carpeta."""
     service = get_service()
     if not service:
         return []
@@ -186,6 +186,37 @@ def list_files(parent_id):
                                    includeItemsFromAllDrives=True,
                                    fields='files(id, name, createdTime)').execute()
     return results.get('files', [])
+
+
+def list_folder_contents(parent_id):
+    """Devuelve carpetas y archivos dentro de parent_id, ordenado: carpetas primero."""
+    service = get_service()
+    if not service:
+        return []
+    query = f"'{parent_id}' in parents and trashed=false"
+    results = service.files().list(
+        q=query, spaces='drive',
+        supportsAllDrives=True, includeItemsFromAllDrives=True,
+        fields='files(id, name, mimeType, createdTime)',
+        orderBy='folder,name'
+    ).execute()
+    return results.get('files', [])
+
+
+def get_folder_info(folder_id):
+    """Devuelve el nombre de una carpeta dado su ID (para breadcrumb)."""
+    service = get_service()
+    if not service:
+        return None
+    try:
+        file_meta = service.files().get(
+            fileId=folder_id, fields='id, name',
+            supportsAllDrives=True
+        ).execute()
+        return file_meta
+    except Exception as e:
+        print(f"Error obteniendo info de carpeta: {e}")
+        return None
 
 
 def download_file(file_id):
@@ -206,19 +237,31 @@ def delete_file(file_id):
     """Mueve un archivo a la papelera."""
     service = get_service()
     if not service:
-        return
+        return False
     try:
-        service.files().update(fileId=file_id, body={'trashed': True}).execute()
+        service.files().update(
+            fileId=file_id,
+            body={'trashed': True},
+            supportsAllDrives=True
+        ).execute()
+        return True
     except Exception as e:
         print(f"Error borrando archivo: {e}")
+        return False
 
 
 def rename_file(file_id, new_name):
     """Renombra un archivo manteniendo su ID intacto."""
     service = get_service()
     if not service:
-        return
+        return False
     try:
-        service.files().update(fileId=file_id, body={'name': new_name}).execute()
+        service.files().update(
+            fileId=file_id,
+            body={'name': new_name},
+            supportsAllDrives=True
+        ).execute()
+        return True
     except Exception as e:
         print(f"Error renombrando archivo: {e}")
+        return False
