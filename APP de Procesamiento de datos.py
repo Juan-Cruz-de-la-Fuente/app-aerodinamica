@@ -2046,6 +2046,18 @@ if st.session_state.seccion_actual == 'inicio':
              st.session_state.seccion_actual = 'betz_4d'
              st.rerun()
 
+    # === HERRAMIENTAS (dentro del bloque de Ensayos de Estela) ===
+    st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
+    st.markdown("""
+    <div class="section-card" style="border-left: 5px solid #10b981; height: 160px; margin-bottom: 10px;">
+        <h3 style="color: #10b981; margin-top: 0; margin-bottom: 10px;">🔧 HERRAMIENTAS DE ESTELA</h3>
+        <p style="color: #bbb; font-size: 0.95rem; margin-bottom: 0;">Utilidades para unir archivos fragmentados, extraer matrices de presión y generar archivos VTK (2D, 3D y 4D) para ParaView / Salome.</p>
+    </div>
+    """, unsafe_allow_html=True)
+    if st.button("ACCEDER A HERRAMIENTAS", key="btn_row_herr", use_container_width=True):
+         st.session_state.seccion_actual = 'herramientas'
+         st.rerun()
+
     # === GRUPO 2: BETZ ===
     st.markdown("<h3 style='margin-top: 3rem; color: #aaa; border-bottom: 1px solid #333; padding-bottom: 10px;'>🧪 ENSAYOS DE BETZ</h3>", unsafe_allow_html=True)
     
@@ -2057,19 +2069,6 @@ if st.session_state.seccion_actual == 'inicio':
     """, unsafe_allow_html=True)
     if st.button("ACCEDER A ENSAYOS", key="btn_row_ensayo", use_container_width=True):
          st.session_state.seccion_actual = 'ensayo_betz'
-         st.rerun()
-
-    # === GRUPO 3: HERRAMIENTAS ===
-    st.markdown("<h3 style='margin-top: 3rem; color: #aaa; border-bottom: 1px solid #333; padding-bottom: 10px;'>🔧 HERRAMIENTAS MÚLTIPLES</h3>", unsafe_allow_html=True)
-    
-    st.markdown("""
-    <div class="section-card" style="border-left: 5px solid #10b981; height: 150px; margin-bottom: 10px;">
-        <h3 style="color: #10b981; margin-top: 0; margin-bottom: 10px;">🔧 UTILIDADES</h3>
-        <p style="color: #bbb; font-size: 0.95rem; margin-bottom: 0;">Unión de archivos fragmentados y extracción rápida de matrices de presión puras o tabuladas listas para graficadores externos.</p>
-    </div>
-    """, unsafe_allow_html=True)
-    if st.button("ACCEDER A UTILIDADES", key="btn_row_tools", use_container_width=True):
-         st.session_state.seccion_actual = 'herramientas'
          st.rerun()
 
     st.markdown("---")
@@ -4276,30 +4275,22 @@ elif st.session_state.seccion_actual == 'herramientas':
         st.markdown("""
         <div class="section-card" style="border-left: 5px solid #10b981; margin-bottom: 10px;">
             <h3 style="color: #10b981; margin: 0;">🎯 03. GENERADOR VTK (CFD)</h3>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        c_desc, c_func = st.columns([1, 2])
-        
-    # --- HERRAMIENTA 3: Generador VTK ---
-    with st.container():
-        st.markdown("""
-        <div class="section-card" style="border-left: 5px solid #10b981; margin-bottom: 10px;">
-            <h3 style="color: #10b981; margin: 0;">🎯 03. GENERADOR VTK (CFD)</h3>
             <p style="color:#aaa; margin: 6px 0 0 0; font-size:0.9rem;">
                 Convierte datos de presión en archivos <b>.VTK</b> compatibles con ParaView / Salome.
-                Seleccioná la dimensión y la fuente de datos.
+                Elegí el tipo de archivo (2D, 3D o 4D) y la fuente de datos.
             </p>
         </div>
         """, unsafe_allow_html=True)
 
-        tab_vtk2d, tab_vtk3d, tab_vtk4d = st.tabs(["🗺️ VTK 2D (Plano)", "🕸️ VTK 3D (Delaunay)", "🌌 VTK 4D (Multi-plano)"])
-
-        # ─────────────────────────────────────────────
-        # TAB VTK 2D
-        # ─────────────────────────────────────────────
-        with tab_vtk2d:
-            st.caption("Genera un plano YZ de presión (X fijo). Ideal para comparar secciones.")
+        # sub-banner VTK 2D
+        st.markdown("""
+        <div style="border-left: 3px solid #06b6d4; background: rgba(6,182,212,0.05);
+                    padding: 8px 14px; border-radius: 4px; margin: 16px 0 8px 0;">
+            <span style="color:#06b6d4; font-weight:700; font-size:0.95rem;">🗺️ VTK 2D — Plano de Presión</span>
+            <span style="color:#888; font-size:0.82rem; margin-left:10px;">Plano YZ plano (X fijo). Presión como color, sin deformación geométrica.</span>
+        </div>
+        """, unsafe_allow_html=True)
+        with st.container():
 
             fuente_2d = st.radio(
                 "Fuente de datos:",
@@ -4375,11 +4366,15 @@ elif st.session_state.seccion_actual == 'herramientas':
                     else:
                         st.error("❌ No se pudo generar el VTK.")
 
-        # ─────────────────────────────────────────────
-        # TAB VTK 3D
-        # ─────────────────────────────────────────────
-        with tab_vtk3d:
-            st.caption("Triangulación Delaunay 3D de los puntos medidos. Fiel a los datos, ideal para CFD.")
+        # sub-banner VTK 3D
+        st.markdown("""
+        <div style="border-left: 3px solid #8b5cf6; background: rgba(139,92,246,0.05);
+                    padding: 8px 14px; border-radius: 4px; margin: 16px 0 8px 0;">
+            <span style="color:#8b5cf6; font-weight:700; font-size:0.95rem;">🕸️ VTK 3D — Malla Delaunay</span>
+            <span style="color:#888; font-size:0.82rem; margin-left:10px;">Triangulación 3D fiel a los datos. Ideal para exportar a CFD.</span>
+        </div>
+        """, unsafe_allow_html=True)
+        with st.container():
 
             fuente_3d = st.radio(
                 "Fuente de datos:",
@@ -4454,11 +4449,15 @@ elif st.session_state.seccion_actual == 'herramientas':
                     else:
                         st.error("❌ No se pudo generar el VTK.")
 
-        # ─────────────────────────────────────────────
-        # TAB VTK 4D
-        # ─────────────────────────────────────────────
-        with tab_vtk4d:
-            st.caption("Genera un VTK 3D Delaunay por cada plano 4D seleccionado, ubicado en su posición X.")
+        # sub-banner VTK 4D
+        st.markdown("""
+        <div style="border-left: 3px solid #ec4899; background: rgba(236,72,153,0.05);
+                    padding: 8px 14px; border-radius: 4px; margin: 16px 0 8px 0;">
+            <span style="color:#ec4899; font-weight:700; font-size:0.95rem;">🌌 VTK 4D — Multi-plano</span>
+            <span style="color:#888; font-size:0.82rem; margin-left:10px;">Genera un VTK Delaunay por cada plano 4D, ubicado en su estación X.</span>
+        </div>
+        """, unsafe_allow_html=True)
+        with st.container():
 
             archivos_4d_vtk = auth.get_user_surfaces_4d(st.session_state.username)
             if not archivos_4d_vtk:
