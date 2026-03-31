@@ -2866,19 +2866,35 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
             st.markdown("---")
             st.markdown("""
             <div class="section-card" style="margin-bottom: 20px;">
-                <h3 style="margin-top: 0; color: white;">&#x2601;&#xFE0F; PASO 4: GUARDAR MATRIZ EN DRIVE (2D)</h3>
+                <h3 style="margin-top: 0; color: white;">☁️ PASO 4: GUARDAR MATRIZ EN DRIVE (2D)</h3>
                 <p style="color: #bbb; margin-bottom: 0;">Guarda la matriz de presiones del plano seleccionado en <b>ENSAYO DE ESTELA / 2D</b>.</p>
             </div>
             """, unsafe_allow_html=True)
             if not df_matriz.empty:
-                nombre_csv_2d = f"{archivo_sel}_T{tiempo_sel}s_2D.csv"
+                c_2d_a, c_2d_b = st.columns(2)
+                aoa_2d = c_2d_a.number_input("Ángulo de Ataque [°]:", value=0.0, step=0.5, format="%.1f", key="aoa_2d_paso4")
+                x_2d = c_2d_b.number_input("📍 Posición X (Estación) [mm]:", value=0.0, step=10.0, key="x_2d_paso4")
+
+                _aoa_str_2d = str(int(aoa_2d)) if aoa_2d == int(aoa_2d) else f"{aoa_2d:.1f}"
+                nombre_auto_2d = f"2D-X{int(x_2d)}-OAO{_aoa_str_2d}-T{int(tiempo_sel)}s.csv"
+
+                c_2d_chk, c_2d_nom = st.columns([0.15, 0.85])
+                usar_custom_2d = c_2d_chk.checkbox("Nombre libre", key="custom_nom_2d")
+                if usar_custom_2d:
+                    nombre_csv_2d = c_2d_nom.text_input("Nombre personalizado:", placeholder=nombre_auto_2d, key="nombre_2d_custom")
+                    if not nombre_csv_2d:
+                        nombre_csv_2d = nombre_auto_2d
+                else:
+                    nombre_csv_2d = nombre_auto_2d
+                    c_2d_nom.code(nombre_csv_2d)
+
                 csv_bytes_2d = df_matriz.to_csv(sep=';', index=False, decimal=',').encode('utf-8-sig')
                 col_2d_dl, col_2d_drive = st.columns(2)
                 with col_2d_dl:
-                    st.download_button("&#x1F4E5; Descargar Matriz 2D", csv_bytes_2d,
+                    st.download_button("📥 Descargar Matriz 2D", csv_bytes_2d,
                                        file_name=nombre_csv_2d, mime="text/csv", key="dl_2d_matriz")
                 with col_2d_drive:
-                    if st.button("&#x2601;&#xFE0F; Guardar en Drive (2D)", key="save_2d_drive", use_container_width=True):
+                    if st.button("☁️ Guardar en Drive (2D)", key="save_2d_drive", use_container_width=True):
                         if auth.save_csv_2d(st.session_state.username, nombre_csv_2d, csv_bytes_2d):
                             st.success(f"✅ Subido a Drive → ENSAYO DE ESTELA/2D/{nombre_csv_2d}")
                         else:
@@ -4265,109 +4281,219 @@ elif st.session_state.seccion_actual == 'herramientas':
         
         c_desc, c_func = st.columns([1, 2])
         
-        with c_desc:
-            st.markdown("""
-            <p style="color: #ccc; font-size: 0.95rem;">
-                Convierte matrices de presión en archivos .VTK compatibles con ParaView o Salome.
-                <br><br>
-                Permite interpolación cúbica para suavizar mallas o triangulación de Delaunay para superficies topográficas.
+    # --- HERRAMIENTA 3: Generador VTK ---
+    with st.container():
+        st.markdown("""
+        <div class="section-card" style="border-left: 5px solid #10b981; margin-bottom: 10px;">
+            <h3 style="color: #10b981; margin: 0;">🎯 03. GENERADOR VTK (CFD)</h3>
+            <p style="color:#aaa; margin: 6px 0 0 0; font-size:0.9rem;">
+                Convierte datos de presión en archivos <b>.VTK</b> compatibles con ParaView / Salome.
+                Seleccioná la dimensión y la fuente de datos.
             </p>
-            """, unsafe_allow_html=True)
-            
-        with c_func:
-            opcion_matriz = st.radio(
+        </div>
+        """, unsafe_allow_html=True)
+
+        tab_vtk2d, tab_vtk3d, tab_vtk4d = st.tabs(["🗺️ VTK 2D (Plano)", "🕸️ VTK 3D (Delaunay)", "🌌 VTK 4D (Multi-plano)"])
+
+        # ─────────────────────────────────────────────
+        # TAB VTK 2D
+        # ─────────────────────────────────────────────
+        with tab_vtk2d:
+            st.caption("Genera un plano YZ de presión (X fijo). Ideal para comparar secciones.")
+
+            fuente_2d = st.radio(
                 "Fuente de datos:",
-                ["Usar matriz existente (de paso anterior)", "Cargar nuevo archivo CSV"],
-                key="opcion_matriz_vtk",
-                horizontal=True
+                ["📂 Drive 2D (base de datos)", "💾 Memoria (sesión actual)", "📁 Subir CSV nuevo"],
+                key="fuente_vtk2d", horizontal=True
             )
 
-            df_matriz_vtk = None
-            matriz_disponible = st.session_state.get('matriz_presiones')
-
-            if opcion_matriz == "Usar matriz existente (de paso anterior)":
-                if matriz_disponible:
-                    st.success(f"✅ Usando: {matriz_disponible['nombre']}")
-                    df_matriz_vtk = matriz_disponible['matriz']
+            df_vtk2d = None
+            if fuente_2d == "📂 Drive 2D (base de datos)":
+                archivos_2d = auth.get_user_files_2d(st.session_state.username)
+                if archivos_2d:
+                    dict_2d = {f"{a[1]} [{a[2][:10] if a[2] else ''}]": a for a in archivos_2d}
+                    sel_2d = st.selectbox("Seleccionar archivo 2D:", list(dict_2d.keys()), key="sel_drive2d_vtk")
+                    if sel_2d:
+                        fid_2d, fname_2d = dict_2d[sel_2d][0], dict_2d[sel_2d][1]
+                        raw_2d = auth.download_file_2d(fid_2d)
+                        if raw_2d:
+                            import io
+                            df_vtk2d = pd.read_csv(io.BytesIO(raw_2d), sep=';', decimal=',')
+                            st.success(f"✅ Cargado desde Drive: **{fname_2d}**")
                 else:
-                    st.warning("⚠️ No hay matriz en memoria. Cargue un archivo nuevo.")
+                    st.info("No hay archivos 2D en Drive. Guardá desde BETZ 2D → Paso 4.")
+
+            elif fuente_2d == "💾 Memoria (sesión actual)":
+                mat_disp = st.session_state.get('matriz_presiones')
+                if mat_disp:
+                    st.success(f"✅ Usando: {mat_disp['nombre']}")
+                    df_vtk2d = mat_disp['matriz']
+                else:
+                    st.warning("No hay matriz en sesión. Usá Herramienta 02 o cargá desde Drive.")
+
             else:
-                archivo_vtk_source = st.file_uploader(
-                    "CSV Matriz:", type=['csv'], key="archivo_vtk", label_visibility="collapsed"
-                )
-                if archivo_vtk_source:
+                csv_new = st.file_uploader("CSV Matriz (sep=;, dec=,):", type=['csv'], key="up_vtk2d")
+                if csv_new:
                     try:
-                        df_matriz_vtk = pd.read_csv(archivo_vtk_source, sep=';', decimal=',')
-                    except:
-                        st.error("Error leyendo CSV")
-            
-            c_in, c_sl, c_px = st.columns([2, 1, 1])
-            with c_in:
-                 nombre_vtk = st.text_input("Nombre VTK:", value="datos_presion", key="nombre_vtk")
-            with c_sl:
-                 resolucion_factor = st.slider("Interpolación / Suavizado:", 1, 5, 2)
-            with c_px:
-                 posicion_x_vtk = st.number_input("Posición X (mm):", value=0.0, step=10.0, key="pos_x_vtk_herr")
-            
-            # Botones de acción
-            c_b1, c_b2 = st.columns(2)
+                        df_vtk2d = pd.read_csv(csv_new, sep=';', decimal=',')
+                    except Exception as e:
+                        st.error(f"Error leyendo CSV: {e}")
 
-            # --- VTK INTERPOLADO CÚBICO (OCULTO - No borrar, solo silenciado) ---
-            # with c_b1:
-            #     if st.button("🚀 VTK Interpolado", use_container_width=True):
-            #          if df_matriz_vtk is not None:
-            #             meta = {"Temperatura_C": 20, "Humedad_Rel_Porc": 50, "Presion_Atm_hPa": 1013, "Velocidad_Ref_ms": 0}
-            #             res = crear_archivo_vtk_interpolado(df_matriz_vtk, nombre_vtk, resolucion_factor, meta, posicion_x_vtk)
-            #             if res:
-            #                 with open(res, "rb") as f:
-            #                     st.download_button("📥 Bajar VTK", f.read(), f"{nombre_vtk}.vtk")
-            #          else:
-            #             st.error("No Data")
+            if df_vtk2d is not None:
+                c2d_x, c2d_aoa, c2d_res = st.columns(3)
+                x_vtk2d  = c2d_x.number_input("📍 Posición X [mm]:", value=0.0, step=10.0, key="x_vtk2d")
+                aoa_vtk2d = c2d_aoa.number_input("Ángulo de Ataque [°]:", value=0.0, step=0.5, format="%.1f", key="aoa_vtk2d")
+                res_vtk2d = c2d_res.slider("Suavizado:", 1, 5, 2, key="res_vtk2d")
 
-            with c_b1:
-                if st.button("🗺️ VTK Plano 2D", use_container_width=True,
-                             help="Plano YZ plano (X fijo). Presión solo como color, sin deformación geométrica."):
-                    if df_matriz_vtk is not None:
-                        resultado = crear_vtk_plano_presion_2d(df_matriz_vtk, nombre_vtk, posicion_x_vtk)
-                        if resultado:
-                            vtk_path, vtk_bytes = resultado
-                            col_dl1, col_dl2 = st.columns(2)
-                            with col_dl1:
-                                st.download_button("📥 Descargar VTK Plano", vtk_bytes,
-                                                   file_name=os.path.basename(vtk_path),
-                                                   mime="application/octet-stream", key="dl_vtk_plano")
-                            with col_dl2:
-                                if st.button("☁️ Guardar en Drive", key="save_vtk_plano_drive"):
-                                    if auth.save_vtk_plano(st.session_state.username,
-                                                           os.path.basename(vtk_path), vtk_bytes):
-                                        st.success("✅ Subido → HERRAMIENTAS/ARCHIVOS VTK/PLANOS DE PRESION")
-                                    else:
-                                        st.error("Error al subir a Drive")
+                _aoa2d = str(int(aoa_vtk2d)) if aoa_vtk2d == int(aoa_vtk2d) else f"{aoa_vtk2d:.1f}"
+                nombre_auto_vtk2d = f"VTK-X{int(x_vtk2d)}-OAO{_aoa2d}-2D"
+
+                c2d_chk, c2d_nom = st.columns([0.15, 0.85])
+                if c2d_chk.checkbox("Nombre libre", key="chk_vtk2d"):
+                    nombre_vtk2d = c2d_nom.text_input("Nombre:", placeholder=nombre_auto_vtk2d, key="nom_vtk2d")
+                    if not nombre_vtk2d: nombre_vtk2d = nombre_auto_vtk2d
+                else:
+                    nombre_vtk2d = nombre_auto_vtk2d
+                    c2d_nom.code(f"{nombre_vtk2d}.vtk")
+
+                if st.button("🗺️ Generar VTK 2D", key="btn_gen_vtk2d", type="primary"):
+                    resultado_2d = crear_vtk_plano_presion_2d(df_vtk2d, nombre_vtk2d, x_vtk2d)
+                    if resultado_2d:
+                        vtk_path_2d, vtk_bytes_2d = resultado_2d
+                        c_dl1, c_dl2 = st.columns(2)
+                        with c_dl1:
+                            st.download_button("📥 Descargar VTK 2D", vtk_bytes_2d,
+                                               file_name=os.path.basename(vtk_path_2d),
+                                               mime="application/octet-stream", key="dl_vtk2d")
+                        with c_dl2:
+                            if st.button("☁️ Guardar en Drive", key="save_vtk2d_drive"):
+                                if auth.save_vtk_plano(st.session_state.username,
+                                                       os.path.basename(vtk_path_2d), vtk_bytes_2d):
+                                    st.success("✅ Subido → HERRAMIENTAS/ARCHIVOS VTK/PLANOS DE PRESION")
+                                else:
+                                    st.error("Error al subir a Drive")
                     else:
-                        st.error("❌ No hay datos de matriz cargados")
+                        st.error("❌ No se pudo generar el VTK.")
 
-            with c_b2:
-                if st.button("🕸️ VTK 3D (Malla Delaunay)", use_container_width=True,
-                             help="Triangula los puntos medidos con Delaunay. Fiel a los datos reales, ideal para CFD."):
-                     if df_matriz_vtk is not None:
-                        res = crear_vtk_superficie_3d_delaunay(df_matriz_vtk, nombre_vtk, posicion_x_vtk)
-                        if res:
-                            with open(res, "rb") as vtk_f:
-                                vtk_bytes_3d = vtk_f.read()
-                            col_dl3, col_dl4 = st.columns(2)
-                            with col_dl3:
-                                st.download_button("📥 Descargar VTK 3D", vtk_bytes_3d,
-                                                   file_name=f"{nombre_vtk}_3D.vtk",
-                                                   mime="application/octet-stream", key="dl_vtk_3d")
-                            with col_dl4:
-                                if st.button("☁️ Guardar en Drive", key="save_vtk_3d_drive"):
-                                    if auth.save_vtk_superficie(st.session_state.username,
-                                                                f"{nombre_vtk}_3D.vtk", vtk_bytes_3d):
-                                        st.success("✅ Subido → HERRAMIENTAS/ARCHIVOS VTK/SUPERFICIES 3D")
-                                    else:
-                                        st.error("Error al subir a Drive")
-                     else:
-                        st.error("❌ No hay datos de matriz cargados")
+        # ─────────────────────────────────────────────
+        # TAB VTK 3D
+        # ─────────────────────────────────────────────
+        with tab_vtk3d:
+            st.caption("Triangulación Delaunay 3D de los puntos medidos. Fiel a los datos, ideal para CFD.")
+
+            fuente_3d = st.radio(
+                "Fuente de datos:",
+                ["📂 Drive 3D (base de datos)", "💾 Memoria (sesión actual)", "📁 Subir CSV nuevo"],
+                key="fuente_vtk3d", horizontal=True
+            )
+
+            df_vtk3d = None
+            if fuente_3d == "📂 Drive 3D (base de datos)":
+                archivos_3d = auth.get_user_surfaces(st.session_state.username)
+                if archivos_3d:
+                    dict_3d = {f"{s[1]} [{s[3][:10] if s[3] else ''}]": s for s in archivos_3d}
+                    sel_3d = st.selectbox("Seleccionar plano 3D:", list(dict_3d.keys()), key="sel_drive3d_vtk")
+                    if sel_3d:
+                        import json as _json
+                        data_str_3d = dict_3d[sel_3d][4]
+                        df_vtk3d = pd.DataFrame(_json.loads(data_str_3d))
+                        st.success(f"✅ Cargado: **{dict_3d[sel_3d][1]}**")
+                        x_suggested_3d = 0.0
+                else:
+                    st.info("No hay planos 3D en Drive. Guardá desde BETZ 3D → Paso 5.")
+
+            elif fuente_3d == "💾 Memoria (sesión actual)":
+                mat_disp3d = st.session_state.get('matriz_presiones')
+                if mat_disp3d:
+                    st.success(f"✅ Usando: {mat_disp3d['nombre']}")
+                    df_vtk3d = mat_disp3d['matriz']
+                else:
+                    st.warning("No hay matriz en sesión.")
+
+            else:
+                csv_new3d = st.file_uploader("CSV Matriz:", type=['csv'], key="up_vtk3d")
+                if csv_new3d:
+                    try:
+                        df_vtk3d = pd.read_csv(csv_new3d, sep=';', decimal=',')
+                    except Exception as e:
+                        st.error(f"Error: {e}")
+
+            if df_vtk3d is not None:
+                c3d_x, c3d_aoa = st.columns(2)
+                x_vtk3d   = c3d_x.number_input("📍 Posición X [mm]:", value=0.0, step=10.0, key="x_vtk3d")
+                aoa_vtk3d = c3d_aoa.number_input("Ángulo de Ataque [°]:", value=0.0, step=0.5, format="%.1f", key="aoa_vtk3d")
+
+                _aoa3d = str(int(aoa_vtk3d)) if aoa_vtk3d == int(aoa_vtk3d) else f"{aoa_vtk3d:.1f}"
+                nombre_auto_vtk3d = f"VTK-X{int(x_vtk3d)}-OAO{_aoa3d}-3D"
+
+                c3d_chk, c3d_nom = st.columns([0.15, 0.85])
+                if c3d_chk.checkbox("Nombre libre", key="chk_vtk3d"):
+                    nombre_vtk3d = c3d_nom.text_input("Nombre:", placeholder=nombre_auto_vtk3d, key="nom_vtk3d")
+                    if not nombre_vtk3d: nombre_vtk3d = nombre_auto_vtk3d
+                else:
+                    nombre_vtk3d = nombre_auto_vtk3d
+                    c3d_nom.code(f"{nombre_vtk3d}.vtk")
+
+                if st.button("🕸️ Generar VTK 3D Delaunay", key="btn_gen_vtk3d", type="primary"):
+                    res_3d = crear_vtk_superficie_3d_delaunay(df_vtk3d, nombre_vtk3d, x_vtk3d)
+                    if res_3d:
+                        with open(res_3d, "rb") as f3d:
+                            vtk_bytes_3d = f3d.read()
+                        c_dl3, c_dl4 = st.columns(2)
+                        with c_dl3:
+                            st.download_button("📥 Descargar VTK 3D", vtk_bytes_3d,
+                                               file_name=f"{nombre_vtk3d}.vtk",
+                                               mime="application/octet-stream", key="dl_vtk3d")
+                        with c_dl4:
+                            if st.button("☁️ Guardar en Drive", key="save_vtk3d_drive"):
+                                if auth.save_vtk_superficie(st.session_state.username,
+                                                            f"{nombre_vtk3d}.vtk", vtk_bytes_3d):
+                                    st.success("✅ Subido → HERRAMIENTAS/ARCHIVOS VTK/SUPERFICIES 3D")
+                                else:
+                                    st.error("Error al subir a Drive")
+                    else:
+                        st.error("❌ No se pudo generar el VTK.")
+
+        # ─────────────────────────────────────────────
+        # TAB VTK 4D
+        # ─────────────────────────────────────────────
+        with tab_vtk4d:
+            st.caption("Genera un VTK 3D Delaunay por cada plano 4D seleccionado, ubicado en su posición X.")
+
+            archivos_4d_vtk = auth.get_user_surfaces_4d(st.session_state.username)
+            if not archivos_4d_vtk:
+                st.info("No hay planos 4D en Drive. Guardá desde BETZ 4D → Paso 1.")
+            else:
+                dict_4d_vtk = {f"{s[1]} (X={s[2]}mm) [{s[3][:10] if s[3] else ''}]": s for s in archivos_4d_vtk}
+                sels_4d = st.multiselect("Seleccionar planos 4D:", list(dict_4d_vtk.keys()), key="sels_4d_vtk")
+
+                aoa_vtk4d = st.number_input("Ángulo de Ataque [°]:", value=0.0, step=0.5, format="%.1f", key="aoa_vtk4d")
+                _aoa4d = str(int(aoa_vtk4d)) if aoa_vtk4d == int(aoa_vtk4d) else f"{aoa_vtk4d:.1f}"
+
+                if sels_4d and st.button("🌌 Generar VTK por cada plano", key="btn_gen_vtk4d", type="primary"):
+                    import json as _json4
+                    for lab in sels_4d:
+                        s4 = dict_4d_vtk[lab]
+                        df_s4 = pd.DataFrame(_json4.loads(s4[4]))
+                        x_s4  = s4[2]
+                        nom_s4 = f"VTK-X{int(x_s4)}-OAO{_aoa4d}-4D-{s4[1]}"
+                        with st.spinner(f"Generando {nom_s4}.vtk..."):
+                            res_s4 = crear_vtk_superficie_3d_delaunay(df_s4, nom_s4, x_s4)
+                        if res_s4:
+                            with open(res_s4, "rb") as f4:
+                                bytes_s4 = f4.read()
+                            st.download_button(
+                                f"📥 {nom_s4}.vtk",
+                                bytes_s4,
+                                file_name=f"{nom_s4}.vtk",
+                                mime="application/octet-stream",
+                                key=f"dl_vtk4d_{s4[1]}"
+                            )
+                            st.success(f"✅ {nom_s4}.vtk generado")
+                        else:
+                            st.error(f"Error generando VTK para {s4[1]}")
+
+
 
 
 
