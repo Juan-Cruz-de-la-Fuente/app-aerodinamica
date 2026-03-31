@@ -183,6 +183,34 @@ def get_user_surfaces_4d(username):
     return fetch_all_4d(folder_id)
 
 
+def get_user_files_2d(username):
+    """Lista archivos CSV de la carpeta 2D (guardados desde BETZ 2D).
+    Devuelve lista de (id, name, created_at, data_bytes).
+    """
+    import streamlit as st
+    folder_id = drive_api.get_folder_2d(username)
+    if not folder_id:
+        return []
+
+    @st.cache_data(ttl=300, show_spinner=False)
+    def fetch_all_2d(fid):
+        all_res = []
+        fs = drive_api.list_files(fid)
+        for f in fs:
+            name = f.get('name', '')
+            if name.endswith('.csv'):
+                all_res.append((f['id'], name, f.get('createdTime'), None))
+        return sorted(all_res, key=lambda x: x[2] or '', reverse=True)
+
+    return fetch_all_2d(folder_id)
+
+
+def download_file_2d(file_id):
+    """Descarga el contenido de un archivo 2D de Drive como bytes."""
+    return drive_api.download_file(file_id)
+
+
+
 def delete_user_surface(surface_id):
     drive_api.delete_file(surface_id)
 

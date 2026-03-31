@@ -126,6 +126,11 @@ def get_folder_3d(username):
     eid = get_or_create_folder(FOLDER_ESTELA, uid)
     return get_or_create_folder(FOLDER_3D, eid)
 
+def get_folder_2d(username):
+    uid = get_user_root(username)
+    eid = get_or_create_folder(FOLDER_ESTELA, uid)
+    return get_or_create_folder(FOLDER_2D, eid)
+
 def get_folder_modelos(username):
     uid = get_user_root(username)
     return get_or_create_folder(FOLDER_MODELOS, uid)
