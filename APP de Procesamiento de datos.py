@@ -3640,11 +3640,24 @@ elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual 
                 
                 # INTELIGENCIA: Pre-calcular X y Nombre basado en archivo
                 x_detectado = extraer_pos_x_estacion(archivo_guardar)
-                nombre_base_sugerido = f"{os.path.splitext(archivo_guardar)[0]}_X{int(x_detectado)}_T{tiempo_g_sel}s"
-                
-                col_g1, col_g2 = st.columns(2)
-                nombre_surf = col_g1.text_input("Nombre identificador:", value=nombre_base_sugerido, key="nombre_surf_bd")
-                col_g2.info("💡 La posición X se asigna en BETZ 4D al colocar esta superficie en el espacio.")
+
+                c_nm1, c_nm2 = st.columns(2)
+                aoa_3d = c_nm1.number_input("Ángulo de Ataque [mm]:", value=0.0, step=0.5, format="%.1f", key="aoa_3d")
+                x_detectado_inp = c_nm2.number_input("📍 Posición X (Estación) [mm]:", value=x_detectado, step=10.0, key="x_3d_inp")
+
+                # Nombre auto-sugerido: 3D-Xpos-OAOgrados-Tts  (editable)
+                _aoa_str = str(int(aoa_3d)) if aoa_3d == int(aoa_3d) else f"{aoa_3d:.1f}"
+                nombre_base_sugerido = f"3D-X{int(x_detectado_inp)}-OAO{_aoa_str}-T{int(tiempo_g_sel)}s"
+
+                c_g1, c_g2 = st.columns([0.15, 0.85])
+                usar_custom_3d = c_g1.checkbox("Nombre libre", key="custom_nom_3d")
+                if usar_custom_3d:
+                    nombre_surf = c_g2.text_input("Nombre personalizado:", placeholder=nombre_base_sugerido, key="nombre_surf_custom")
+                    if not nombre_surf:
+                        nombre_surf = nombre_base_sugerido
+                else:
+                    nombre_surf = nombre_base_sugerido
+                    c_g2.code(nombre_surf)
                 
                 if st.button("💾 Guardar en Base de Datos", key="btn_guardar_bd"):
                     # Convertir a matriz (Y, Z, Presion)
@@ -3727,8 +3740,22 @@ elif st.session_state.seccion_actual == 'betz_4d':
                     value=0.0, step=10.0, key="x_pos_4d"
                 )
 
-                nombre_sugerido_4d = f"{os.path.splitext(archivo_4d.name)[0]}_T{int(t4d_sel)}s"
-                nombre_4d = st.text_input("Nombre identificador 4D:", value=nombre_sugerido_4d, key="nombre_4d_inp")
+                aoa_4d = st.number_input("Ángulo de Ataque [mm]:", value=0.0, step=0.5, format="%.1f", key="aoa_4d")
+
+                # Nombre auto-sugerido: 4D-Xpos-OAOgrados-Tts  (editable)
+                _aoa_str_4d = str(int(aoa_4d)) if aoa_4d == int(aoa_4d) else f"{aoa_4d:.1f}"
+                nombre_sugerido_4d = f"4D-X{int(x_pos_4d)}-OAO{_aoa_str_4d}-T{int(t4d_sel)}s"
+
+                c_4d1, c_4d2 = st.columns([0.15, 0.85])
+                usar_custom_4d = c_4d1.checkbox("Nombre libre", key="custom_nom_4d")
+                if usar_custom_4d:
+                    nombre_4d = c_4d2.text_input("Nombre personalizado:", placeholder=nombre_sugerido_4d, key="nombre_4d_inp")
+                    if not nombre_4d:
+                        nombre_4d = nombre_sugerido_4d
+                else:
+                    nombre_4d = nombre_sugerido_4d
+                    c_4d2.code(nombre_4d)
+                
 
                 if st.button("💾 Guardar Plano 4D en Drive", key="btn_guardar_4d"):
                     results_4d = []
