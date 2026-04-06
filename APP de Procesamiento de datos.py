@@ -3882,24 +3882,27 @@ elif st.session_state.seccion_actual == 'betz_4d':
                         s_data = dict_superficies[label]
                         x_base = s_data[2]
                         
-                        # Deform X
-                        x_def = x_base + (df['Presion'] * pressure_scale)
-                        
                         # Triangulate
                         try:
-                            tri = Delaunay(df[['Y', 'Z']].values)
+                            df_clean = df.dropna(subset=['Y', 'Z', 'Presion']).drop_duplicates(subset=['Y', 'Z'])
+                            if len(df_clean) < 3:
+                                continue
+                            
+                            tri = Delaunay(df_clean[['Y', 'Z']].values)
+                            x_def = x_base + (df_clean['Presion'] * pressure_scale)
+                            
                             fig_4d.add_trace(go.Mesh3d(
-                                x=x_def, y=df['Y'], z=df['Z'],
+                                x=x_def, y=df_clean['Y'], z=df_clean['Z'],
                                 i=tri.simplices[:,0], j=tri.simplices[:,1], k=tri.simplices[:,2],
-                                intensity=df['Presion'],
+                                intensity=df_clean['Presion'],
                                 colorscale='Turbo',
                                 cmin=g_min, cmax=g_max,
                                 showscale=True,
                                 opacity=0.9,
                                 name=f"{s_data[1]} (X={x_base})"
                             ))
-                        except:
-                            pass
+                        except Exception as e:
+                            st.warning(f"Error ploteando {s_data[1]}: {e}")
                             
                     fig_4d.update_layout(
                         title="Escena 4D Integrada",
@@ -3974,7 +3977,9 @@ elif st.session_state.seccion_actual == 'betz_4d':
                         
                         # Límites de superficies
                         for item in anim_items:
-                            df = item['df']
+                            df = item['df'].dropna(subset=['Y', 'Z', 'Presion'])
+                            if df.empty: continue
+                            
                             # Considerar deformación maxima aproximada para el bounding box
                             # (Asumiendo que la presion positiva deforma hacia +X)
                             max_p = df['Presion'].max()
@@ -4040,22 +4045,29 @@ elif st.session_state.seccion_actual == 'betz_4d':
                             
                             for frame_item in items_to_show:
                                 df_f = frame_item['df']
-                                tri = Delaunay(df_f[['Y', 'Z']].values)
+                                df_clean = df_f.dropna(subset=['Y', 'Z', 'Presion']).drop_duplicates(subset=['Y', 'Z'])
+                                if len(df_clean) < 3:
+                                    continue
                                 
-                                # Calcular deformación
-                                x_def = frame_item['x'] + (df_f['Presion'] * pressure_scale_gif)
-                                
-                                fig_frame.add_trace(go.Mesh3d(
-                                    x=x_def, 
-                                    y=df_f['Y'],
-                                    z=df_f['Z'],
-                                    i=tri.simplices[:,0], j=tri.simplices[:,1], k=tri.simplices[:,2],
-                                    intensity=df_f['Presion'],
-                                    colorscale='Turbo',
-                                    cmin=val_range[0], cmax=val_range[1],
-                                    showscale=(frame_item == items_to_show[-1]), 
-                                    opacity=1.0
-                                ))
+                                try:
+                                    tri = Delaunay(df_clean[['Y', 'Z']].values)
+                                    
+                                    # Calcular deformación
+                                    x_def = frame_item['x'] + (df_clean['Presion'] * pressure_scale_gif)
+                                    
+                                    fig_frame.add_trace(go.Mesh3d(
+                                        x=x_def, 
+                                        y=df_clean['Y'],
+                                        z=df_clean['Z'],
+                                        i=tri.simplices[:,0], j=tri.simplices[:,1], k=tri.simplices[:,2],
+                                        intensity=df_clean['Presion'],
+                                        colorscale='Turbo',
+                                        cmin=val_range[0], cmax=val_range[1],
+                                        showscale=(frame_item == items_to_show[-1]), 
+                                        opacity=1.0
+                                    ))
+                                except Exception as e:
+                                    pass
                             
                             # Layout - ISOMETRIC FIXED VIEW ZOOMED OUT
                             fig_frame.update_layout(
