@@ -3835,13 +3835,13 @@ elif st.session_state.seccion_actual == 'betz_4d':
             for label in sel_labels:
                 s_data = dict_superficies[label]
                 try:
-                    import io
-                    df = pd.read_json(io.StringIO(s_data[4]))
+                    import json
+                    df = pd.DataFrame(json.loads(s_data[4]))
                     loaded_dfs[label] = df
                     if 'Presion' in df.columns:
                         all_pressures.extend(df['Presion'].tolist())
                 except Exception as e:
-                    st.error(f"Error cargando datos de {label}: Error de formato.")
+                    st.error(f"Error cargando datos de {label}: {str(e)}")
 
             if all_pressures:
                 g_min, g_max = min(all_pressures), max(all_pressures)
