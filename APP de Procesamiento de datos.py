@@ -3835,12 +3835,13 @@ elif st.session_state.seccion_actual == 'betz_4d':
             for label in sel_labels:
                 s_data = dict_superficies[label]
                 try:
-                    df = pd.read_json(s_data[4])
+                    import io
+                    df = pd.read_json(io.StringIO(s_data[4]))
                     loaded_dfs[label] = df
                     if 'Presion' in df.columns:
                         all_pressures.extend(df['Presion'].tolist())
                 except Exception as e:
-                    st.error(f"Error cargando datos de {label}: {e}")
+                    st.error(f"Error cargando datos de {label}: Error de formato.")
 
             if all_pressures:
                 g_min, g_max = min(all_pressures), max(all_pressures)
@@ -3940,13 +3941,15 @@ elif st.session_state.seccion_actual == 'betz_4d':
                         if m: time_val = int(m.group(1))
                     except: pass
                     
-                    anim_items.append({
-                        'label': label,
-                        'x': s_data[2],
-                        'time': time_val,
-                        'df': loaded_dfs[label],
-                        'name': s_data[1]
-                    })
+                    df_cargado = loaded_dfs.get(label)
+                    if df_cargado is not None:
+                        anim_items.append({
+                            'label': label,
+                            'x': s_data[2],
+                            'time': time_val,
+                            'df': df_cargado,
+                            'name': s_data[1]
+                        })
                 
                 c_sort1, c_sort2 = st.columns([2, 1])
                 sort_mode = c_sort1.radio("Ordenar secuencia por:", ["Posición X (Espacial)", "Tiempo (Temporal)"], horizontal=True, key="sort_mode_anim")
