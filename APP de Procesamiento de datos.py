@@ -351,6 +351,9 @@ def render_navbar():
                     if st.button("🌌 Vis. Estela 4D", use_container_width=True, type="primary" if st.session_state.seccion_actual == 'betz_4d' else "secondary"):
                         st.session_state.seccion_actual = 'betz_4d'
                         st.rerun()
+                    if st.button("🌀 Análisis de Vórtices", use_container_width=True, type="primary" if st.session_state.seccion_actual == 'analisis_vortices' else "secondary"):
+                        st.session_state.seccion_actual = 'analisis_vortices'
+                        st.rerun()
                     if st.button("🔧 Herramientas", use_container_width=True, type="primary" if st.session_state.seccion_actual == 'herramientas' else "secondary"):
                         st.session_state.seccion_actual = 'herramientas'
                         st.rerun()
@@ -3047,6 +3050,223 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
                             st.success(f"✅ Subido a Drive → ENSAYO DE ESTELA/2D/{nombre_csv_2d}")
                         else:
                             st.error("Error al subir a Drive")
+
+elif st.session_state.seccion_actual == 'analisis_vortices':
+    st.markdown("""
+        <div class="header-container">
+            <h1 style="font-size: 3rem; margin-bottom: 1rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
+            🌀 ANÁLISIS DE VÓRTICES
+            </h1>
+            <h2 style="font-size: 1.8rem; margin-bottom: 0; opacity: 0.9;">
+            Detección Numérica Topológica de Estelas Rotacionales en 2D
+            </h2>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    if 'archivos_2d_cargados' not in st.session_state or not st.session_state.archivos_2d_cargados:
+        st.warning("⚠️ No hay matrices espaciales en la memoria. Por favor, ve primero a **Vis. Estela 2D**, aplica la configuración inicial y carga los archivos CSV en el Paso 2.")
+    else:
+        st.markdown("## ⚙️ Paso 1: Configuración de Parámetros Matemáticos")
+        c_param1, c_param2, c_param3 = st.columns(3)
+        with c_param1:
+            sensibilidad_pa = st.number_input("Caída de p Mínima [Pa] (Sensibilidad central)", min_value=1.0, max_value=500.0, value=15.0, step=1.0, help="Diferencia de presión mínima que debe existir desde el núcleo hacia los 4 ejes para validarlo como vórtice cerrado real.")
+        with c_param2:
+            forma_aprox = st.radio("Aproximación de Diámetro", ["Círculos Equivalentes (Promedio)", "Elipses Analíticas (Deformación)"])
+        with c_param3:
+            grid_res = st.slider("Resolución Grilla (Calidad)", min_value=50, max_value=300, value=150, step=10, help="Cantidad de puntos interpolados. Mayor resolución mejora precisión pero puede ser más lento.")
+        
+        st.markdown("---")
+        st.markdown("## 🚀 Paso 2: Ejecución del Escáner Direccional")
+        archivo_sel = st.selectbox("Seleccionar Archivo en Memoria:", list(st.session_state.archivos_2d_cargados.keys()))
+        df_selected = st.session_state.archivos_2d_cargados[archivo_sel]
+        tiempos = df_selected['Tiempo_s'].dropna().unique()
+        tiempo_sel = st.selectbox("Seleccionar Tiempo Relativo:", sorted(tiempos))
+
+        if st.button("🔎 INICIAR BARRIDO NUMÉRICO", use_container_width=True, type="primary"):
+            with st.spinner("Ensamblando plano YZ y barriendo derivadas espaciales..."):
+                df_run = df_selected[df_selected['Tiempo_s'] == tiempo_sel].copy()
+                results_2d = []
+                for _, row in df_run.iterrows():
+                    y_trav = row.get('Pos_Y_Traverser')
+                    z_base = row.get('Pos_Z_Base')
+                    for col in df_run.columns:
+                        num_sensor = obtener_numero_sensor_desde_columna(col)
+                        if num_sensor is not None:
+                            val_presion = row[col]
+                            if pd.isna(val_presion): continue
+                            z_real = calcular_altura_absoluta_z(
+                                num_sensor, z_base, 
+                                st.session_state.configuracion_2d.get('distancia_toma_12', -120),
+                                st.session_state.configuracion_2d.get('distancia_entre_tomas', 10.0),
+                                12, st.session_state.configuracion_2d.get('orden', 'asc')
+                            )
+                            results_2d.append({'Y': y_trav, 'Z': z_real, 'Presion': val_presion})
+                            
+                df_matriz = pd.DataFrame(results_2d)
+                
+                if df_matriz.empty:
+                    st.error("No se pudieron extraer datos espaciales. Comprueba la configuración 2D.")
+                else:
+                    y_plot = df_matriz['Y'].values
+                    z_plot = df_matriz['Z'].values
+                    val_plot = df_matriz['Presion'].values
+                    
+                    y_grid_vals = np.linspace(y_plot.min(), y_plot.max(), grid_res)
+                    z_grid_vals = np.linspace(z_plot.min(), z_plot.max(), grid_res)
+                    Y_grid, Z_grid = np.meshgrid(y_grid_vals, z_grid_vals)
+                    
+                    try:
+                        from scipy.interpolate import griddata
+                        import scipy.ndimage as ndimage
+                        V_grid = griddata((y_plot, z_plot), val_plot, (Y_grid, Z_grid), method='cubic')
+                        
+                        neighborhood_size = 7
+                        local_min = ndimage.minimum_filter(V_grid, size=neighborhood_size) == V_grid
+                        valid_mask = ~np.isnan(V_grid)
+                        local_min = local_min & valid_mask
+                        
+                        min_indices = np.where(local_min)
+                        vortices = []
+                        
+                        dy = (y_plot.max() - y_plot.min()) / grid_res
+                        dz = (z_plot.max() - z_plot.min()) / grid_res
+                        
+                        for i in range(len(min_indices[0])):
+                            row = min_indices[0][i]
+                            col = min_indices[1][i]
+                            
+                            p_cent = V_grid[row, col]
+                            
+                            r_right, p_right = 0, p_cent
+                            for c in range(col+1, len(y_grid_vals)):
+                                if np.isnan(V_grid[row, c]) or V_grid[row, c] < V_grid[row, c-1]: break
+                                r_right = (c - col) * dy
+                                p_right = V_grid[row, c]
+                                
+                            r_left, p_left = 0, p_cent
+                            for c in range(col-1, -1, -1):
+                                if np.isnan(V_grid[row, c]) or V_grid[row, c] < V_grid[row, c+1]: break
+                                r_left = (col - c) * dy
+                                p_left = V_grid[row, c]
+                                
+                            r_up, p_up = 0, p_cent
+                            for r in range(row+1, len(z_grid_vals)):
+                                if np.isnan(V_grid[r, col]) or V_grid[r, col] < V_grid[r-1, col]: break
+                                r_up = (r - row) * dz
+                                p_up = V_grid[r, col]
+                                
+                            r_down, p_down = 0, p_cent
+                            for r in range(row-1, -1, -1):
+                                if np.isnan(V_grid[r, col]) or V_grid[r, col] < V_grid[r+1, col]: break
+                                r_down = (row - r) * dz
+                                p_down = V_grid[r, col]
+                                
+                            delta_min = min(p_right - p_cent, p_left - p_cent, p_up - p_cent, p_down - p_cent)
+                            
+                            if delta_min >= sensibilidad_pa and (r_right > 0 and r_left > 0 and r_up > 0 and r_down > 0):
+                                r_x = (r_right + r_left) / 2.0
+                                r_z = (r_up + r_down) / 2.0
+                                radius = (r_x + r_z) / 2.0
+                                
+                                # Validate asymmetry isn't too huge to avoid walls pseudo-vortices
+                                if (max(r_right, r_left) / max(min(r_right, r_left), 0.001) < 4.0 and
+                                    max(r_up, r_down) / max(min(r_up, r_down), 0.001) < 4.0):
+                                    
+                                    vortices.append({
+                                        'y': y_grid_vals[col],
+                                        'z': z_grid_vals[row],
+                                        'p_min': p_cent,
+                                        'r_x': r_x,
+                                        'r_z': r_z,
+                                        'diametro': radius * 2,
+                                        'r_prom': radius
+                                    })
+                        
+                        st.markdown("### 📊 Resultado Gráfico")
+                        fig = go.Figure()
+                        fig.add_trace(go.Contour(
+                            x=y_grid_vals, y=z_grid_vals, z=V_grid,
+                            colorscale="Jet", colorbar=dict(title="P [Pa]"),
+                            contours=dict(showlines=False),
+                            hovertemplate="Y: %{x:.2f}<br>Z: %{y:.2f}<br>P: %{z:.2f}<extra></extra>"
+                        ))
+                        
+                        for idx, v in enumerate(vortices):
+                            color_vortex = "magenta"
+                            if "Círculos" in forma_aprox:
+                                fig.add_shape(type="circle",
+                                    xref="x", yref="y",
+                                    x0=v['y'] - v['r_prom'], y0=v['z'] - v['r_prom'],
+                                    x1=v['y'] + v['r_prom'], y1=v['z'] + v['r_prom'],
+                                    line_color=color_vortex, line_width=3, fillcolor="rgba(255, 0, 255, 0.1)"
+                                )
+                            else:
+                                fig.add_shape(type="circle", # En Plotly un shape SVG tipo circle ajustado a una caja rectangular (diferente r_x y r_z) traza elipses automáticamente
+                                    xref="x", yref="y",
+                                    x0=v['y'] - v['r_x'], y0=v['z'] - v['r_z'],
+                                    x1=v['y'] + v['r_x'], y1=v['z'] + v['r_z'],
+                                    line_color=color_vortex, line_width=3, fillcolor="rgba(255, 0, 255, 0.1)"
+                                )
+                                
+                            fig.add_trace(go.Scatter(
+                                x=[v['y']], y=[v['z']],
+                                mode="markers+text",
+                                marker=dict(color="white", size=10, symbol="cross"),
+                                text=[f" V{idx+1}"],
+                                textposition="top right",
+                                textfont=dict(color="white", size=14, family="Orbitron"),
+                                hovertemplate=f"Vórtice {idx+1}<br>Y: %{{x:.2f}}<br>Z: %{{y:.2f}}<extra></extra>",
+                                showlegend=False
+                            ))
+                            
+                        fig.update_layout(
+                            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                            font=dict(color="white"),
+                            xaxis_title="Envergadura (Y) [mm]",
+                            yaxis_title="Altura (Z) [mm]",
+                            margin=dict(l=60, r=60, t=60, b=60),
+                            height=800
+                        )
+                        fig.update_xaxes(scaleanchor="y", scaleratio=1, showgrid=True, gridcolor="rgba(255,255,255,0.1)")
+                        fig.update_yaxes(showgrid=True, gridcolor="rgba(255,255,255,0.1)")
+                        st.plotly_chart(fig, use_container_width=True)
+                        
+                        st.markdown("### 📋 Cuadro de Vórtices Detectados")
+                        if len(vortices) == 0:
+                            st.warning("No se detectó ningún pozo de presión radial cerrado bajo estas tolerancias.")
+                        else:
+                            st.success(f"¡Se validaron matemáticamente {len(vortices)} vórtices independientes!")
+                            
+                            df_v = pd.DataFrame(vortices)
+                            df_v.index = [f"V{i+1}" for i in range(len(vortices))]
+                            
+                            df_res = pd.DataFrame({
+                                "Centro Y [mm]": df_v['y'].round(2),
+                                "Centro Z [mm]": df_v['z'].round(2),
+                                "Presión Núcleo Mínima [Pa]": df_v['p_min'].round(2),
+                            })
+                            if "Círculos" in forma_aprox:
+                                df_res["Radio Equiv [mm]"] = df_v['r_prom'].round(2)
+                                df_res["Diámetro Equiv [mm]"] = df_v['diametro'].round(2)
+                            else:
+                                df_res["Semieje Y [mm]"] = df_v['r_x'].round(2)
+                                df_res["Semieje Z [mm]"] = df_v['r_z'].round(2)
+                                
+                            st.dataframe(df_res, use_container_width=True)
+                            
+                            if len(vortices) > 1:
+                                st.markdown("#### 📏 Geometría Inter-Centros (Distancias Reales)")
+                                pairs = []
+                                for i in range(len(vortices)):
+                                    for j in range(i+1, len(vortices)):
+                                        dy = vortices[i]['y'] - vortices[j]['y']
+                                        dz = vortices[i]['z'] - vortices[j]['z']
+                                        dist = np.sqrt(dy**2 + dz**2)
+                                        pairs.append({"Enlace": f"V{i+1} ↔ V{j+1}", "Distancia Euclídea [mm]": round(dist, 2)})
+                                st.table(pd.DataFrame(pairs))
+                                
+                    except Exception as e:
+                        st.error(f"Error procesando la topología de vórtices: {e}")
 
 elif st.session_state.seccion_actual == 'ensayo_betz':
     st.markdown("""
