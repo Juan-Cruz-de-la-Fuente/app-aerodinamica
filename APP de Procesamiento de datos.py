@@ -423,7 +423,8 @@ def login_page():
             fade_percent = percent_visible * 0.15
             
             carousel_css = "<style>\n"
-            carousel_html = '<div style="position: relative; width: 100%; padding-top: 66.66%; border: 1px solid #333; overflow: hidden;">\n'
+            carousel_html = '<div style="position: relative; width: 100%; border: 1px solid #333; overflow: hidden; border-radius: 4px;">\n'
+            carousel_html += f'<img src="data:image/jpeg;base64,{img_b64_list[0]}" style="width: 100%; visibility: hidden; display: block;">\n'
             for i, b64 in enumerate(img_b64_list):
                 p_start = (i * percent_visible)
                 p_in = p_start + fade_percent
