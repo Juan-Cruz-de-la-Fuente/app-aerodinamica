@@ -410,12 +410,12 @@ def login_page():
     if not img_b64_list:
         fallback_url = 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop'
         carousel_css = ""
-        carousel_html = f'<img src="{fallback_url}" style="width: 100%; border-radius: 0px; border: 1px solid #333; opacity: 0.9;">'
+        carousel_html = f'<div style="position: absolute; top:0; left:0; right:0; bottom:0; background-size: cover; background-position: center; background-image: linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.8)), url(\'{fallback_url}\'); z-index: 0; opacity: 1;"></div>'
     else:
         num_imgs = len(img_b64_list)
         if num_imgs == 1:
             carousel_css = ""
-            carousel_html = f'<img src="data:image/jpeg;base64,{img_b64_list[0]}" style="width: 100%; border-radius: 0px; border: 1px solid #333; opacity: 0.9;">'
+            carousel_html = f'<div style="position: absolute; top:0; left:0; right:0; bottom:0; background-size: cover; background-position: center; background-image: linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.8)), url(\'data:image/jpeg;base64,{img_b64_list[0]}\'); z-index: 0; opacity: 1;"></div>'
         else:
             time_per_slide = 5
             total_time = num_imgs * time_per_slide
@@ -423,8 +423,7 @@ def login_page():
             fade_percent = percent_visible * 0.15
             
             carousel_css = "<style>\n"
-            carousel_html = '<div style="position: relative; width: 100%; border: 1px solid #333; overflow: hidden; border-radius: 4px;">\n'
-            carousel_html += f'<img src="data:image/jpeg;base64,{img_b64_list[0]}" style="width: 100%; visibility: hidden; display: block;">\n'
+            carousel_html = ""
             for i, b64 in enumerate(img_b64_list):
                 p_start = (i * percent_visible)
                 p_in = p_start + fade_percent
@@ -434,16 +433,17 @@ def login_page():
                 carousel_css += f"""
 .login-bg-{i} {{
     position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-    background-image: url('data:image/jpeg;base64,{b64}');
+    background-image: linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.8)), url('data:image/jpeg;base64,{b64}');
     background-size: cover; background-position: center;
     animation: fadeLogin{i} {total_time}s infinite;
     opacity: 0;
+    z-index: 0;
 }}
 @keyframes fadeLogin{i} {{
-    0% {{ opacity: 0; }}
+    0%, {max(0, p_start-0.01):.2f}% {{ opacity: 0; }}
     {p_start:.2f}% {{ opacity: 0; }}
-    {p_in:.2f}% {{ opacity: 0.9; }}
-    {p_out:.2f}% {{ opacity: 0.9; }}
+    {p_in:.2f}% {{ opacity: 1; }}
+    {p_out:.2f}% {{ opacity: 1; }}
     {p_end:.2f}% {{ opacity: 0; }}
     100% {{ opacity: 0; }}
 }}
@@ -451,18 +451,15 @@ def login_page():
                 carousel_html += f'<div class="login-bg-{i}"></div>\n'
                 
             carousel_css += "</style>\n"
-            carousel_html += '</div>\n'
 
     # Login Hero Image
     st.markdown(f"{carousel_css}", unsafe_allow_html=True)
     st.markdown(f"""
-<div style="display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 80vh;">
-<div style="width: 100%; max-width: 450px; margin-bottom: 20px;">
+<div style="position: relative; width: 100%; min-height: 80vh; padding: 4rem 1rem; border-radius: 0px; display: flex; flex-direction: column; justify-content: center; align-items: center; border: 1px solid #333; overflow: hidden; margin-top: -1rem; margin-bottom: 2rem;">
 {carousel_html}
-</div>
-<div class="stCard" style="width: 100%; max-width: 450px; padding: 2.5rem; border: 1px solid var(--border); background-color: var(--card);">
+<div class="stCard" style="position: relative; width: 100%; max-width: 450px; padding: 2.5rem; border: 1px solid var(--border); background-color: rgba(10, 10, 10, 0.85); backdrop-filter: blur(10px); z-index: 10; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.8);">
 <div style="display: flex; justify-content: center; margin-bottom: 1.5rem;">
-<h1 style="font-size: 2rem; margin: 0; color: #fafafa;">BETZ APP</h1>
+<h1 style="font-size: 2.5rem; margin: 0; font-family: 'Orbitron', sans-serif; color: #fafafa; text-shadow: 0 4px 15px rgba(0,0,0,0.9);">BETZ APP</h1>
 </div>
 <p style="text-align: center; color: var(--muted-foreground); margin-bottom: 2rem;">Sistema de Procesamiento de Datos de Túnel de Viento</p>
 </div>
