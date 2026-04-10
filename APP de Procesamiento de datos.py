@@ -423,7 +423,7 @@ def login_page():
             fade_percent = percent_visible * 0.15
             
             carousel_css = "<style>\n"
-            carousel_html = '<div style="position: relative; width: 100%; padding-top: 56.25%; border: 1px solid #333; overflow: hidden;">\n'
+            carousel_html = '<div style="position: relative; width: 100%; padding-top: 66.66%; border: 1px solid #333; overflow: hidden;">\n'
             for i, b64 in enumerate(img_b64_list):
                 p_start = (i * percent_visible)
                 p_in = p_start + fade_percent
@@ -456,15 +456,15 @@ def login_page():
     st.markdown(f"{carousel_css}", unsafe_allow_html=True)
     st.markdown(f"""
 <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 80vh;">
-    <div style="width: 100%; max-width: 450px; margin-bottom: 20px;">
-        {carousel_html}
-    </div>
-    <div class="stCard" style="width: 100%; max-width: 450px; padding: 2.5rem; border: 1px solid var(--border); background-color: var(--card);">
-        <div style="display: flex; justify-content: center; margin-bottom: 1.5rem;">
-           <h1 style="font-size: 2rem; margin: 0; color: #fafafa;">BETZ APP</h1>
-        </div>
-        <p style="text-align: center; color: var(--muted-foreground); margin-bottom: 2rem;">Sistema de Procesamiento de Datos de Túnel de Viento</p>
-    </div>
+<div style="width: 100%; max-width: 450px; margin-bottom: 20px;">
+{carousel_html}
+</div>
+<div class="stCard" style="width: 100%; max-width: 450px; padding: 2.5rem; border: 1px solid var(--border); background-color: var(--card);">
+<div style="display: flex; justify-content: center; margin-bottom: 1.5rem;">
+<h1 style="font-size: 2rem; margin: 0; color: #fafafa;">BETZ APP</h1>
+</div>
+<p style="text-align: center; color: var(--muted-foreground); margin-bottom: 2rem;">Sistema de Procesamiento de Datos de Túnel de Viento</p>
+</div>
 </div>
 """, unsafe_allow_html=True)
     
