@@ -1896,16 +1896,77 @@ def crear_vtk_plano_presion_2d(df_matriz, nombre_base, posicion_x=0.0):
 
 # Contenido principal según la sección
 if st.session_state.seccion_actual == 'inicio':
+    # --- LECTURA DE IMÁGENES CAROUSEL ---
+    folder_portada = "Imagenes de portada"
+    img_b64_list = []
+    if os.path.exists(folder_portada):
+        valid_exts = {'.png', '.jpg', '.jpeg', '.webp', '.gif'}
+        import random
+        archivos = [f for f in os.listdir(folder_portada) if os.path.splitext(f)[1].lower() in valid_exts]
+        random.shuffle(archivos)
+        for f in archivos:
+            try:
+                with open(os.path.join(folder_portada, f), 'rb') as img_f:
+                    img_b64_list.append(base64.b64encode(img_f.read()).decode())
+            except:
+                pass
+    
+    # Si no hay imágenes, poner una predeterminada
+    if not img_b64_list:
+        fallback_url = 'https://images.unsplash.com/photo-1517976487492-5750f3195933?q=80&w=2070&auto=format&fit=crop'
+        carousel_css = f".hero-bg-0 {{ background-image: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,1)), url('{fallback_url}'); opacity: 1; }}"
+        carousel_html = '<div class="hero-bg hero-bg-0"></div>'
+    else:
+        num_imgs = len(img_b64_list)
+        if num_imgs == 1:
+            # Caso especial si hay 1 sola imagen: mostrar fija sin crossfade extra
+            carousel_css = f"""
+            .hero-bg-0 {{
+                background-image: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,1)), url('data:image/jpeg;base64,{img_b64_list[0]}');
+                opacity: 1;
+            }}
+            """
+            carousel_html = '<div class="hero-bg hero-bg-0"></div>'
+        else:
+            time_per_slide = 5 # segundos que dura cada imagen en pantalla
+            total_time = num_imgs * time_per_slide
+            percent_visible = 100.0 / num_imgs
+            fade_percent = percent_visible * 0.15 # 15% del lapso usado en transicion suave
+            
+            carousel_css = ""
+            carousel_html = ""
+            for i, b64 in enumerate(img_b64_list):
+                # Calcular timestamps de opacidad
+                p_start = (i * percent_visible)
+                p_in = p_start + fade_percent
+                p_out = ((i+1) * percent_visible) - fade_percent
+                p_end = ((i+1) * percent_visible)
+                
+                carousel_css += f"""
+                .hero-bg-{i} {{
+                    background-image: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,1)), url('data:image/jpeg;base64,{b64}');
+                    animation: fadeCarousel{i} {total_time}s infinite;
+                    opacity: 0;
+                }}
+                @keyframes fadeCarousel{i} {{
+                    0%, {max(0, p_start-0.01)}% {{ opacity: 0; }}
+                    {p_start}% {{ opacity: 0; }}
+                    {p_in}% {{ opacity: 1; }}
+                    {p_out}% {{ opacity: 1; }}
+                    {p_end}% {{ opacity: 0; }}
+                    100% {{ opacity: 0; }}
+                }}
+                """
+                carousel_html += f'<div class="hero-bg hero-bg-{i}"></div>'
+
     # --- HERO SECTION (SpaceX Style) ---
-    st.markdown("""
+    st.markdown(f"""
     <style>
-        .hero-container {
+        .hero-container {{
             position: relative;
             width: 100%;
             padding: 4rem 1rem;
-            background-image: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,1)), url('https://images.unsplash.com/photo-1517976487492-5750f3195933?q=80&w=2070&auto=format&fit=crop');
-            background-size: cover;
-            background-position: center;
+            min-height: 80vh; /* Dimensión aumentada para mayor inmersión */
             border-radius: 0px;
             display: flex;
             flex-direction: column;
@@ -1914,47 +1975,71 @@ if st.session_state.seccion_actual == 'inicio':
             text-align: center;
             margin-bottom: 3rem;
             border: 1px solid #333;
-            min-height: 60vh;
-        }
+            overflow: hidden;
+        }}
         
-        .hero-title {
+        .hero-bg {{
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-size: cover;
+            background-position: center;
+            z-index: 0;
+            transition: opacity 1s ease-in-out;
+        }}
+        
+        {carousel_css}
+        
+        .hero-content {{
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }}
+        
+        .hero-title {{
             font-family: 'Orbitron', sans-serif;
-            font-size: 4rem;
+            font-size: 4.5rem;
             font-weight: 900;
             letter-spacing: 2px;
             margin-bottom: 0.5rem;
             text-shadow: 0 10px 30px rgba(0,0,0,0.5);
             color: white;
-        }
+        }}
         
-        .hero-subtitle {
+        .hero-subtitle {{
             font-family: 'Inter', sans-serif;
-            font-size: 1.1rem;
+            font-size: 1.2rem;
             letter-spacing: 6px;
             text-transform: uppercase;
             color: rgba(255,255,255,0.8);
             margin-top: 0.5rem;
-        }
+            text-shadow: 0 4px 15px rgba(0,0,0,0.8);
+        }}
         
-        .scroll-indicator {
+        .scroll-indicator {{
             margin-top: 4rem; 
             opacity: 0.7; 
             font-size: 0.8rem;
             animation: bounce 2s infinite;
-        }
+            text-shadow: 0 2px 5px rgba(0,0,0,1);
+        }}
         
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
-            40% {transform: translateY(-10px);}
-            60% {transform: translateY(-5px);}
-        }
+        @keyframes bounce {{
+            0%, 20%, 50%, 80%, 100% {{transform: translateY(0);}}
+            40% {{transform: translateY(-10px);}}
+            60% {{transform: translateY(-5px);}}
+        }}
     </style>
     
     <div class="hero-container">
-        <h1 class="hero-title">LABORATORIO</h1>
-        <p class="hero-subtitle">Aerodinámica Experimental</p>
-        <div class="scroll-indicator">
-            ▼ DESLIZA PARA NAVEGAR
+        {carousel_html}
+        <div class="hero-content">
+            <h1 class="hero-title">LABORATORIO</h1>
+            <p class="hero-subtitle">Aerodinámica Experimental</p>
+            <div class="scroll-indicator">
+                ▼ DESLIZA PARA NAVEGAR
+            </div>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -2692,7 +2777,7 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
         with c1:
             distancia_toma_12 = st.number_input("Distancia Toma 12 [mm]", value=-120.0, step=1.0, format="%.1f", key="dist_12_2d")
         with c2:
-            distancia_entre_tomas = st.number_input("Sep. entre tomas [mm]", value=10.91, step=0.01, format="%.2f", key="dist_entre_2d")
+            distancia_entre_tomas = st.number_input("Sep. entre tomas [mm]", value=10.00, step=0.01, format="%.2f", key="dist_entre_2d")
 
         if st.button("💾 CONFIRMAR CONFIGURACIÓN", type="primary", use_container_width=True, key="btn_conf_2d"):
             st.session_state.configuracion_2d = {
@@ -2800,7 +2885,7 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
                                 z_real = calcular_altura_absoluta_z(
                                     num_sensor, z_base, 
                                     st.session_state.configuracion_2d.get('distancia_toma_12', -120),
-                                    st.session_state.configuracion_2d.get('distancia_entre_tomas', 10.91),
+                                    st.session_state.configuracion_2d.get('distancia_entre_tomas', 10.0),
                                     12, st.session_state.configuracion_2d.get('orden', 'asc')
                                 )
                                 results_2d.append({'Y': y_trav, 'Z': z_real, 'Presion': val_presion})
@@ -2830,12 +2915,14 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
                                 fig.add_trace(go.Contour(
                                     x=y_grid_vals, y=z_grid_vals, z=V_grid,
                                     colorscale=cs_name, colorbar=dict(title=z_title),
-                                    contours=dict(showlines=False)
+                                    contours=dict(showlines=False),
+                                    hovertemplate="Y: %{x:.2f} mm<br>Z: %{y:.2f} mm<br>Presión: %{z:.2f} Pa<extra></extra>"
                                 ))
                             else:
                                 fig.add_trace(go.Heatmap(
                                     x=y_grid_vals, y=z_grid_vals, z=V_grid,
-                                    colorscale=cs_name, colorbar=dict(title=z_title)
+                                    colorscale=cs_name, colorbar=dict(title=z_title),
+                                    hovertemplate="Y: %{x:.2f} mm<br>Z: %{y:.2f} mm<br>Presión: %{z:.2f} Pa<extra></extra>"
                                 ))
 
                             fig.update_layout(
@@ -2853,11 +2940,18 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
                             fig.update_xaxes(scaleanchor="y", scaleratio=1, showgrid=True, gridcolor="rgba(255,255,255,0.1)")
                             fig.update_yaxes(showgrid=True, gridcolor="rgba(255,255,255,0.1)")
 
+                            plot_key = f"plot_2d_{st.session_state.get('plot_2d_key', 0)}"
                             st.plotly_chart(fig, use_container_width=True, config={
                                 'modeBarButtonsToAdd': ['drawline', 'drawcircle', 'eraseshape'],
                                 'displaylogo': False, 'scrollZoom': True
-                            })
-                            st.info("💡 **Gráfico Físico Proporcional:** Los ejes representan dimensiones nativas (1 pixel unitario X = 1 pixel unitario Y). Usa la mini-calculadora de la izquierda para convertir tu medición `drawline` directamente a tamaño de Escala Cuerda [c] de la aeronave.")
+                            }, key=plot_key)
+                            col_info, col_btn = st.columns([0.8, 0.2])
+                            with col_info:
+                                st.info("💡 **Gráfico Físico Proporcional:** Para borrar un dibujo puedes usar el botón la Goma (Erase active shape) en el menú del gráfico.")
+                            with col_btn:
+                                if st.button("🧹 Limpiar Dibujos", key="btn_clear_trazos", use_container_width=True):
+                                    st.session_state.plot_2d_key = st.session_state.get('plot_2d_key', 0) + 1
+                                    st.rerun()
                         except Exception as e:
                             st.error(f"Error trazando proyecciones cúbicas: {e}")
 
@@ -3648,10 +3742,15 @@ elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual 
                 
                 # Filtrar por tiempo si hay múltiples
                 tiempos_g = df_guardar['Tiempo_s'].dropna().unique()
-                tiempo_g_sel = st.selectbox("Seleccionar Tiempo:", sorted(tiempos_g), key="tiempo_guardar_bd")
+                tiempo_original = tiempos_g[0] if len(tiempos_g) > 0 else 5
+                tiempo_g_sel = st.number_input("Ingresar Tiempo:", value=5, step=1, key="tiempo_guardar_bd")
                 
                 # Filtrar datos
-                df_filtrado_g = df_guardar[df_guardar['Tiempo_s'] == tiempo_g_sel].copy()
+                if tiempo_g_sel in tiempos_g:
+                    df_filtrado_g = df_guardar[df_guardar['Tiempo_s'] == tiempo_g_sel].copy()
+                else:
+                    df_filtrado_g = df_guardar[df_guardar['Tiempo_s'] == tiempo_original].copy()
+                df_filtrado_g['Tiempo_s'] = tiempo_g_sel
                 
                 # INTELIGENCIA: Pre-calcular X y Nombre basado en archivo
                 x_detectado = extraer_pos_x_estacion(archivo_guardar)
@@ -3747,8 +3846,13 @@ elif st.session_state.seccion_actual == 'betz_4d':
 
             if datos_4d is not None:
                 tiempos_4d = sorted(datos_4d['Tiempo_s'].dropna().unique())
-                t4d_sel = st.selectbox("Seleccionar Tiempo:", tiempos_4d, key="t4d_sel")
-                df_4d_filtrado = datos_4d[datos_4d['Tiempo_s'] == t4d_sel].copy()
+                t4d_original = tiempos_4d[0] if len(tiempos_4d) > 0 else 5
+                t4d_sel = st.number_input("Ingresar Tiempo:", value=5, step=1, key="t4d_sel")
+                if t4d_sel in tiempos_4d:
+                    df_4d_filtrado = datos_4d[datos_4d['Tiempo_s'] == t4d_sel].copy()
+                else:
+                    df_4d_filtrado = datos_4d[datos_4d['Tiempo_s'] == t4d_original].copy()
+                df_4d_filtrado['Tiempo_s'] = t4d_sel
 
                 x_pos_4d = st.number_input(
                     "📍 Posición X (Estación) [mm]:",
@@ -3899,7 +4003,9 @@ elif st.session_state.seccion_actual == 'betz_4d':
                                 colorscale='Turbo',
                                 cmin=g_min, cmax=g_max,
                                 showscale=True,
-                                opacity=0.9,
+                                opacity=1.0,
+                                lighting=dict(ambient=0.5, diffuse=0.8, specular=0.5, roughness=0.5, fresnel=0.2),
+                                lightposition=dict(x=100, y=200, z=100),
                                 name=f"{s_data[1]} (X={x_base})"
                             ))
                         except Exception as e:
@@ -4067,7 +4173,9 @@ elif st.session_state.seccion_actual == 'betz_4d':
                                         colorscale='Turbo',
                                         cmin=val_range[0], cmax=val_range[1],
                                         showscale=(frame_item == items_to_show[-1]), 
-                                        opacity=1.0
+                                        opacity=1.0,
+                                        lighting=dict(ambient=0.5, diffuse=0.8, specular=0.5, roughness=0.5, fresnel=0.2),
+                                        lightposition=dict(x=100, y=200, z=100)
                                     ))
                                 except Exception as e:
                                     pass

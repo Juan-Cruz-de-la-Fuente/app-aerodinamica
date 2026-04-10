@@ -131,24 +131,21 @@ def get_user_surfaces(username):
         for f in fs:
             name = f.get('name', '')
             # Nuevo formato: 3D____nombre.json
+            # Nuevo formato: 3D____nombre.json
             if name.startswith('3D____'):
                 parts = name.replace('.json', '').split('____')
                 fname = parts[1] if len(parts) >= 2 else name
                 data_bytes = drive_api.download_file(f['id'])
                 data_str = data_bytes.decode('utf-8') if data_bytes else '{}'
                 all_res.append((f['id'], fname, 0.0, f.get('createdTime'), data_str))
-            # Formato viejo: SURF____nombre____xpos.json  (retrocompatibilidad)
+            # Formato viejo: SURF____nombre.json (3D viejo sin xpos)
             elif name.startswith('SURF____'):
                 parts = name.replace('.json', '').split('____')
-                if len(parts) >= 3:
-                    fname = parts[1]
-                    try:
-                        x_pos = float(parts[2])
-                    except Exception:
-                        x_pos = 0.0
+                if len(parts) < 3: # Si es menor a 3, es un archivo 3D (no tiene Xpos)
+                    fname = parts[1] if len(parts) >= 2 else name.replace('.json', '')
                     data_bytes = drive_api.download_file(f['id'])
                     data_str = data_bytes.decode('utf-8') if data_bytes else '{}'
-                    all_res.append((f['id'], fname, x_pos, f.get('createdTime'), data_str))
+                    all_res.append((f['id'], fname, 0.0, f.get('createdTime'), data_str))
         return sorted(all_res, key=lambda x: x[3] or '', reverse=True)
 
     return fetch_all_surfaces(folder_id)
@@ -170,6 +167,17 @@ def get_user_surfaces_4d(username):
             if name.startswith('4D____'):
                 parts = name.replace('.json', '').split('____')
                 if len(parts) >= 3:
+                    fname = parts[1]
+                    try:
+                        x_pos = float(parts[2])
+                    except Exception:
+                        x_pos = 0.0
+                    data_bytes = drive_api.download_file(f['id'])
+                    data_str = data_bytes.decode('utf-8') if data_bytes else '{}'
+                    all_res.append((f['id'], fname, x_pos, f.get('createdTime'), data_str))
+            elif name.startswith('SURF____'):
+                parts = name.replace('.json', '').split('____')
+                if len(parts) >= 3: # Si tiene 3 partes o más, es 4D (tiene Xpos)
                     fname = parts[1]
                     try:
                         x_pos = float(parts[2])
