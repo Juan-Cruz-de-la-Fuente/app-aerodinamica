@@ -393,12 +393,71 @@ if 'username' not in st.session_state:
     st.session_state.username = None
 
 def login_page():
+    folder_portada = "Imagenes de portada"
+    img_b64_list = []
+    if os.path.exists(folder_portada):
+        valid_exts = {'.png', '.jpg', '.jpeg', '.webp', '.gif'}
+        import random
+        archivos = [f for f in os.listdir(folder_portada) if os.path.splitext(f)[1].lower() in valid_exts]
+        random.shuffle(archivos)
+        for f in archivos[:15]: 
+            try:
+                with open(os.path.join(folder_portada, f), 'rb') as img_f:
+                    img_b64_list.append(base64.b64encode(img_f.read()).decode())
+            except:
+                pass
+                
+    if not img_b64_list:
+        fallback_url = 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop'
+        carousel_css = ""
+        carousel_html = f'<img src="{fallback_url}" style="width: 100%; border-radius: 0px; border: 1px solid #333; opacity: 0.9;">'
+    else:
+        num_imgs = len(img_b64_list)
+        if num_imgs == 1:
+            carousel_css = ""
+            carousel_html = f'<img src="data:image/jpeg;base64,{img_b64_list[0]}" style="width: 100%; border-radius: 0px; border: 1px solid #333; opacity: 0.9;">'
+        else:
+            time_per_slide = 5
+            total_time = num_imgs * time_per_slide
+            percent_visible = 100.0 / num_imgs
+            fade_percent = percent_visible * 0.15
+            
+            carousel_css = "<style>\n"
+            carousel_html = '<div style="position: relative; width: 100%; padding-top: 56.25%; border: 1px solid #333; overflow: hidden;">\n'
+            for i, b64 in enumerate(img_b64_list):
+                p_start = (i * percent_visible)
+                p_in = p_start + fade_percent
+                p_out = ((i+1) * percent_visible) - fade_percent
+                p_end = ((i+1) * percent_visible)
+                
+                carousel_css += f"""
+                .login-bg-{i} {{
+                    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+                    background-image: url('data:image/jpeg;base64,{b64}');
+                    background-size: cover; background-position: center;
+                    animation: fadeLogin{i} {total_time}s infinite;
+                    opacity: 0;
+                }}
+                @keyframes fadeLogin{i} {{
+                    0% {{ opacity: 0; }}
+                    {p_start:.2f}% {{ opacity: 0; }}
+                    {p_in:.2f}% {{ opacity: 0.9; }}
+                    {p_out:.2f}% {{ opacity: 0.9; }}
+                    {p_end:.2f}% {{ opacity: 0; }}
+                    100% {{ opacity: 0; }}
+                }}
+                """
+                carousel_html += f'<div class="login-bg-{i}"></div>\n'
+                
+            carousel_css += "</style>\n"
+            carousel_html += '</div>\n'
+
     # Login Hero Image
-    st.markdown("""
+    st.markdown(f"""
+    {carousel_css}
     <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 80vh;">
         <div style="width: 100%; max-width: 450px; margin-bottom: 20px;">
-            <img src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop" 
-                 style="width: 100%; border-radius: 0px; border: 1px solid #333; opacity: 0.9;">
+            {carousel_html}
         </div>
         <div class="stCard" style="width: 100%; max-width: 450px; padding: 2.5rem; border: 1px solid var(--border); background-color: var(--card);">
             <div style="display: flex; justify-content: center; margin-bottom: 1.5rem;">
