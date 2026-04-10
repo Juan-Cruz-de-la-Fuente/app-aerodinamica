@@ -431,42 +431,42 @@ def login_page():
                 p_end = ((i+1) * percent_visible)
                 
                 carousel_css += f"""
-                .login-bg-{i} {{
-                    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-                    background-image: url('data:image/jpeg;base64,{b64}');
-                    background-size: cover; background-position: center;
-                    animation: fadeLogin{i} {total_time}s infinite;
-                    opacity: 0;
-                }}
-                @keyframes fadeLogin{i} {{
-                    0% {{ opacity: 0; }}
-                    {p_start:.2f}% {{ opacity: 0; }}
-                    {p_in:.2f}% {{ opacity: 0.9; }}
-                    {p_out:.2f}% {{ opacity: 0.9; }}
-                    {p_end:.2f}% {{ opacity: 0; }}
-                    100% {{ opacity: 0; }}
-                }}
-                """
+.login-bg-{i} {{
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background-image: url('data:image/jpeg;base64,{b64}');
+    background-size: cover; background-position: center;
+    animation: fadeLogin{i} {total_time}s infinite;
+    opacity: 0;
+}}
+@keyframes fadeLogin{i} {{
+    0% {{ opacity: 0; }}
+    {p_start:.2f}% {{ opacity: 0; }}
+    {p_in:.2f}% {{ opacity: 0.9; }}
+    {p_out:.2f}% {{ opacity: 0.9; }}
+    {p_end:.2f}% {{ opacity: 0; }}
+    100% {{ opacity: 0; }}
+}}
+"""
                 carousel_html += f'<div class="login-bg-{i}"></div>\n'
                 
             carousel_css += "</style>\n"
             carousel_html += '</div>\n'
 
     # Login Hero Image
+    st.markdown(f"{carousel_css}", unsafe_allow_html=True)
     st.markdown(f"""
-    {carousel_css}
-    <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 80vh;">
-        <div style="width: 100%; max-width: 450px; margin-bottom: 20px;">
-            {carousel_html}
-        </div>
-        <div class="stCard" style="width: 100%; max-width: 450px; padding: 2.5rem; border: 1px solid var(--border); background-color: var(--card);">
-            <div style="display: flex; justify-content: center; margin-bottom: 1.5rem;">
-               <h1 style="font-size: 2rem; margin: 0; color: #fafafa;">BETZ APP</h1>
-            </div>
-            <p style="text-align: center; color: var(--muted-foreground); margin-bottom: 2rem;">Sistema de Procesamiento de Datos de Túnel de Viento</p>
-        </div>
+<div style="display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 80vh;">
+    <div style="width: 100%; max-width: 450px; margin-bottom: 20px;">
+        {carousel_html}
     </div>
-    """, unsafe_allow_html=True)
+    <div class="stCard" style="width: 100%; max-width: 450px; padding: 2.5rem; border: 1px solid var(--border); background-color: var(--card);">
+        <div style="display: flex; justify-content: center; margin-bottom: 1.5rem;">
+           <h1 style="font-size: 2rem; margin: 0; color: #fafafa;">BETZ APP</h1>
+        </div>
+        <p style="text-align: center; color: var(--muted-foreground); margin-bottom: 2rem;">Sistema de Procesamiento de Datos de Túnel de Viento</p>
+    </div>
+</div>
+""", unsafe_allow_html=True)
     
     c1, c2, c3 = st.columns([1, 1.5, 1])
     with c2:
