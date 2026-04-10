@@ -457,11 +457,9 @@ def login_page():
     st.markdown(f"""
 <div style="position: relative; width: 100%; min-height: 80vh; padding: 4rem 1rem; border-radius: 0px; display: flex; flex-direction: column; justify-content: center; align-items: center; border: 1px solid #333; overflow: hidden; margin-top: -1rem; margin-bottom: 2rem;">
 {carousel_html}
-<div class="stCard" style="position: relative; width: 100%; max-width: 450px; padding: 2.5rem; border: 1px solid var(--border); background-color: rgba(10, 10, 10, 0.85); backdrop-filter: blur(10px); z-index: 10; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.8);">
-<div style="display: flex; justify-content: center; margin-bottom: 1.5rem;">
-<h1 style="font-size: 2.5rem; margin: 0; font-family: 'Orbitron', sans-serif; color: #fafafa; text-shadow: 0 4px 15px rgba(0,0,0,0.9);">BETZ APP</h1>
-</div>
-<p style="text-align: center; color: var(--muted-foreground); margin-bottom: 2rem;">Sistema de Procesamiento de Datos de Túnel de Viento</p>
+<div style="position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 800px; padding: 2.5rem; background-color: transparent; border: none; box-shadow: none;">
+<h1 style="font-family: 'Orbitron', sans-serif; font-size: 4.5rem; font-weight: 900; letter-spacing: 2px; margin-bottom: 0.5rem; text-shadow: 0 10px 30px rgba(0,0,0,0.5); color: white; text-align: center;">BETZ APP</h1>
+<p style="font-family: 'Inter', sans-serif; font-size: 1.2rem; letter-spacing: 6px; text-transform: uppercase; color: rgba(255,255,255,0.8); margin-top: 0.5rem; text-shadow: 0 4px 15px rgba(0,0,0,0.8); text-align: center; margin-bottom: 2rem;">Sistema de Procesamiento de Datos de Túnel de Viento</p>
 </div>
 </div>
 """, unsafe_allow_html=True)
