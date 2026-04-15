@@ -1,6 +1,21 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+
+def calcular_variable_atmosferica(df, variable):
+    import pandas as pd
+    res = df.get('Presion', pd.Series([0]*len(df)))
+    if variable == 'Presion Total [Actual]':
+        return res
+    elif variable == 'P_t / Rho_inf':
+        rho = df.get('rho_inf', 1.225).fillna(1.225)
+        rho = rho.replace(0, 1)
+        return res / rho
+    elif variable == 'Velocidad Infinito':
+        return df.get('V_inf', 0.0).fillna(0.0)
+    elif variable == 'Presion Infinito':
+        return df.get('P_inf', 101325.0).fillna(101325.0)
+    return res
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 import plotly.express as px
@@ -750,6 +765,54 @@ def procesar_promedios(archivo_csv, orden="asc"):
             df_resultado["Tiempo_s"] = [coord[0] for coord in coordenadas_tiempo]
             df_resultado["Pos_Y_Traverser"] = [coord[1] for coord in coordenadas_tiempo]
             df_resultado["Pos_Z_Base"] = [coord[2] for coord in coordenadas_tiempo]
+
+            # Inyectar valores en el infinito
+            def _extract_ts(n):
+                m = re.search(r'(\d{10,14})', str(n))
+                return m.group(1) if m else None
+            df_resultado["Timestamp"] = df_resultado["Archivo"].apply(_extract_ts)
+
+            inf_file = "Valores en el infinito.txt"
+            df_resultado["rho_inf"] = 1.225
+            df_resultado["V_inf"] = 0.0
+            df_resultado["P_inf"] = 101325.0
+
+            if os.path.exists(inf_file):
+                try:
+                    df_inf = pd.read_csv(inf_file, sep=";", engine="python", skip_blank_lines=True)
+                    df_inf.columns = [str(c).strip() for c in df_inf.columns]
+                    if len(df_inf.columns) > 2:
+                        first_col = df_inf.columns[0]
+                        df_inf["ts_clean"] = df_inf[first_col].astype(str).str.split(',').str[0]
+                        df_inf["ts_int"] = pd.to_numeric(df_inf["ts_clean"], errors='coerce')
+                        df_inf = df_inf.dropna(subset=["ts_int"])
+
+                        def get_inf_values(ts_str):
+                            try:
+                                ts_val = int(ts_str)
+                                diffs = (df_inf["ts_int"] - ts_val).abs()
+                                idx = diffs.idxmin()
+                                row = df_inf.loc[idx]
+                                T = float(str(row.get("temp_baro", "15")).replace(",", "."))
+                                P_hpa = float(str(row.get("pres_baro", "1013.25")).replace(",", "."))
+                                HR = float(str(row.get("hrel", "50")).replace(",", "."))
+                                P_pa = P_hpa * 100.0
+                                T_kelvin = T + 273.15
+                                P_v_sat = 6.1078 * (10 ** ((7.5 * T)/(237.3 + T)))
+                                P_v = HR / 100.0 * P_v_sat
+                                P_d = P_hpa - P_v
+                                rho = (P_d * 100) / (287.058 * T_kelvin) + (P_v * 100) / (461.495 * T_kelvin)
+                                v_inf = float(str(row.get("velocidad", "0.0")).replace(",", "."))
+                                return rho, v_inf, P_pa
+                            except:
+                                return 1.225, 0.0, 101325.0
+
+                        recs = df_resultado["Timestamp"].apply(get_inf_values)
+                        df_resultado["rho_inf"] = [r[0] for r in recs]
+                        df_resultado["V_inf"] = [r[1] for r in recs]
+                        df_resultado["P_inf"] = [r[2] for r in recs]
+                except Exception as e:
+                    print("Error leyendo infinito:", e)
         else:
             df_resultado["Tiempo_s"] = None
             df_resultado["Pos_Y_Traverser"] = None
@@ -791,7 +854,7 @@ def crear_archivos_individuales_por_tiempo_y_posicion(df_resultado, nombre_archi
         for tiempo in sorted(t_vals):
             df_yt = df_y[df_y["Tiempo_s"] == tiempo]
 
-            clave_sub_archivo = f"{nombre_original}_Y{y_valor}_T{tiempo}s"
+            clave_sub_archivo = f"{nombre_original}_X{int(y_valor) if pd.notna(y_valor) else 0}_T{tiempo}s"
             
             # Contar posiciones Z únicas
             num_z = len(df_yt['Pos_Z_Base'].unique()) if 'Pos_Z_Base' in df_yt.columns else 1
@@ -802,7 +865,7 @@ def crear_archivos_individuales_por_tiempo_y_posicion(df_resultado, nombre_archi
                 'tiempo': tiempo,
                 'pos_y_traverser': y_valor,
                 'datos': df_yt,
-                'nombre_archivo': f"{nombre_original}_Y{y_valor}_T{tiempo}s.csv",
+                'nombre_archivo': f"{nombre_original}_X{int(y_valor) if pd.notna(y_valor) else 0}_T{tiempo}s.csv",
                 'num_posiciones_z': num_z
             }
 
@@ -877,9 +940,9 @@ def crear_grafico_betz_concatenado(sub_archivos_seleccionados, posiciones_sensor
                         continue
 
 
-def extraer_datos_para_grafico(sub_archivo, configuracion):
+def extraer_datos_para_grafico(sub_archivo, configuracion, variable='Presion Total'):
     """Extraer datos de presión y altura de un sub-archivo para gráficos (múltiples posiciones).
-       Ahora soporta sensores numerados dinámicamente.
+       Ahora soporta sensores numerados dinámicamente y mapeo de variables atmosféricas.
     """
     datos_tiempo = sub_archivo['datos']
     distancia_entre_tomas = configuracion['distancia_entre_tomas']
@@ -906,8 +969,19 @@ def extraer_datos_para_grafico(sub_archivo, configuracion):
                 continue
             try:
                 presion_val = float(str(presion).replace(',', '.'))
+                # Calcular la variable seleccionada
+                valor_final = presion_val # Por defecto Presion Total
+                
+                if variable == 'P_t / Rho_inf':
+                    rho = float(fila.get('rho_inf', 1.225)) if pd.notna(fila.get('rho_inf', 1.225)) else 1.225
+                    valor_final = presion_val / rho if rho != 0 else 0
+                elif variable == 'Velocidad Infinito':
+                    valor_final = float(fila.get('V_inf', 0.0)) if pd.notna(fila.get('V_inf', 0.0)) else 0.0
+                elif variable == 'Presion Infinito':
+                    valor_final = float(fila.get('P_inf', 101325.0)) if pd.notna(fila.get('P_inf', 101325.0)) else 101325.0
+
                 z_datos.append(z_total)
-                presion_datos.append(presion_val)
+                presion_datos.append(valor_final)
             except (ValueError, TypeError):
                 continue
 
@@ -1327,10 +1401,10 @@ def mostrar_configuracion_sensores(section_key):
 
     return st.session_state.get(config_key, {})
 
-def crear_superficie_delaunay_3d(datos_completos, configuracion_3d, nombre_archivo, mostrar_puntos=True):
+def crear_superficie_delaunay_3d(datos_completos, configuracion_3d, nombre_archivo, mostrar_puntos=True, variable='Presion Total'):
     """
     Crea una superficie 3D continua con Delaunay y mejoras visuales.
-    Ahora permite activar/desactivar la visualización de puntos medidos.
+    Ahora permite activar/desactivar la visualización de puntos medidos y seleccionar vector a plotear.
     """
     try:
         posicion_inicial = configuracion_3d['distancia_toma_12']
@@ -1362,9 +1436,20 @@ def crear_superficie_delaunay_3d(datos_completos, configuracion_3d, nombre_archi
                     if isinstance(presion, str):
                         presion = float(presion.replace(',', '.'))
                     presion_val = float(presion)
+                    # Calcular la variable seleccionada
+                    valor_final = presion_val # Por defecto Presion Total
+                    
+                    if variable == 'P_t / Rho_inf':
+                        rho = float(fila.get('rho_inf', 1.225)) if pd.notna(fila.get('rho_inf', 1.225)) else 1.225
+                        valor_final = presion_val / rho if rho != 0 else 0
+                    elif variable == 'Velocidad Infinito':
+                        valor_final = float(fila.get('V_inf', 0.0)) if pd.notna(fila.get('V_inf', 0.0)) else 0.0
+                    elif variable == 'Presion Infinito':
+                        valor_final = float(fila.get('P_inf', 101325.0)) if pd.notna(fila.get('P_inf', 101325.0)) else 101325.0
+
                     puntos_y.append(y_traverser)  # Ahora es Y explicitamente
                     puntos_z_altura.append(altura_sensor_real)  # Ahora es Z explicitamente
-                    presiones_z.append(presion_val)
+                    presiones_z.append(valor_final)
                 except (ValueError, TypeError):
                     continue
 
@@ -2917,6 +3002,9 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
                 tiempo_sel = st.selectbox("Seleccionar Tiempo:", sorted(tiempos))
 
                 st.markdown("### 3. Visualización")
+                opciones_var_2d = ["Presion Total [Actual]", "P_t / Rho_inf", "Velocidad Infinito", "Presion Infinito"]
+                var_2d_sel = st.selectbox("📊 Variable a visualizar:", opciones_var_2d, key="var_2d_sel_ui")
+                
                 plot_type = st.selectbox("Render de Pixeles:", ["Contour Suavizado", "Mapa de Calor (Celdas)"])
 
                 st.markdown("---")
@@ -2946,9 +3034,18 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
                                     st.session_state.configuracion_2d.get('distancia_entre_tomas', 10.0),
                                     12, st.session_state.configuracion_2d.get('orden', 'asc')
                                 )
-                                results_2d.append({'Y': y_trav, 'Z': z_real, 'Presion': val_presion})
+                                results_2d.append({
+                                    'Y': y_trav, 
+                                    'Z': z_real, 
+                                    'Presion': val_presion,
+                                    'rho_inf': row.get('rho_inf', 1.225),
+                                    'V_inf': row.get('V_inf', 0.0),
+                                    'P_inf': row.get('P_inf', 101325.0)
+                                })
                                 
                     df_matriz = pd.DataFrame(results_2d)
+                    if not df_matriz.empty:
+                        df_matriz['Presion'] = calcular_variable_atmosferica(df_matriz, var_2d_sel)
                     
                     if df_matriz.empty:
                         st.error("❌ No se pudieron extraer datos espaciales (Y, Z, P). Comprueba tu archivo físico.")
@@ -3027,6 +3124,7 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
                 x_2d = c_2d_b.number_input("📍 Posición X (Estación) [mm]:", value=0.0, step=10.0, key="x_2d_paso4")
 
                 _aoa_str_2d = str(int(aoa_2d)) if aoa_2d == int(aoa_2d) else f"{aoa_2d:.1f}"
+                _aoa_str_2d = _aoa_str_2d.replace("-", "neg")
                 nombre_auto_2d = f"2D-X{int(x_2d)}-OAO{_aoa_str_2d}-T{int(tiempo_sel)}s.csv"
 
                 c_2d_chk, c_2d_nom = st.columns([0.15, 0.85])
@@ -3172,12 +3270,47 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                                 if (max(r_right, r_left) / max(min(r_right, r_left), 0.001) < 4.0 and
                                     max(r_up, r_down) / max(min(r_up, r_down), 0.001) < 4.0):
                                     
+                                    # Algoritmo de isobandas con Shoelace para Area y Radio Real
+                                    target_p = p_cent + sensibilidad_pa
+                                    best_area = 0.0
+                                    try:
+                                        import matplotlib.pyplot as plt
+                                        from matplotlib.path import Path
+                                        fig_tmp, ax_tmp = plt.subplots()
+                                        cs = ax_tmp.contour(Y_grid, Z_grid, V_grid, levels=[target_p])
+                                        
+                                        y_c, z_c = y_grid_vals[col], z_grid_vals[row]
+                                        for coln in cs.collections:
+                                            for path in coln.get_paths():
+                                                poly = path.vertices
+                                                if len(poly) > 2 and Path(poly).contains_point((y_c, z_c)):
+                                                    # Teorema de Shoelace / Stokes
+                                                    x_v = poly[:, 0]
+                                                    y_v = poly[:, 1]
+                                                    area = 0.5 * np.abs(np.dot(x_v, np.roll(y_v, 1)) - np.dot(y_v, np.roll(x_v, 1)))
+                                                    if area > best_area:
+                                                        best_area = area
+                                        plt.close(fig_tmp)
+                                    except Exception:
+                                        pass
+                                    
+                                    if best_area > 0:
+                                        area_final = best_area
+                                        radius = np.sqrt(best_area / np.pi)
+                                    else:
+                                        # Fallback Rombo (Shoelace básico)
+                                        pts_y = [y_grid_vals[col]+r_right, y_grid_vals[col], y_grid_vals[col]-r_left, y_grid_vals[col]]
+                                        pts_z = [z_grid_vals[row], z_grid_vals[row]+r_up, z_grid_vals[row], z_grid_vals[row]-r_down]
+                                        area_final = 0.5 * np.abs(np.dot(pts_y, np.roll(pts_z, 1)) - np.dot(pts_z, np.roll(pts_y, 1)))
+                                        radius = np.sqrt(area_final / np.pi)
+                                        
                                     vortices.append({
                                         'y': y_grid_vals[col],
                                         'z': z_grid_vals[row],
                                         'p_min': p_cent,
                                         'r_x': r_x,
                                         'r_z': r_z,
+                                        'area': area_final,
                                         'diametro': radius * 2,
                                         'r_prom': radius
                                     })
@@ -3244,6 +3377,7 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                                 "Centro Y [mm]": df_v['y'].round(2),
                                 "Centro Z [mm]": df_v['z'].round(2),
                                 "Presión Núcleo Mínima [Pa]": df_v['p_min'].round(2),
+                                "Área Calculada [mm²]": df_v['area'].round(2),
                             })
                             if "Círculos" in forma_aprox:
                                 df_res["Radio Equiv [mm]"] = df_v['r_prom'].round(2)
@@ -3816,6 +3950,9 @@ elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual 
 
         st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
         
+        opciones_var_3d = ["Presion Total [Actual]", "P_t / Rho_inf", "Velocidad Infinito", "Presion Infinito"]
+        var_3d_sel = st.selectbox("📊 Variable a visualizar:", opciones_var_3d, key="var_3d_sel_ui")
+
         # 🔘 Checkbox para activar/desactivar puntos medidos
         mostrar_puntos_3d = st.checkbox("🔘 Mostrar puntos originales (Nube de puntos)", value=False, key="mostrar_puntos_3d")
 
@@ -3867,7 +4004,8 @@ elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual 
                                         datos_archivo,
                                         st.session_state.configuracion_3d,
                                         nombre_archivo,
-                                        mostrar_puntos=mostrar_puntos_3d  # ← Aquí
+                                        mostrar_puntos=mostrar_puntos_3d,  # ← Aquí
+                                        variable=var_3d_sel
                                     )
                                     
                                     if fig_individual:
@@ -4036,6 +4174,7 @@ elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual 
 
                 # Nombre auto-sugerido: 3D-Xpos-OAOgrados-Tts  (editable)
                 _aoa_str = str(int(aoa_3d)) if aoa_3d == int(aoa_3d) else f"{aoa_3d:.1f}"
+                _aoa_str = _aoa_str.replace("-", "neg")
                 nombre_base_sugerido = f"3D-X{int(x_detectado_inp)}-OAO{_aoa_str}-T{int(tiempo_g_sel)}s"
 
                 c_g1, c_g2 = st.columns([0.15, 0.85])
@@ -4138,6 +4277,7 @@ elif st.session_state.seccion_actual == 'betz_4d':
 
                 # Nombre auto-sugerido: 4D-Xpos-OAOgrados-Tts  (editable)
                 _aoa_str_4d = str(int(aoa_4d)) if aoa_4d == int(aoa_4d) else f"{aoa_4d:.1f}"
+                _aoa_str_4d = _aoa_str_4d.replace("-", "neg")
                 nombre_sugerido_4d = f"4D-X{int(x_pos_4d)}-OAO{_aoa_str_4d}-T{int(t4d_sel)}s"
 
                 c_4d1, c_4d2 = st.columns([0.15, 0.85])
@@ -4204,6 +4344,9 @@ elif st.session_state.seccion_actual == 'betz_4d':
         dict_superficies = {f"{s[1]} (X={s[2]}) [{s[3]}]": s for s in mis_superficies}
         
         # Multiselect for surfaces
+        opciones_var_4d = ["Presion Total [Actual]", "P_t / Rho_inf", "Velocidad Infinito", "Presion Infinito"]
+        var_4d_sel = st.selectbox("📊 Variable a visualizar:", opciones_var_4d, key="var_4d_sel_ui")
+        
         sel_labels = st.multiselect("Seleccionar Superficies para Análisis:", list(dict_superficies.keys()), key="sel_4d_main")
         
         if sel_labels:
@@ -4216,6 +4359,7 @@ elif st.session_state.seccion_actual == 'betz_4d':
                 try:
                     import json
                     df = pd.DataFrame(json.loads(s_data[4]))
+                    df['Presion'] = calcular_variable_atmosferica(df, var_4d_sel)
                     loaded_dfs[label] = df
                     if 'Presion' in df.columns:
                         all_pressures.extend(df['Presion'].tolist())
@@ -4439,10 +4583,13 @@ elif st.session_state.seccion_actual == 'betz_4d':
                                     # Calcular deformación
                                     x_def = frame_item['x'] + (df_clean['Presion'] * pressure_scale_gif)
                                     
+                                    # Rotar 180 grados respecto a Z para alinear caída de presión hacia atrás
+                                    x_rot, y_rot, z_rot = rotate_points(x_def.values, df_clean['Y'].values, df_clean['Z'].values, 0, 0, 180)
+
                                     fig_frame.add_trace(go.Mesh3d(
-                                        x=x_def, 
-                                        y=df_clean['Y'],
-                                        z=df_clean['Z'],
+                                        x=x_rot, 
+                                        y=y_rot,
+                                        z=z_rot,
                                         i=tri.simplices[:,0], j=tri.simplices[:,1], k=tri.simplices[:,2],
                                         intensity=df_clean['Presion'],
                                         colorscale='Turbo',
