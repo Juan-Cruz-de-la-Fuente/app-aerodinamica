@@ -683,7 +683,7 @@ def extraer_nombre_base_archivo(nombre_archivo):
     # Capitalizar primera letra de cada palabra
     return ' '.join(word.capitalize() for word in nombre_base.split())
 
-def procesar_promedios(archivo_csv, orden="asc"):
+def procesar_promedios(archivo_csv, orden="asc", archivo_infinito=None):
     """Procesar archivo de incertidumbre y detectar automáticamente la cantidad de sensores."""
     try:
         df_raw = pd.read_csv(archivo_csv, sep=";", header=None, dtype=str)  # leer como texto para robustez
@@ -772,12 +772,19 @@ def procesar_promedios(archivo_csv, orden="asc"):
                 return m.group(1) if m else None
             df_resultado["Timestamp"] = df_resultado["Archivo"].apply(_extract_ts)
 
-            inf_file = "Valores en el infinito.txt"
+            # Soporte para archivo_infinito como upload o ruta local
+            if archivo_infinito is not None:
+                inf_file = archivo_infinito
+                use_path = False
+            else:
+                inf_file = "Valores en el infinito.txt"
+                use_path = True
             df_resultado["rho_inf"] = 1.225
             df_resultado["V_inf"] = 0.0
             df_resultado["P_inf"] = 101325.0
 
-            if os.path.exists(inf_file):
+            file_exists = (os.path.exists(inf_file) if use_path else True)
+            if file_exists:
                 try:
                     df_inf = pd.read_csv(inf_file, sep=";", engine="python", skip_blank_lines=True)
                     df_inf.columns = [str(c).strip() for c in df_inf.columns]
@@ -1581,7 +1588,7 @@ def unir_archivos_incertidumbre(archivos_lista, nombre_salida):
         st.error(f"Error al unir archivos: {str(e)}")
         return None, []
 
-def extraer_matriz_presiones_completa(archivo_incertidumbre, configuracion):
+def extraer_matriz_presiones_completa(archivo_incertidumbre, configuracion, archivo_infinito=None):
     """
     Devuelve un DataFrame con columnas Y, Z, Presion
     listo para exportar como VTK estructurado.
@@ -1589,7 +1596,7 @@ def extraer_matriz_presiones_completa(archivo_incertidumbre, configuracion):
     """
     try:
         # Procesar archivo CSV
-        datos = procesar_promedios(archivo_incertidumbre, configuracion["orden"])
+        datos = procesar_promedios(archivo_incertidumbre, configuracion["orden"], archivo_infinito)
         if datos is None:
             return pd.DataFrame(columns=["Y", "Z", "Presion"])
 
@@ -2957,14 +2964,15 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
             st.session_state.archivos_2d_cargados = {}
 
         uploaded_files_2d = st.file_uploader("Arrastre sus archivos CSV de Incertidumbre aquí", type=['csv'], accept_multiple_files=True, key="uploader_2d")
-        
+        uploaded_infinito_2d = st.file_uploader("🔗 'Valores en el infinito.txt' (Opcional - datos atmosféricos)", type=['txt', 'csv'], accept_multiple_files=False, key="upl_inf_2d")
+
         if uploaded_files_2d:
             st.markdown("<br>", unsafe_allow_html=True)
             for file_2d in uploaded_files_2d:
                 nombre_archivo = file_2d.name.replace('.csv', '').replace('incertidumbre_', '')
                 if nombre_archivo not in st.session_state.archivos_2d_cargados:
                     with st.spinner(f"🔨 Procesando archivo {nombre_archivo}..."):
-                        datos_procesados = procesar_promedios(file_2d, st.session_state.configuracion_2d['orden'])
+                        datos_procesados = procesar_promedios(file_2d, st.session_state.configuracion_2d['orden'], uploaded_infinito_2d)
                         if datos_procesados is not None:
                             st.session_state.archivos_2d_cargados[nombre_archivo] = datos_procesados
                             st.success(f"✅ Archivo extraído correctamente: {nombre_archivo}")
@@ -3068,9 +3076,9 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
                             
                             if plot_type == "Contour Suavizado":
                                 dtick_val = None
-                                if "P_∞" in var_2d_sel_ui: 
+                                if "P_∞" in var_2d_sel: 
                                     dtick_val = 5
-                                elif "V_∞" in var_2d_sel_ui:
+                                elif "V_∞" in var_2d_sel:
                                     dtick_val = 0.1
                                 
                                 c_args = dict(showlines=False)
@@ -3178,7 +3186,7 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
     with c_param1:
         sensibilidad_pa = st.number_input("Caída de p Mínima [Pa] (Sensibilidad central)", min_value=1.0, max_value=500.0, value=15.0, step=1.0, help="Diferencia de presión mínima que debe existir desde el núcleo hacia los 4 ejes para validarlo como vórtice cerrado real.")
     with c_param2:
-        forma_aprox = st.radio("Aproximación de Diámetro", ["Círculos Equivalentes (Promedio)", "Elipses Analíticas (Deformación)"])
+        forma_aprox = st.radio("Visualización de Núcleo", ["Polígonos Reales (Isobanda)", "Círculos Equivalentes (Área)", "Elipses Analíticas (Ajuste)"])
     with c_param3:
         grid_res = st.slider("Resolución Grilla (Calidad)", min_value=50, max_value=300, value=150, step=10, help="Cantidad de puntos interpolados. Mayor resolución mejora precisión pero puede ser más lento.")
     
@@ -3239,7 +3247,7 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
             if st.button("🔎 INICIAR BARRIDO NUMÉRICO DESDE DRIVE", use_container_width=True, type="primary"):
                 with st.spinner("Cargando matriz 2D y barriendo derivadas..."):
                     s_data = dict_2d_drive[archivo_drive_sel]
-                    csv_str = s_data[4] # data in blob
+                    csv_str = s_data[3] # data in blob
                     import io
                     df_matriz = pd.read_csv(io.StringIO(csv_str))
                     # Check column constraints
@@ -3320,6 +3328,7 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                                     # Algoritmo de isobandas con Shoelace para Area y Radio Real
                                     target_p = p_cent + sensibilidad_pa
                                     best_area = 0.0
+                                    best_poly = None
                                     try:
                                         import matplotlib.pyplot as plt
                                         from matplotlib.path import Path
@@ -3337,6 +3346,7 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                                                     area = 0.5 * np.abs(np.dot(x_v, np.roll(y_v, 1)) - np.dot(y_v, np.roll(x_v, 1)))
                                                     if area > best_area:
                                                         best_area = area
+                                                        best_poly = poly.tolist()  # guardar polígono real
                                         plt.close(fig_tmp)
                                     except Exception:
                                         pass
@@ -3359,7 +3369,8 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                                         'r_z': r_z,
                                         'area': area_final,
                                         'diametro': radius * 2,
-                                        'r_prom': radius
+                                        'r_prom': radius,
+                                        'poly_pts': best_poly  # polígono irregular para dibujar
                                     })
                         
                         st.markdown("### 📊 Resultado Gráfico")
@@ -3373,19 +3384,34 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                         
                         for idx, v in enumerate(vortices):
                             color_vortex = "magenta"
-                            if "Círculos" in forma_aprox:
+                            # Dibujar el contorno real (polígono irregular de isobanda) si se solicita o como default
+                            poly_pts = v.get('poly_pts')
+                            if "Polígonos" in forma_aprox and poly_pts is not None and len(poly_pts) > 2:
+                                py_pts = [p[0] for p in poly_pts] + [poly_pts[0][0]]
+                                pz_pts = [p[1] for p in poly_pts] + [poly_pts[0][1]]
+                                fig.add_trace(go.Scatter(
+                                    x=py_pts, y=pz_pts,
+                                    mode="lines",
+                                    fill="toself",
+                                    fillcolor="rgba(255,0,255,0.25)",
+                                    line=dict(color=color_vortex, width=3),
+                                    showlegend=False,
+                                    name=f"Vórtice {idx+1}",
+                                    hoverinfo="skip"
+                                ))
+                            elif "Círculos" in forma_aprox:
                                 fig.add_shape(type="circle",
                                     xref="x", yref="y",
                                     x0=v['y'] - v['r_prom'], y0=v['z'] - v['r_prom'],
                                     x1=v['y'] + v['r_prom'], y1=v['z'] + v['r_prom'],
-                                    line_color=color_vortex, line_width=3, fillcolor="rgba(255, 0, 255, 0.1)"
+                                    line_color=color_vortex, line_width=2, fillcolor="rgba(255,0,255,0.1)"
                                 )
-                            else:
-                                fig.add_shape(type="circle", # En Plotly un shape SVG tipo circle ajustado a una caja rectangular (diferente r_x y r_z) traza elipses automáticamente
+                            else: # Elipses
+                                fig.add_shape(type="circle",
                                     xref="x", yref="y",
                                     x0=v['y'] - v['r_x'], y0=v['z'] - v['r_z'],
                                     x1=v['y'] + v['r_x'], y1=v['z'] + v['r_z'],
-                                    line_color=color_vortex, line_width=3, fillcolor="rgba(255, 0, 255, 0.1)"
+                                    line_color=color_vortex, line_width=2, fillcolor="rgba(255,0,255,0.1)"
                                 )
                                 
                             fig.add_trace(go.Scatter(
@@ -3948,6 +3974,7 @@ elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual 
             accept_multiple_files=True,
             key="uploader_betz3d"
         )
+        uploaded_infinito_3d = st.file_uploader("🔗 'Valores en el infinito.txt' (Opcional - datos atmosféricos)", type=['txt', 'csv'], accept_multiple_files=False, key="upl_inf_3d")
         
         if uploaded_files_3d:
             st.markdown("<br>", unsafe_allow_html=True)
@@ -3956,7 +3983,7 @@ elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual 
                 
                 if nombre_archivo not in st.session_state.archivos_3d_cargados:
                     with st.spinner(f"🌐 Procesando geometría 3D para {nombre_archivo}..."):
-                        datos_3d = procesar_promedios(uploaded_file_3d, st.session_state.configuracion_3d['orden'])
+                        datos_3d = procesar_promedios(uploaded_file_3d, st.session_state.configuracion_3d['orden'], uploaded_infinito_3d)
                         
                         if datos_3d is not None:
                             st.session_state.archivos_3d_cargados[nombre_archivo] = datos_3d
@@ -4301,9 +4328,10 @@ elif st.session_state.seccion_actual == 'betz_4d':
             "📂 Subir archivo CSV de incertidumbre (4D):",
             type=['csv'], key="upload_4d_paso1"
         )
+        uploaded_infinito_4d = st.file_uploader("🔗 'Valores en el infinito.txt' (Opcional - datos atmosféricos)", type=['txt', 'csv'], accept_multiple_files=False, key="upl_inf_4d")
 
         if archivo_4d and config_4d:
-            datos_4d = procesar_promedios(archivo_4d, config_4d.get('orden', 'asc'))
+            datos_4d = procesar_promedios(archivo_4d, config_4d.get('orden', 'asc'), uploaded_infinito_4d)
 
             if datos_4d is not None:
                 tiempos_4d = sorted(datos_4d['Tiempo_s'].dropna().unique())
@@ -4826,13 +4854,14 @@ elif st.session_state.seccion_actual == 'herramientas':
                 btn_matriz = st.button("📊 Extraer", key="btn_matriz", type="primary", use_container_width=True)
 
             # Configuración de sensores para esta herramienta
-            with st.expander("Configuración de Sensores (Avanzado)"):
+            with st.expander("Configuración de Sensores y Atmósfera (Avanzado)"):
                 configuracion_matriz = mostrar_configuracion_sensores("herramienta2")
+                upl_inf_vtk = st.file_uploader("🔗 'Valores en el infinito.txt' para normalización VTK:", type=['txt', 'csv'], key="upl_inf_vtk")
 
             if btn_matriz:
                 if archivo_matriz:
                     with st.spinner("Procesando..."):
-                        matriz = extraer_matriz_presiones_completa(archivo_matriz, configuracion_matriz)
+                        matriz = extraer_matriz_presiones_completa(archivo_matriz, configuracion_matriz, upl_inf_vtk)
 
                         if matriz is not None and not matriz.empty:
                             st.session_state.matriz_presiones = {
