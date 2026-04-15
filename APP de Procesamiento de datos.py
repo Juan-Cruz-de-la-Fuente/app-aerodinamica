@@ -3067,10 +3067,22 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
                             fig = go.Figure()
                             
                             if plot_type == "Contour Suavizado":
+                                dtick_val = None
+                                if "P_∞" in var_2d_sel_ui: 
+                                    dtick_val = 5
+                                elif "V_∞" in var_2d_sel_ui:
+                                    dtick_val = 0.1
+                                
+                                c_args = dict(showlines=False)
+                                if dtick_val:
+                                    c_args['start'] = np.nanmin(V_grid)
+                                    c_args['end'] = np.nanmax(V_grid)
+                                    c_args['size'] = dtick_val
+
                                 fig.add_trace(go.Contour(
                                     x=y_grid_vals, y=z_grid_vals, z=V_grid,
                                     colorscale=cs_name, colorbar=dict(title=z_title),
-                                    contours=dict(showlines=False),
+                                    contours=c_args,
                                     hovertemplate="Y: %{x:.2f} mm<br>Z: %{y:.2f} mm<br>Presión: %{z:.2f} Pa<extra></extra>"
                                 ))
                             else:
@@ -3161,50 +3173,85 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
         </div>
     """, unsafe_allow_html=True)
     
-    if 'archivos_2d_cargados' not in st.session_state or not st.session_state.archivos_2d_cargados:
-        st.warning("⚠️ No hay matrices espaciales en la memoria. Por favor, ve primero a **Vis. Estela 2D**, aplica la configuración inicial y carga los archivos CSV en el Paso 2.")
-    else:
-        st.markdown("## ⚙️ Paso 1: Configuración de Parámetros Matemáticos")
-        c_param1, c_param2, c_param3 = st.columns(3)
-        with c_param1:
-            sensibilidad_pa = st.number_input("Caída de p Mínima [Pa] (Sensibilidad central)", min_value=1.0, max_value=500.0, value=15.0, step=1.0, help="Diferencia de presión mínima que debe existir desde el núcleo hacia los 4 ejes para validarlo como vórtice cerrado real.")
-        with c_param2:
-            forma_aprox = st.radio("Aproximación de Diámetro", ["Círculos Equivalentes (Promedio)", "Elipses Analíticas (Deformación)"])
-        with c_param3:
-            grid_res = st.slider("Resolución Grilla (Calidad)", min_value=50, max_value=300, value=150, step=10, help="Cantidad de puntos interpolados. Mayor resolución mejora precisión pero puede ser más lento.")
-        
-        st.markdown("---")
-        st.markdown("## 🚀 Paso 2: Ejecución del Escáner Direccional")
-        archivo_sel = st.selectbox("Seleccionar Archivo en Memoria:", list(st.session_state.archivos_2d_cargados.keys()))
-        df_selected = st.session_state.archivos_2d_cargados[archivo_sel]
-        tiempos = df_selected['Tiempo_s'].dropna().unique()
-        tiempo_sel = st.selectbox("Seleccionar Tiempo Relativo:", sorted(tiempos))
+    st.markdown("## ⚙️ Paso 1: Configuración de Parámetros Matemáticos")
+    c_param1, c_param2, c_param3 = st.columns(3)
+    with c_param1:
+        sensibilidad_pa = st.number_input("Caída de p Mínima [Pa] (Sensibilidad central)", min_value=1.0, max_value=500.0, value=15.0, step=1.0, help="Diferencia de presión mínima que debe existir desde el núcleo hacia los 4 ejes para validarlo como vórtice cerrado real.")
+    with c_param2:
+        forma_aprox = st.radio("Aproximación de Diámetro", ["Círculos Equivalentes (Promedio)", "Elipses Analíticas (Deformación)"])
+    with c_param3:
+        grid_res = st.slider("Resolución Grilla (Calidad)", min_value=50, max_value=300, value=150, step=10, help="Cantidad de puntos interpolados. Mayor resolución mejora precisión pero puede ser más lento.")
+    
+    st.markdown("---")
+    st.markdown("## 🚀 Paso 2: Selección de Fuente y Ejecución")
 
-        if st.button("🔎 INICIAR BARRIDO NUMÉRICO", use_container_width=True, type="primary"):
-            with st.spinner("Ensamblando plano YZ y barriendo derivadas espaciales..."):
-                df_run = df_selected[df_selected['Tiempo_s'] == tiempo_sel].copy()
-                results_2d = []
-                for _, row in df_run.iterrows():
-                    y_trav = row.get('Pos_Y_Traverser')
-                    z_base = row.get('Pos_Z_Base')
-                    for col in df_run.columns:
-                        num_sensor = obtener_numero_sensor_desde_columna(col)
-                        if num_sensor is not None:
-                            val_presion = row[col]
-                            if pd.isna(val_presion): continue
-                            z_real = calcular_altura_absoluta_z(
-                                num_sensor, z_base, 
-                                st.session_state.configuracion_2d.get('distancia_toma_12', -120),
-                                st.session_state.configuracion_2d.get('distancia_entre_tomas', 10.0),
-                                12, st.session_state.configuracion_2d.get('orden', 'asc')
-                            )
-                            results_2d.append({'Y': y_trav, 'Z': z_real, 'Presion': val_presion})
-                            
-                df_matriz = pd.DataFrame(results_2d)
-                
-                if df_matriz.empty:
-                    st.error("No se pudieron extraer datos espaciales. Comprueba la configuración 2D.")
-                else:
+    fuente_vortices = st.radio("Fuente de datos para vórtices:", 
+        ["🧠 Extraer de Archivos 2D en Memoria", "☁️ Cargar Matriz 2D desde Drive"]
+    )
+
+    df_matriz = pd.DataFrame()
+    ejecutar = False
+
+    if fuente_vortices == "🧠 Extraer de Archivos 2D en Memoria":
+        if 'archivos_2d_cargados' not in st.session_state or not st.session_state.archivos_2d_cargados:
+            st.warning("⚠️ No hay matrices espaciales en la memoria. Por favor, ve primero a **Vis. Estela 2D** y carga los archivos.")
+        else:
+            archivo_sel = st.selectbox("Seleccionar Archivo en Memoria:", list(st.session_state.archivos_2d_cargados.keys()))
+            df_selected = st.session_state.archivos_2d_cargados[archivo_sel]
+            tiempos = df_selected['Tiempo_s'].dropna().unique()
+            tiempo_sel = st.selectbox("Seleccionar Tiempo Relativo:", sorted(tiempos))
+
+            if st.button("🔎 INICIAR BARRIDO NUMÉRICO", use_container_width=True, type="primary"):
+                with st.spinner("Ensamblando plano YZ y barriendo derivadas espaciales..."):
+                    df_run = df_selected[df_selected['Tiempo_s'] == tiempo_sel].copy()
+                    results_2d = []
+                    for _, row in df_run.iterrows():
+                        y_trav = row.get('Pos_Y_Traverser')
+                        z_base = row.get('Pos_Z_Base')
+                        for col in df_run.columns:
+                            num_sensor = obtener_numero_sensor_desde_columna(col)
+                            if num_sensor is not None:
+                                val_presion = row[col]
+                                if pd.isna(val_presion): continue
+                                z_real = calcular_altura_absoluta_z(
+                                    num_sensor, z_base, 
+                                    st.session_state.configuracion_2d.get('distancia_toma_12', -120),
+                                    st.session_state.configuracion_2d.get('distancia_entre_tomas', 10.0),
+                                    12, st.session_state.configuracion_2d.get('orden', 'asc')
+                                )
+                                results_2d.append({'Y': y_trav, 'Z': z_real, 'Presion': val_presion})
+                    df_matriz = pd.DataFrame(results_2d)
+                    ejecutar = True
+
+    elif fuente_vortices == "☁️ Cargar Matriz 2D desde Drive":
+        try:
+            archivos_2d_drive = auth.get_user_files_2d(st.session_state.username)
+        except AttributeError:
+            archivos_2d_drive = []
+            st.error("Error conectando con base de datos. (Función auth.get_user_files_2d inexistente/fallida)")
+        
+        if not archivos_2d_drive:
+            st.info("⚠️ No tienes matrices 2D guardadas en Drive.")
+        else:
+            dict_2d_drive = {f"{a[1]} [{a[2][:10] if a[2] else ''}]": a for a in archivos_2d_drive}
+            archivo_drive_sel = st.selectbox("Seleccionar Matriz 2D:", list(dict_2d_drive.keys()))
+            
+            if st.button("🔎 INICIAR BARRIDO NUMÉRICO DESDE DRIVE", use_container_width=True, type="primary"):
+                with st.spinner("Cargando matriz 2D y barriendo derivadas..."):
+                    s_data = dict_2d_drive[archivo_drive_sel]
+                    csv_str = s_data[4] # data in blob
+                    import io
+                    df_matriz = pd.read_csv(io.StringIO(csv_str))
+                    # Check column constraints
+                    if 'Y' in df_matriz.columns and 'Z' in df_matriz.columns and 'Presion' in df_matriz.columns:
+                        ejecutar = True
+                    else:
+                        st.error("❌ El archivo cargado desde drive no posee las columnas ('Y', 'Z', 'Presion').")
+
+    if ejecutar:
+        if df_matriz.empty:
+            st.error("No se pudieron extraer datos espaciales. Comprueba la configuración.")
+        else:
                     y_plot = df_matriz['Y'].values
                     z_plot = df_matriz['Z'].values
                     val_plot = df_matriz['Presion'].values
@@ -4413,18 +4460,17 @@ elif st.session_state.seccion_actual == 'betz_4d':
                                 continue
                             
                             tri = Delaunay(df_clean[['Y', 'Z']].values)
-                            x_def = x_base + (df_clean['Presion'] * pressure_scale)
+                            x_def = x_base - (df_clean['Presion'] * pressure_scale)
                             
                             fig_4d.add_trace(go.Mesh3d(
                                 x=x_def, y=df_clean['Y'], z=df_clean['Z'],
                                 i=tri.simplices[:,0], j=tri.simplices[:,1], k=tri.simplices[:,2],
                                 intensity=df_clean['Presion'],
-                                colorscale='Turbo',
+                                colorscale='Jet',
                                 cmin=g_min, cmax=g_max,
                                 showscale=True,
                                 opacity=1.0,
-                                lighting=dict(ambient=0.5, diffuse=0.8, specular=0.5, roughness=0.5, fresnel=0.2),
-                                lightposition=dict(x=100, y=200, z=100),
+                                flatshading=True,
                                 name=f"{s_data[1]} (X={x_base})"
                             ))
                         except Exception as e:
@@ -4580,24 +4626,20 @@ elif st.session_state.seccion_actual == 'betz_4d':
                                 try:
                                     tri = Delaunay(df_clean[['Y', 'Z']].values)
                                     
-                                    # Calcular deformación
-                                    x_def = frame_item['x'] + (df_clean['Presion'] * pressure_scale_gif)
+                                    # Invertimos el signo para que el hueco caiga en dirección +X (Hacia adelante relativo al eje)
+                                    x_def = frame_item['x'] - (df_clean['Presion'] * pressure_scale_gif)
                                     
-                                    # Rotar 180 grados respecto a Z para alinear caída de presión hacia atrás
-                                    x_rot, y_rot, z_rot = rotate_points(x_def.values, df_clean['Y'].values, df_clean['Z'].values, 0, 0, 180)
-
                                     fig_frame.add_trace(go.Mesh3d(
-                                        x=x_rot, 
-                                        y=y_rot,
-                                        z=z_rot,
+                                        x=x_def, 
+                                        y=df_clean['Y'],
+                                        z=df_clean['Z'],
                                         i=tri.simplices[:,0], j=tri.simplices[:,1], k=tri.simplices[:,2],
                                         intensity=df_clean['Presion'],
-                                        colorscale='Turbo',
+                                        colorscale='Jet',
                                         cmin=val_range[0], cmax=val_range[1],
                                         showscale=(frame_item == items_to_show[-1]), 
                                         opacity=1.0,
-                                        lighting=dict(ambient=0.5, diffuse=0.8, specular=0.5, roughness=0.5, fresnel=0.2),
-                                        lightposition=dict(x=100, y=200, z=100)
+                                        flatshading=True
                                     ))
                                 except Exception as e:
                                     pass
