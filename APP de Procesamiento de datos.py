@@ -3209,6 +3209,66 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
                         else:
                             st.error("Error al subir a Drive")
 
+            # --- PASO 5: ANÁLISIS DE PARÁMETROS ATMOSFÉRICOS (INFINITO) ---
+            st.markdown("---")
+            st.markdown("""
+            <div class="section-card" style="margin-bottom: 20px;">
+                <h3 style="margin-top: 0; color: white;">📊 PASO 5: ANÁLISIS DE PARÁMETROS ATMOSFÉRICOS (INFINITO)</h3>
+                <p style="color: #bbb; margin-bottom: 0;">Analice la estabilidad de las variables en el infinito durante todo el ensayo.</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+            # Recolectar datos de infinito de todos los archivos cargados
+            inf_data_list = []
+            for nombre, df in st.session_state.archivos_2d_cargados.items():
+                if 'Timestamp' in df.columns:
+                    inf_cols = ['Timestamp', 'rho_inf', 'V_inf', 'P_inf']
+                    # Filtrar columnas existentes
+                    cols_to_use = [c for c in inf_cols if c in df.columns]
+                    tmp_df = df[cols_to_use].copy()
+                    tmp_df['Archivo_Origen'] = nombre
+                    inf_data_list.append(tmp_df)
+            
+            if not inf_data_list:
+                st.info("No se encontraron datos de parámetros atmosféricos en los archivos cargados.")
+            else:
+                df_inf_global = pd.concat(inf_data_list).drop_duplicates()
+                df_inf_global['Timestamp'] = pd.to_numeric(df_inf_global['Timestamp'], errors='coerce')
+                df_inf_global = df_inf_global.dropna(subset=['Timestamp']).sort_values('Timestamp')
+
+                # Normalizar tiempo a t=0
+                min_ts = df_inf_global['Timestamp'].min()
+                df_inf_global['Tiempo_Relativo_s'] = (df_inf_global['Timestamp'] - min_ts)
+                
+                c_inf_1, c_inf_2 = st.columns([1, 2])
+                with c_inf_1:
+                    var_inf_plot = st.selectbox("Variable Atmosférica:", ["ρ_∞", "V_∞", "P_∞"], key="var_inf_plot")
+                    tipo_inf_plot = st.radio("Tipo de Análisis:", ["Evolución Temporal", "Distribución Normal"], key="tipo_inf_plot")
+                    
+                    # Map variable name
+                    inf_col_map = {"ρ_∞": "rho_inf", "V_∞": "V_inf", "P_∞": "P_inf"}
+                    col_plot = inf_col_map[var_inf_plot]
+                    unit_plot = {"ρ_∞": "[kg/m³]", "V_∞": "[m/s]", "P_∞": "[Pa]"}[var_inf_plot]
+
+                with c_inf_2:
+                    if tipo_inf_plot == "Evolución Temporal":
+                        fig_inf = px.line(df_inf_global, x='Tiempo_Relativo_s', y=col_plot, 
+                                         title=f"Evolución de {var_inf_plot} vs Tiempo",
+                                         labels={'Tiempo_Relativo_s': 'Tiempo [s]', col_plot: f"{var_inf_plot} {unit_plot}"},
+                                         markers=True)
+                        fig_inf.update_traces(line_color='#00d1ff')
+                    else:
+                        fig_inf = px.histogram(df_inf_global, x=col_plot, 
+                                              title=f"Distribución de {var_inf_plot}",
+                                              labels={col_plot: f"{var_inf_plot} {unit_plot}"},
+                                              marginal="box", # o "violin", "rug"
+                                              opacity=0.7)
+                        fig_inf.update_traces(marker_color='#00d1ff')
+
+                    fig_inf.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="white"))
+                    st.plotly_chart(fig_inf, use_container_width=True)
+
+
 elif st.session_state.seccion_actual == 'analisis_vortices':
     st.markdown("""
         <div class="header-container">
@@ -3224,7 +3284,7 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
     st.markdown("## ⚙️ Paso 1: Configuración de Parámetros Matemáticos")
     c_param1, c_param2, c_param3 = st.columns(3)
     with c_param1:
-        sensibilidad_pa = st.number_input("Caída de p Mínima [Pa] (Sensibilidad central)", min_value=1.0, max_value=500.0, value=15.0, step=1.0, help="Diferencia de presión mínima que debe existir desde el núcleo hacia los 4 ejes para validarlo como vórtice cerrado real.")
+        sensibilidad_pa = st.number_input("Diferencial para Borde del Vórtice (ΔP) [Pa]", min_value=1.0, max_value=500.0, value=15.0, step=1.0, help="Diferencial de presión desde el núcleo hasta el borde que define la frontera del vórtice. Ej: Núcleo -260Pa y Borde -180Pa -> ΔP = 80Pa.")
     with c_param2:
         st.info("✔️ Visualización de Frontera Exacta")
         forma_aprox = "Polígonos Reales (Isobanda)"
