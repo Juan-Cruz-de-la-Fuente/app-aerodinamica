@@ -789,13 +789,14 @@ def procesar_promedios(archivo_csv, orden="asc", archivo_infinito=None):
                     if len(df_inf.columns) > 2:
                         first_col = df_inf.columns[0]
                         df_inf["ts_clean"] = df_inf[first_col].astype(str).str.split(',').str[0]
-                        df_inf["ts_int"] = pd.to_numeric(df_inf["ts_clean"], errors='coerce')
-                        df_inf = df_inf.dropna(subset=["ts_int"])
+                        df_inf["dt_val"] = pd.to_datetime(df_inf["ts_clean"], format='%y%m%d%H%M%S', errors='coerce')
+                        df_inf = df_inf.dropna(subset=["dt_val"])
 
                         def get_inf_values(ts_str):
                             try:
-                                ts_val = int(ts_str)
-                                diffs = (df_inf["ts_int"] - ts_val).abs()
+                                target_dt = pd.to_datetime(ts_str, format='%y%m%d%H%M%S', errors='coerce')
+                                if pd.isna(target_dt): return 1.225, 0.0, 101325.0
+                                diffs = (df_inf["dt_val"] - target_dt).abs()
                                 idx = diffs.idxmin()
                                 row = df_inf.loc[idx]
                                 T = float(str(row.get("temp_baro", "15")).replace(",", "."))
@@ -3233,12 +3234,12 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
                 st.info("No se encontraron datos de parámetros atmosféricos en los archivos cargados.")
             else:
                 df_inf_global = pd.concat(inf_data_list).drop_duplicates()
-                df_inf_global['Timestamp'] = pd.to_numeric(df_inf_global['Timestamp'], errors='coerce')
-                df_inf_global = df_inf_global.dropna(subset=['Timestamp']).sort_values('Timestamp')
+                df_inf_global['dt_val'] = pd.to_datetime(df_inf_global['Timestamp'], format='%y%m%d%H%M%S', errors='coerce')
+                df_inf_global = df_inf_global.dropna(subset=['dt_val']).sort_values('dt_val')
 
-                # Normalizar tiempo a t=0
-                min_ts = df_inf_global['Timestamp'].min()
-                df_inf_global['Tiempo_Relativo_s'] = (df_inf_global['Timestamp'] - min_ts)
+                # Normalizar tiempo a t=0 usando segundos reales
+                min_dt = df_inf_global['dt_val'].min()
+                df_inf_global['Tiempo_Relativo_s'] = (df_inf_global['dt_val'] - min_dt).dt.total_seconds()
                 
                 c_inf_1, c_inf_2 = st.columns([1, 2])
                 with c_inf_1:
