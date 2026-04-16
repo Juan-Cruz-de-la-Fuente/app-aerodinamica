@@ -3519,35 +3519,46 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                         ))
                         
                         for idx, v in enumerate(vortices):
-                            color_vortex = "magenta"
-                            # Dibujar el contorno real (polígono irregular de isobanda) si se solicita o como default
+                            # Dibujar el contorno real (polígono irregular de isobanda)
                             poly_pts = v.get('poly_pts')
-                            if "Polígonos" in forma_aprox and poly_pts is not None and len(poly_pts) > 2:
+                            if poly_pts is not None and len(poly_pts) > 2:
+                                # Cerrar el polígono para el trazado
                                 py_pts = [p[0] for p in poly_pts] + [poly_pts[0][0]]
                                 pz_pts = [p[1] for p in poly_pts] + [poly_pts[0][1]]
+                                
+                                # Trazar la frontera irregular (lo que el usuario espera en Negro)
                                 fig.add_trace(go.Scatter(
                                     x=py_pts, y=pz_pts,
                                     mode="lines",
-                                    fill="none",
-                                    line=dict(color="black", width=2),
-                                    showlegend=False,
-                                    name=f"Vórtice {idx+1}",
-                                    hoverinfo="skip"
+                                    fill="toself",
+                                    fillcolor="rgba(0, 255, 255, 0.15)", # Sutil relleno cian para resaltar el área
+                                    line=dict(color="black", width=3, dash="solid"),
+                                    name=f"Frontera Vórtice {idx+1}",
+                                    hovertemplate=f"Vórtice {idx+1}<br>Frontera Detectada<extra></extra>"
                                 ))
-                            elif "Círculos" in forma_aprox:
-                                fig.add_shape(type="circle",
-                                    xref="x", yref="y",
-                                    x0=v['y'] - v['r_prom'], y0=v['z'] - v['r_prom'],
-                                    x1=v['y'] + v['r_prom'], y1=v['z'] + v['r_prom'],
-                                    line_color=color_vortex, line_width=2, fillcolor="rgba(255,0,255,0.1)"
-                                )
-                            else: # Elipses
+                                
+                                # Marcar el núcleo con una cruz blanca
+                                fig.add_trace(go.Scatter(
+                                    x=[v['y']], y=[v['z']],
+                                    mode="markers",
+                                    marker=dict(symbol="x", color="white", size=10, line=dict(width=1)),
+                                    name=f"Núcleo V{idx+1}",
+                                    hovertemplate=f"Centro V{idx+1}<br>P_min: %{{data.p_min:.2f}} Pa<extra></extra>".replace("%{data.p_min:.2f}", f"{v['p_min']:.2f}")
+                                ))
+                            else:
+                                # Caso de respaldo: Elipse si no se pudo extraer el polígono cerrado
                                 fig.add_shape(type="circle",
                                     xref="x", yref="y",
                                     x0=v['y'] - v['r_x'], y0=v['z'] - v['r_z'],
                                     x1=v['y'] + v['r_x'], y1=v['z'] + v['r_z'],
-                                    line_color=color_vortex, line_width=2, fillcolor="rgba(255,0,255,0.1)"
+                                    line_color="magenta", line_width=2, fillcolor="rgba(255,0,255,0.1)"
                                 )
+                                fig.add_trace(go.Scatter(
+                                    x=[v['y']], y=[v['z']],
+                                    mode="markers",
+                                    marker=dict(symbol="circle", color="magenta", size=8),
+                                    name=f"Vórtice {idx+1} (Aprox.)"
+                                ))
                                 
                             fig.add_trace(go.Scatter(
                                 x=[v['y']], y=[v['z']],
