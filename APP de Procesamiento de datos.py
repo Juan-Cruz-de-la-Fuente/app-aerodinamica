@@ -2892,6 +2892,14 @@ elif st.session_state.seccion_actual == 'betz_2d':
                 )
 
 elif st.session_state.seccion_actual == 'vis_2d_nueva':
+
+    if 'configuracion_2d' not in st.session_state:
+        st.session_state.configuracion_2d = {
+            'orden': 'asc',
+            'sensor_referencia': 'Sensor 12',
+            'distancia_toma_12': -120.0,
+            'distancia_entre_tomas': 10.0
+        }
     st.markdown("""
         <div class="header-container">
             <h1 style="font-size: 3rem; margin-bottom: 1rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
@@ -2950,324 +2958,323 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
 
 
     # --- PASO 2: IMPORTACIÓN DE ARCHIVOS ---
-    if st.session_state.get('configuracion_2d'):
+    st.markdown("---")
+    st.markdown("""
+    <div class="section-card" style="margin-bottom: 20px;">
+        <h3 style="margin-top: 0; color: white;">📁 PASO 2: IMPORTACIÓN DE ARCHIVOS CRUDOS</h3>
+        <p style="color: #bbb; margin-bottom: 20px;">Cargue uno o múltiples archivos CSV crudos de ensayo para generar los planos espaciales en 2D.</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    if 'archivos_2d_cargados' not in st.session_state:
+        st.session_state.archivos_2d_cargados = {}
+
+    uploaded_files_2d = st.file_uploader("Arrastre sus archivos CSV de Incertidumbre aquí", type=['csv'], accept_multiple_files=True, key="uploader_2d")
+    uploaded_infinito_2d = st.file_uploader("🔗 'Valores en el infinito.txt' (Opcional - datos atmosféricos)", type=['txt', 'csv'], accept_multiple_files=False, key="upl_inf_2d")
+
+    if uploaded_files_2d:
+        st.markdown("<br>", unsafe_allow_html=True)
+        for file_2d in uploaded_files_2d:
+            nombre_archivo = file_2d.name.replace('.csv', '').replace('incertidumbre_', '')
+            if nombre_archivo not in st.session_state.archivos_2d_cargados:
+                with st.spinner(f"🔨 Procesando archivo {nombre_archivo}..."):
+                    datos_procesados = procesar_promedios(file_2d, st.session_state.configuracion_2d['orden'], uploaded_infinito_2d)
+                    if datos_procesados is not None:
+                        st.session_state.archivos_2d_cargados[nombre_archivo] = datos_procesados
+                        st.success(f"✅ Archivo extraído correctamente: {nombre_archivo}")
+                        
+    _archivos_mem_2d = st.session_state.archivos_2d_cargados
+    try:
+        _archivos_drv_2d = auth.get_user_files_2d(st.session_state.username)
+    except:
+        _archivos_drv_2d = []
+
+    # Mostrar resumen interactivo de archivos con Progress list (como en 3D)
+    if _archivos_mem_2d:
+        st.markdown("### 📋 Archivos en Memoria")
+        cols = st.columns(3)
+        for idx, (nombre, datos) in enumerate(_archivos_mem_2d.items()):
+            with cols[idx % 3]:
+                with st.container(border=True):
+                    st.markdown(f"**📦 {nombre}**")
+                    st.caption(f"{len(datos)} Puntos medidos • {len(datos['Tiempo_s'].unique())} Tiempos discretos")
+                    st.progress(100)
+
+    if _archivos_mem_2d or _archivos_drv_2d:
+        # --- PASO 3: VISUALIZADOR INTERACTIVO ---
         st.markdown("---")
         st.markdown("""
         <div class="section-card" style="margin-bottom: 20px;">
-            <h3 style="margin-top: 0; color: white;">📁 PASO 2: IMPORTACIÓN DE ARCHIVOS CRUDOS</h3>
-            <p style="color: #bbb; margin-bottom: 20px;">Cargue uno o múltiples archivos CSV crudos de ensayo para generar los planos espaciales en 2D.</p>
+            <h3 style="margin-top: 0; color: white;">📈 PASO 3: VISUALIZADOR 2D INTERACTIVO</h3>
+            <p style="color: #bbb; margin-bottom: 20px;">Explore el plano de presiones seleccionando archivo y escala, interactuando nativamente con las herramientas del trazado (regla configurable).</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        c_cfg, c_plot = st.columns([1, 2.5])
+        with c_cfg:
+            st.markdown("### 1. Parámetros de Escala")
+            cuerda_mm = st.number_input("Cuerda Referencia [mm]", value=300.0, step=1.0)
+            
+            st.markdown("### 2. Selección de Plano")
+            fuente_plot_2d = st.radio("Fuente de matriz:", ["Archivos Crudos (Memoria)", "Matriz Guardada (Drive)"])
+            
+            ejecutar_viz_2d = False
+            if fuente_plot_2d == "Archivos Crudos (Memoria)":
+                if not _archivos_mem_2d:
+                    st.warning("⚠️ No hay archivos procesados en memoria.")
+                else:
+                    archivo_sel = st.selectbox("Seleccionar Archivo (X):", list(_archivos_mem_2d.keys()))
+                    df_selected = _archivos_mem_2d[archivo_sel]
+                    tiempos = df_selected['Tiempo_s'].dropna().unique()
+                    tiempo_sel = st.selectbox("Seleccionar Tiempo:", sorted(tiempos))
+                    ejecutar_viz_2d = True
+            else:
+                if not _archivos_drv_2d:
+                    st.warning("⚠️ No hay matrices 2D en tu Drive.")
+                else:
+                    dict_drv_2d = {f"{a[1]} [{a[2][:10] if a[2] else ''}]": a for a in _archivos_drv_2d}
+                    archivo_drv_sel = st.selectbox("Seleccionar Matriz Drive:", list(dict_drv_2d.keys()))
+                    ejecutar_viz_2d = True
+
+            st.markdown("### 3. Visualización")
+            opciones_var_2d = ["Presión Total [Actual]", "ρ_∞", "V_∞", "P_∞"]
+            var_2d_sel = st.selectbox("📊 Variable a visualizar:", opciones_var_2d, key="var_2d_sel_ui")
+            
+            plot_type = st.selectbox("Render de Pixeles:", ["Contour Suavizado", "Mapa de Calor (Celdas)"])
+
+            st.markdown("---")
+            st.markdown("### 📏 Medición de Trazos")
+            st.info("La Regla ↘️ del gráfico mide nativamente en [mm]. Ingresa aquí el trazo medido para convertir a [c]:")
+            long_leida = st.number_input("Longitud Leída [mm]:", value=0.0, step=1.0)
+            if long_leida > 0:
+                st.success(f"**Longitud Equiv:** {(long_leida / cuerda_mm):.3f} c")
+
+        with c_plot:
+            if ejecutar_viz_2d:
+                with st.spinner("Ensamblando proyección de contornos 2D..."):
+                    if fuente_plot_2d == "Archivos Crudos (Memoria)":
+                        df_run = df_selected[df_selected['Tiempo_s'] == tiempo_sel].copy()
+                        
+                        results_2d = []
+                        # Ensamblar la Matriz 2D extrayendo las posiciones absolutas
+                        for _, row in df_run.iterrows():
+                            y_trav = row.get('Pos_Y_Traverser')
+                            z_base = row.get('Pos_Z_Base')
+                            for col in df_run.columns:
+                                num_sensor = obtener_numero_sensor_desde_columna(col)
+                                if num_sensor is not None:
+                                    val_presion = row[col]
+                                    if pd.isna(val_presion): continue
+                                    z_real = calcular_altura_absoluta_z(
+                                        num_sensor, z_base, 
+                                        st.session_state.configuracion_2d.get('distancia_toma_12', -120),
+                                        st.session_state.configuracion_2d.get('distancia_entre_tomas', 10.0),
+                                        12, st.session_state.configuracion_2d.get('orden', 'asc')
+                                    )
+                                    results_2d.append({
+                                        'Y': y_trav, 
+                                        'Z': z_real, 
+                                        'Presion': val_presion,
+                                        'rho_inf': row.get('rho_inf', 1.225),
+                                        'V_inf': row.get('V_inf', 0.0),
+                                        'P_inf': row.get('P_inf', 101325.0)
+                                    })
+                                    
+                        df_matriz = pd.DataFrame(results_2d)
+                    else:
+                        s_data = dict_drv_2d[archivo_drv_sel]
+                        csv_bytes = auth.download_file_2d(s_data[0])
+                        csv_str = csv_bytes.decode('utf-8-sig') if csv_bytes else ""
+                        import io
+                        df_matriz = pd.read_csv(io.StringIO(csv_str), sep=';', decimal=',')
+                        if 'Y' not in df_matriz.columns or 'Z' not in df_matriz.columns or 'Presion' not in df_matriz.columns:
+                            df_matriz = pd.read_csv(io.StringIO(csv_str), sep=',', decimal='.')
+                if not df_matriz.empty:
+                    df_matriz['Presion'] = calcular_variable_atmosferica(df_matriz, var_2d_sel)
+                
+                if df_matriz.empty:
+                    st.error("❌ No se pudieron extraer datos espaciales (Y, Z, P). Comprueba tu archivo físico.")
+                else:
+                    y_plot = df_matriz['Y'].values
+                    z_plot = df_matriz['Z'].values
+                    val_plot = df_matriz['Presion'].values
+                    eje_label = "mm"
+                    z_title = "P [Pa]"
+                    if var_2d_sel == "ρ_∞":
+                        z_title = "Densidad [kg/m³]"
+                        hover_text = "Densidad: %{z:.2f} kg/m³"
+                    elif var_2d_sel == "V_∞":
+                        z_title = "V [m/s]"
+                        hover_text = "Velocidad: %{z:.2f} m/s"
+                    else:
+                        hover_text = "Presión: %{z:.2f} Pa"
+                        
+                    cs_name = "Jet"
+
+                    # Create Grid Interpolation cubic 150x150 res
+                    y_grid_vals = np.linspace(y_plot.min(), y_plot.max(), 150)
+                    z_grid_vals = np.linspace(z_plot.min(), z_plot.max(), 150)
+                    Y_grid, Z_grid = np.meshgrid(y_grid_vals, z_grid_vals)
+                    
+                    try:
+                        V_grid = griddata((y_plot, z_plot), val_plot, (Y_grid, Z_grid), method='cubic')
+                        fig = go.Figure()
+                        
+                        if plot_type == "Contour Suavizado":
+                            dtick_val = None
+                            if "P_∞" in var_2d_sel: 
+                                dtick_val = 1
+                            elif "V_∞" in var_2d_sel:
+                                dtick_val = 0.1
+                            elif "ρ_∞" in var_2d_sel:
+                                dtick_val = 0.05
+                            
+                            c_args = dict(showlines=False)
+                            if dtick_val:
+                                c_args['start'] = np.nanmin(V_grid)
+                                c_args['end'] = np.nanmax(V_grid)
+                                c_args['size'] = dtick_val
+
+                            fig.add_trace(go.Contour(
+                                x=y_grid_vals, y=z_grid_vals, z=V_grid,
+                                colorscale=cs_name, colorbar=dict(title=z_title),
+                                contours=c_args,
+                                hovertemplate=f"Y: %{{x:.2f}} mm<br>Z: %{{y:.2f}} mm<br>{hover_text}<extra></extra>"
+                            ))
+                        else:
+                            fig.add_trace(go.Heatmap(
+                                x=y_grid_vals, y=z_grid_vals, z=V_grid,
+                                colorscale=cs_name, colorbar=dict(title=z_title),
+                                hovertemplate=f"Y: %{{x:.2f}} mm<br>Z: %{{y:.2f}} mm<br>{hover_text}<extra></extra>"
+                            ))
+
+                        fig.update_layout(
+                            title=dict(text=f"Proyección Espacial 2D: Presión [Pa]", font=dict(size=20, color="white")),
+                            xaxis_title=dict(text=f"Envergadura (Y) [{eje_label}]", font=dict(color="white")),
+                            yaxis_title=dict(text=f"Altura (Z) [{eje_label}]", font=dict(color="white")),
+                            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                            font=dict(color="white"),
+                            dragmode="drawline",
+                            newshape=dict(line_color="magenta", line_width=3, opacity=1.0),
+                            margin=dict(l=60, r=60, t=60, b=60),
+                            height=800
+                        )
+                        # Ancla física de ejes. Garantiza que la matriz mida proporcionalmente 1:1 en la pantalla
+                        fig.update_xaxes(scaleanchor="y", scaleratio=1, showgrid=True, gridcolor="rgba(255,255,255,0.1)")
+                        fig.update_yaxes(showgrid=True, gridcolor="rgba(255,255,255,0.1)")
+
+                        plot_key = f"plot_2d_{st.session_state.get('plot_2d_key', 0)}"
+                        st.plotly_chart(fig, use_container_width=True, config={
+                            'modeBarButtonsToAdd': ['drawline', 'drawcircle', 'eraseshape'],
+                            'displaylogo': False, 'scrollZoom': True
+                        }, key=plot_key)
+                        col_info, col_btn = st.columns([0.8, 0.2])
+                        with col_info:
+                            st.info("💡 **Gráfico Físico Proporcional:** Para borrar un dibujo puedes usar el botón la Goma (Erase active shape) en el menú del gráfico.")
+                        with col_btn:
+                            if st.button("🧹 Limpiar Dibujos", key="btn_clear_trazos", use_container_width=True):
+                                st.session_state.plot_2d_key = st.session_state.get('plot_2d_key', 0) + 1
+                                st.rerun()
+                    except Exception as e:
+                        st.error(f"Error trazando proyecciones cúbicas: {e}")
+
+        # --- GUARDAR MATRIZ 2D EN DRIVE ---
+        st.markdown("---")
+        st.markdown("""
+        <div class="section-card" style="margin-bottom: 20px;">
+            <h3 style="margin-top: 0; color: white;">☁️ PASO 4: GUARDAR MATRIZ EN DRIVE (2D)</h3>
+            <p style="color: #bbb; margin-bottom: 0;">Guarda la matriz de presiones del plano seleccionado en <b>ENSAYO DE ESTELA / 2D</b>.</p>
+        </div>
+        """, unsafe_allow_html=True)
+        if not df_matriz.empty:
+            c_2d_a, c_2d_b = st.columns(2)
+            aoa_2d = c_2d_a.number_input("Ángulo de Ataque [°]:", value=0.0, step=0.5, format="%.1f", key="aoa_2d_paso4")
+            x_2d = c_2d_b.number_input("📍 Posición X (Estación) [mm]:", value=0.0, step=10.0, key="x_2d_paso4")
+
+            _aoa_str_2d = str(int(aoa_2d)) if aoa_2d == int(aoa_2d) else f"{aoa_2d:.1f}"
+            _aoa_str_2d = _aoa_str_2d.replace("-", "neg")
+            nombre_auto_2d = f"2D-X{int(x_2d)}-OAO{_aoa_str_2d}-T{int(tiempo_sel)}s.csv"
+
+            c_2d_chk, c_2d_nom = st.columns([0.15, 0.85])
+            usar_custom_2d = c_2d_chk.checkbox("Nombre libre", key="custom_nom_2d")
+            if usar_custom_2d:
+                nombre_csv_2d = c_2d_nom.text_input("Nombre personalizado:", placeholder=nombre_auto_2d, key="nombre_2d_custom")
+                if not nombre_csv_2d:
+                    nombre_csv_2d = nombre_auto_2d
+            else:
+                nombre_csv_2d = nombre_auto_2d
+                c_2d_nom.code(nombre_csv_2d)
+
+            csv_bytes_2d = df_matriz.to_csv(sep=';', index=False, decimal=',').encode('utf-8-sig')
+            col_2d_dl, col_2d_drive = st.columns(2)
+            with col_2d_dl:
+                st.download_button("📥 Descargar Matriz 2D", csv_bytes_2d,
+                                   file_name=nombre_csv_2d, mime="text/csv", key="dl_2d_matriz")
+            with col_2d_drive:
+                if st.button("☁️ Guardar en Drive (2D)", key="save_2d_drive", use_container_width=True):
+                    if auth.save_csv_2d(st.session_state.username, nombre_csv_2d, csv_bytes_2d):
+                        st.success(f"✅ Subido a Drive → ENSAYO DE ESTELA/2D/{nombre_csv_2d}")
+                    else:
+                        st.error("Error al subir a Drive")
+
+        # --- PASO 5: ANÁLISIS DE PARÁMETROS ATMOSFÉRICOS (INFINITO) ---
+        st.markdown("---")
+        st.markdown("""
+        <div class="section-card" style="margin-bottom: 20px;">
+            <h3 style="margin-top: 0; color: white;">📊 PASO 5: ANÁLISIS DE PARÁMETROS ATMOSFÉRICOS (INFINITO)</h3>
+            <p style="color: #bbb; margin-bottom: 0;">Analice la estabilidad de las variables en el infinito durante todo el ensayo.</p>
         </div>
         """, unsafe_allow_html=True)
 
-        if 'archivos_2d_cargados' not in st.session_state:
-            st.session_state.archivos_2d_cargados = {}
+        # Recolectar datos de infinito de todos los archivos cargados
+        inf_data_list = []
+        for nombre, df in st.session_state.archivos_2d_cargados.items():
+            if 'Timestamp' in df.columns:
+                inf_cols = ['Timestamp', 'rho_inf', 'V_inf', 'P_inf']
+                # Filtrar columnas existentes
+                cols_to_use = [c for c in inf_cols if c in df.columns]
+                tmp_df = df[cols_to_use].copy()
+                tmp_df['Archivo_Origen'] = nombre
+                inf_data_list.append(tmp_df)
+        
+        if not inf_data_list:
+            st.info("No se encontraron datos de parámetros atmosféricos en los archivos cargados.")
+        else:
+            df_inf_global = pd.concat(inf_data_list).drop_duplicates()
+            df_inf_global['dt_val'] = pd.to_datetime(df_inf_global['Timestamp'], format='%y%m%d%H%M%S', errors='coerce')
+            df_inf_global = df_inf_global.dropna(subset=['dt_val']).sort_values('dt_val')
 
-        uploaded_files_2d = st.file_uploader("Arrastre sus archivos CSV de Incertidumbre aquí", type=['csv'], accept_multiple_files=True, key="uploader_2d")
-        uploaded_infinito_2d = st.file_uploader("🔗 'Valores en el infinito.txt' (Opcional - datos atmosféricos)", type=['txt', 'csv'], accept_multiple_files=False, key="upl_inf_2d")
-
-        if uploaded_files_2d:
-            st.markdown("<br>", unsafe_allow_html=True)
-            for file_2d in uploaded_files_2d:
-                nombre_archivo = file_2d.name.replace('.csv', '').replace('incertidumbre_', '')
-                if nombre_archivo not in st.session_state.archivos_2d_cargados:
-                    with st.spinner(f"🔨 Procesando archivo {nombre_archivo}..."):
-                        datos_procesados = procesar_promedios(file_2d, st.session_state.configuracion_2d['orden'], uploaded_infinito_2d)
-                        if datos_procesados is not None:
-                            st.session_state.archivos_2d_cargados[nombre_archivo] = datos_procesados
-                            st.success(f"✅ Archivo extraído correctamente: {nombre_archivo}")
-                            
-        _archivos_mem_2d = st.session_state.archivos_2d_cargados
-        try:
-            _archivos_drv_2d = auth.get_user_files_2d(st.session_state.username)
-        except:
-            _archivos_drv_2d = []
-
-        # Mostrar resumen interactivo de archivos con Progress list (como en 3D)
-        if _archivos_mem_2d:
-            st.markdown("### 📋 Archivos en Memoria")
-            cols = st.columns(3)
-            for idx, (nombre, datos) in enumerate(_archivos_mem_2d.items()):
-                with cols[idx % 3]:
-                    with st.container(border=True):
-                        st.markdown(f"**📦 {nombre}**")
-                        st.caption(f"{len(datos)} Puntos medidos • {len(datos['Tiempo_s'].unique())} Tiempos discretos")
-                        st.progress(100)
-
-        if _archivos_mem_2d or _archivos_drv_2d:
-            # --- PASO 3: VISUALIZADOR INTERACTIVO ---
-            st.markdown("---")
-            st.markdown("""
-            <div class="section-card" style="margin-bottom: 20px;">
-                <h3 style="margin-top: 0; color: white;">📈 PASO 3: VISUALIZADOR 2D INTERACTIVO</h3>
-                <p style="color: #bbb; margin-bottom: 20px;">Explore el plano de presiones seleccionando archivo y escala, interactuando nativamente con las herramientas del trazado (regla configurable).</p>
-            </div>
-            """, unsafe_allow_html=True)
+            # Normalizar tiempo a t=0 usando segundos reales
+            min_dt = df_inf_global['dt_val'].min()
+            df_inf_global['Tiempo_Relativo_s'] = (df_inf_global['dt_val'] - min_dt).dt.total_seconds()
             
-            c_cfg, c_plot = st.columns([1, 2.5])
-            with c_cfg:
-                st.markdown("### 1. Parámetros de Escala")
-                cuerda_mm = st.number_input("Cuerda Referencia [mm]", value=300.0, step=1.0)
+            c_inf_1, c_inf_2 = st.columns([1, 2])
+            with c_inf_1:
+                var_inf_plot = st.selectbox("Variable Atmosférica:", ["ρ_∞", "V_∞", "P_∞"], key="var_inf_plot")
+                tipo_inf_plot = st.radio("Tipo de Análisis:", ["Evolución Temporal", "Distribución Normal"], key="tipo_inf_plot")
                 
-                st.markdown("### 2. Selección de Plano")
-                fuente_plot_2d = st.radio("Fuente de matriz:", ["Archivos Crudos (Memoria)", "Matriz Guardada (Drive)"])
-                
-                ejecutar_viz_2d = False
-                if fuente_plot_2d == "Archivos Crudos (Memoria)":
-                    if not _archivos_mem_2d:
-                        st.warning("⚠️ No hay archivos procesados en memoria.")
-                    else:
-                        archivo_sel = st.selectbox("Seleccionar Archivo (X):", list(_archivos_mem_2d.keys()))
-                        df_selected = _archivos_mem_2d[archivo_sel]
-                        tiempos = df_selected['Tiempo_s'].dropna().unique()
-                        tiempo_sel = st.selectbox("Seleccionar Tiempo:", sorted(tiempos))
-                        ejecutar_viz_2d = True
+                # Map variable name
+                inf_col_map = {"ρ_∞": "rho_inf", "V_∞": "V_inf", "P_∞": "P_inf"}
+                col_plot = inf_col_map[var_inf_plot]
+                unit_plot = {"ρ_∞": "[kg/m³]", "V_∞": "[m/s]", "P_∞": "[Pa]"}[var_inf_plot]
+
+            with c_inf_2:
+                if tipo_inf_plot == "Evolución Temporal":
+                    fig_inf = px.line(df_inf_global, x='Tiempo_Relativo_s', y=col_plot, 
+                                     title=f"Evolución de {var_inf_plot} vs Tiempo",
+                                     labels={'Tiempo_Relativo_s': 'Tiempo [s]', col_plot: f"{var_inf_plot} {unit_plot}"},
+                                     markers=True)
+                    fig_inf.update_traces(line_color='#00d1ff')
                 else:
-                    if not _archivos_drv_2d:
-                        st.warning("⚠️ No hay matrices 2D en tu Drive.")
-                    else:
-                        dict_drv_2d = {f"{a[1]} [{a[2][:10] if a[2] else ''}]": a for a in _archivos_drv_2d}
-                        archivo_drv_sel = st.selectbox("Seleccionar Matriz Drive:", list(dict_drv_2d.keys()))
-                        ejecutar_viz_2d = True
+                    fig_inf = px.histogram(df_inf_global, x=col_plot, 
+                                          title=f"Distribución de {var_inf_plot}",
+                                          labels={col_plot: f"{var_inf_plot} {unit_plot}"},
+                                          marginal="box", # o "violin", "rug"
+                                          opacity=0.7)
+                    fig_inf.update_traces(marker_color='#00d1ff')
 
-                st.markdown("### 3. Visualización")
-                opciones_var_2d = ["Presión Total [Actual]", "ρ_∞", "V_∞", "P_∞"]
-                var_2d_sel = st.selectbox("📊 Variable a visualizar:", opciones_var_2d, key="var_2d_sel_ui")
-                
-                plot_type = st.selectbox("Render de Pixeles:", ["Contour Suavizado", "Mapa de Calor (Celdas)"])
-
-                st.markdown("---")
-                st.markdown("### 📏 Medición de Trazos")
-                st.info("La Regla ↘️ del gráfico mide nativamente en [mm]. Ingresa aquí el trazo medido para convertir a [c]:")
-                long_leida = st.number_input("Longitud Leída [mm]:", value=0.0, step=1.0)
-                if long_leida > 0:
-                    st.success(f"**Longitud Equiv:** {(long_leida / cuerda_mm):.3f} c")
-
-            with c_plot:
-                if ejecutar_viz_2d:
-                    with st.spinner("Ensamblando proyección de contornos 2D..."):
-                        if fuente_plot_2d == "Archivos Crudos (Memoria)":
-                            df_run = df_selected[df_selected['Tiempo_s'] == tiempo_sel].copy()
-                            
-                            results_2d = []
-                            # Ensamblar la Matriz 2D extrayendo las posiciones absolutas
-                            for _, row in df_run.iterrows():
-                                y_trav = row.get('Pos_Y_Traverser')
-                                z_base = row.get('Pos_Z_Base')
-                                for col in df_run.columns:
-                                    num_sensor = obtener_numero_sensor_desde_columna(col)
-                                    if num_sensor is not None:
-                                        val_presion = row[col]
-                                        if pd.isna(val_presion): continue
-                                        z_real = calcular_altura_absoluta_z(
-                                            num_sensor, z_base, 
-                                            st.session_state.configuracion_2d.get('distancia_toma_12', -120),
-                                            st.session_state.configuracion_2d.get('distancia_entre_tomas', 10.0),
-                                            12, st.session_state.configuracion_2d.get('orden', 'asc')
-                                        )
-                                        results_2d.append({
-                                            'Y': y_trav, 
-                                            'Z': z_real, 
-                                            'Presion': val_presion,
-                                            'rho_inf': row.get('rho_inf', 1.225),
-                                            'V_inf': row.get('V_inf', 0.0),
-                                            'P_inf': row.get('P_inf', 101325.0)
-                                        })
-                                        
-                            df_matriz = pd.DataFrame(results_2d)
-                        else:
-                            s_data = dict_drv_2d[archivo_drv_sel]
-                            csv_bytes = auth.download_file_2d(s_data[0])
-                            csv_str = csv_bytes.decode('utf-8-sig') if csv_bytes else ""
-                            import io
-                            df_matriz = pd.read_csv(io.StringIO(csv_str), sep=';', decimal=',')
-                            if 'Y' not in df_matriz.columns or 'Z' not in df_matriz.columns or 'Presion' not in df_matriz.columns:
-                                df_matriz = pd.read_csv(io.StringIO(csv_str), sep=',', decimal='.')
-                    if not df_matriz.empty:
-                        df_matriz['Presion'] = calcular_variable_atmosferica(df_matriz, var_2d_sel)
-                    
-                    if df_matriz.empty:
-                        st.error("❌ No se pudieron extraer datos espaciales (Y, Z, P). Comprueba tu archivo físico.")
-                    else:
-                        y_plot = df_matriz['Y'].values
-                        z_plot = df_matriz['Z'].values
-                        val_plot = df_matriz['Presion'].values
-                        eje_label = "mm"
-                        z_title = "P [Pa]"
-                        if var_2d_sel == "ρ_∞":
-                            z_title = "Densidad [kg/m³]"
-                            hover_text = "Densidad: %{z:.2f} kg/m³"
-                        elif var_2d_sel == "V_∞":
-                            z_title = "V [m/s]"
-                            hover_text = "Velocidad: %{z:.2f} m/s"
-                        else:
-                            hover_text = "Presión: %{z:.2f} Pa"
-                            
-                        cs_name = "Jet"
-
-                        # Create Grid Interpolation cubic 150x150 res
-                        y_grid_vals = np.linspace(y_plot.min(), y_plot.max(), 150)
-                        z_grid_vals = np.linspace(z_plot.min(), z_plot.max(), 150)
-                        Y_grid, Z_grid = np.meshgrid(y_grid_vals, z_grid_vals)
-                        
-                        try:
-                            V_grid = griddata((y_plot, z_plot), val_plot, (Y_grid, Z_grid), method='cubic')
-                            fig = go.Figure()
-                            
-                            if plot_type == "Contour Suavizado":
-                                dtick_val = None
-                                if "P_∞" in var_2d_sel: 
-                                    dtick_val = 1
-                                elif "V_∞" in var_2d_sel:
-                                    dtick_val = 0.1
-                                elif "ρ_∞" in var_2d_sel:
-                                    dtick_val = 0.05
-                                
-                                c_args = dict(showlines=False)
-                                if dtick_val:
-                                    c_args['start'] = np.nanmin(V_grid)
-                                    c_args['end'] = np.nanmax(V_grid)
-                                    c_args['size'] = dtick_val
-
-                                fig.add_trace(go.Contour(
-                                    x=y_grid_vals, y=z_grid_vals, z=V_grid,
-                                    colorscale=cs_name, colorbar=dict(title=z_title),
-                                    contours=c_args,
-                                    hovertemplate=f"Y: %{{x:.2f}} mm<br>Z: %{{y:.2f}} mm<br>{hover_text}<extra></extra>"
-                                ))
-                            else:
-                                fig.add_trace(go.Heatmap(
-                                    x=y_grid_vals, y=z_grid_vals, z=V_grid,
-                                    colorscale=cs_name, colorbar=dict(title=z_title),
-                                    hovertemplate=f"Y: %{{x:.2f}} mm<br>Z: %{{y:.2f}} mm<br>{hover_text}<extra></extra>"
-                                ))
-
-                            fig.update_layout(
-                                title=dict(text=f"Proyección Espacial 2D: Presión [Pa]", font=dict(size=20, color="white")),
-                                xaxis_title=dict(text=f"Envergadura (Y) [{eje_label}]", font=dict(color="white")),
-                                yaxis_title=dict(text=f"Altura (Z) [{eje_label}]", font=dict(color="white")),
-                                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                                font=dict(color="white"),
-                                dragmode="drawline",
-                                newshape=dict(line_color="magenta", line_width=3, opacity=1.0),
-                                margin=dict(l=60, r=60, t=60, b=60),
-                                height=800
-                            )
-                            # Ancla física de ejes. Garantiza que la matriz mida proporcionalmente 1:1 en la pantalla
-                            fig.update_xaxes(scaleanchor="y", scaleratio=1, showgrid=True, gridcolor="rgba(255,255,255,0.1)")
-                            fig.update_yaxes(showgrid=True, gridcolor="rgba(255,255,255,0.1)")
-
-                            plot_key = f"plot_2d_{st.session_state.get('plot_2d_key', 0)}"
-                            st.plotly_chart(fig, use_container_width=True, config={
-                                'modeBarButtonsToAdd': ['drawline', 'drawcircle', 'eraseshape'],
-                                'displaylogo': False, 'scrollZoom': True
-                            }, key=plot_key)
-                            col_info, col_btn = st.columns([0.8, 0.2])
-                            with col_info:
-                                st.info("💡 **Gráfico Físico Proporcional:** Para borrar un dibujo puedes usar el botón la Goma (Erase active shape) en el menú del gráfico.")
-                            with col_btn:
-                                if st.button("🧹 Limpiar Dibujos", key="btn_clear_trazos", use_container_width=True):
-                                    st.session_state.plot_2d_key = st.session_state.get('plot_2d_key', 0) + 1
-                                    st.rerun()
-                        except Exception as e:
-                            st.error(f"Error trazando proyecciones cúbicas: {e}")
-
-            # --- GUARDAR MATRIZ 2D EN DRIVE ---
-            st.markdown("---")
-            st.markdown("""
-            <div class="section-card" style="margin-bottom: 20px;">
-                <h3 style="margin-top: 0; color: white;">☁️ PASO 4: GUARDAR MATRIZ EN DRIVE (2D)</h3>
-                <p style="color: #bbb; margin-bottom: 0;">Guarda la matriz de presiones del plano seleccionado en <b>ENSAYO DE ESTELA / 2D</b>.</p>
-            </div>
-            """, unsafe_allow_html=True)
-            if not df_matriz.empty:
-                c_2d_a, c_2d_b = st.columns(2)
-                aoa_2d = c_2d_a.number_input("Ángulo de Ataque [°]:", value=0.0, step=0.5, format="%.1f", key="aoa_2d_paso4")
-                x_2d = c_2d_b.number_input("📍 Posición X (Estación) [mm]:", value=0.0, step=10.0, key="x_2d_paso4")
-
-                _aoa_str_2d = str(int(aoa_2d)) if aoa_2d == int(aoa_2d) else f"{aoa_2d:.1f}"
-                _aoa_str_2d = _aoa_str_2d.replace("-", "neg")
-                nombre_auto_2d = f"2D-X{int(x_2d)}-OAO{_aoa_str_2d}-T{int(tiempo_sel)}s.csv"
-
-                c_2d_chk, c_2d_nom = st.columns([0.15, 0.85])
-                usar_custom_2d = c_2d_chk.checkbox("Nombre libre", key="custom_nom_2d")
-                if usar_custom_2d:
-                    nombre_csv_2d = c_2d_nom.text_input("Nombre personalizado:", placeholder=nombre_auto_2d, key="nombre_2d_custom")
-                    if not nombre_csv_2d:
-                        nombre_csv_2d = nombre_auto_2d
-                else:
-                    nombre_csv_2d = nombre_auto_2d
-                    c_2d_nom.code(nombre_csv_2d)
-
-                csv_bytes_2d = df_matriz.to_csv(sep=';', index=False, decimal=',').encode('utf-8-sig')
-                col_2d_dl, col_2d_drive = st.columns(2)
-                with col_2d_dl:
-                    st.download_button("📥 Descargar Matriz 2D", csv_bytes_2d,
-                                       file_name=nombre_csv_2d, mime="text/csv", key="dl_2d_matriz")
-                with col_2d_drive:
-                    if st.button("☁️ Guardar en Drive (2D)", key="save_2d_drive", use_container_width=True):
-                        if auth.save_csv_2d(st.session_state.username, nombre_csv_2d, csv_bytes_2d):
-                            st.success(f"✅ Subido a Drive → ENSAYO DE ESTELA/2D/{nombre_csv_2d}")
-                        else:
-                            st.error("Error al subir a Drive")
-
-            # --- PASO 5: ANÁLISIS DE PARÁMETROS ATMOSFÉRICOS (INFINITO) ---
-            st.markdown("---")
-            st.markdown("""
-            <div class="section-card" style="margin-bottom: 20px;">
-                <h3 style="margin-top: 0; color: white;">📊 PASO 5: ANÁLISIS DE PARÁMETROS ATMOSFÉRICOS (INFINITO)</h3>
-                <p style="color: #bbb; margin-bottom: 0;">Analice la estabilidad de las variables en el infinito durante todo el ensayo.</p>
-            </div>
-            """, unsafe_allow_html=True)
-
-            # Recolectar datos de infinito de todos los archivos cargados
-            inf_data_list = []
-            for nombre, df in st.session_state.archivos_2d_cargados.items():
-                if 'Timestamp' in df.columns:
-                    inf_cols = ['Timestamp', 'rho_inf', 'V_inf', 'P_inf']
-                    # Filtrar columnas existentes
-                    cols_to_use = [c for c in inf_cols if c in df.columns]
-                    tmp_df = df[cols_to_use].copy()
-                    tmp_df['Archivo_Origen'] = nombre
-                    inf_data_list.append(tmp_df)
-            
-            if not inf_data_list:
-                st.info("No se encontraron datos de parámetros atmosféricos en los archivos cargados.")
-            else:
-                df_inf_global = pd.concat(inf_data_list).drop_duplicates()
-                df_inf_global['dt_val'] = pd.to_datetime(df_inf_global['Timestamp'], format='%y%m%d%H%M%S', errors='coerce')
-                df_inf_global = df_inf_global.dropna(subset=['dt_val']).sort_values('dt_val')
-
-                # Normalizar tiempo a t=0 usando segundos reales
-                min_dt = df_inf_global['dt_val'].min()
-                df_inf_global['Tiempo_Relativo_s'] = (df_inf_global['dt_val'] - min_dt).dt.total_seconds()
-                
-                c_inf_1, c_inf_2 = st.columns([1, 2])
-                with c_inf_1:
-                    var_inf_plot = st.selectbox("Variable Atmosférica:", ["ρ_∞", "V_∞", "P_∞"], key="var_inf_plot")
-                    tipo_inf_plot = st.radio("Tipo de Análisis:", ["Evolución Temporal", "Distribución Normal"], key="tipo_inf_plot")
-                    
-                    # Map variable name
-                    inf_col_map = {"ρ_∞": "rho_inf", "V_∞": "V_inf", "P_∞": "P_inf"}
-                    col_plot = inf_col_map[var_inf_plot]
-                    unit_plot = {"ρ_∞": "[kg/m³]", "V_∞": "[m/s]", "P_∞": "[Pa]"}[var_inf_plot]
-
-                with c_inf_2:
-                    if tipo_inf_plot == "Evolución Temporal":
-                        fig_inf = px.line(df_inf_global, x='Tiempo_Relativo_s', y=col_plot, 
-                                         title=f"Evolución de {var_inf_plot} vs Tiempo",
-                                         labels={'Tiempo_Relativo_s': 'Tiempo [s]', col_plot: f"{var_inf_plot} {unit_plot}"},
-                                         markers=True)
-                        fig_inf.update_traces(line_color='#00d1ff')
-                    else:
-                        fig_inf = px.histogram(df_inf_global, x=col_plot, 
-                                              title=f"Distribución de {var_inf_plot}",
-                                              labels={col_plot: f"{var_inf_plot} {unit_plot}"},
-                                              marginal="box", # o "violin", "rug"
-                                              opacity=0.7)
-                        fig_inf.update_traces(marker_color='#00d1ff')
-
-                    fig_inf.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="white"))
-                    st.plotly_chart(fig_inf, use_container_width=True)
+                fig_inf.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="white"))
+                st.plotly_chart(fig_inf, use_container_width=True)
 
 
 elif st.session_state.seccion_actual == 'analisis_vortices':
