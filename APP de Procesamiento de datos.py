@@ -5,13 +5,13 @@ import numpy as np
 def calcular_variable_atmosferica(df, variable):
     import pandas as pd
     res = df.get('Presion', pd.Series([0]*len(df)))
-    if variable == 'Presion Total [Actual]':
+    if variable == 'Presión Total [Actual]':
         return res
-    elif variable == 'Densidad del aire en el ∞':
+    elif variable == 'ρ en el ∞':
         return df.get('rho_inf', 1.225).fillna(1.225)
-    elif variable == 'Velocidad en el ∞':
+    elif variable == 'V_∞':
         return df.get('V_inf', 0.0).fillna(0.0)
-    elif variable == 'Presion en el ∞':
+    elif variable == 'P_∞':
         return df.get('P_inf', 101325.0).fillna(101325.0)
     return res
 import matplotlib.pyplot as plt
@@ -3008,7 +3008,7 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
                 tiempo_sel = st.selectbox("Seleccionar Tiempo:", sorted(tiempos))
 
                 st.markdown("### 3. Visualización")
-                opciones_var_2d = ["Presion Total [Actual]", "Densidad del aire en el ∞", "Velocidad en el ∞", "Presion en el ∞"]
+                opciones_var_2d = ["Presión Total [Actual]", "ρ en el ∞", "V_∞", "P_∞"]
                 var_2d_sel = st.selectbox("📊 Variable a visualizar:", opciones_var_2d, key="var_2d_sel_ui")
                 
                 plot_type = st.selectbox("Render de Pixeles:", ["Contour Suavizado", "Mapa de Calor (Celdas)"])
@@ -3061,10 +3061,10 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
                         val_plot = df_matriz['Presion'].values
                         eje_label = "mm"
                         z_title = "P [Pa]"
-                        if var_2d_sel == "Densidad del aire en el ∞":
+                        if var_2d_sel == "ρ en el ∞":
                             z_title = "Densidad [kg/m³]"
                             hover_text = "Densidad: %{z:.2f} kg/m³"
-                        elif var_2d_sel == "Velocidad en el ∞":
+                        elif var_2d_sel == "V_∞":
                             z_title = "V [m/s]"
                             hover_text = "Velocidad: %{z:.2f} m/s"
                         else:
@@ -3083,11 +3083,11 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
                             
                             if plot_type == "Contour Suavizado":
                                 dtick_val = None
-                                if "Presion en el ∞" in var_2d_sel: 
+                                if "P_∞" in var_2d_sel: 
                                     dtick_val = 1
-                                elif "Velocidad en el ∞" in var_2d_sel:
+                                elif "V_∞" in var_2d_sel:
                                     dtick_val = 0.1
-                                elif "Densidad del aire en el ∞" in var_2d_sel:
+                                elif "ρ en el ∞" in var_2d_sel:
                                     dtick_val = 0.05
                                 
                                 c_args = dict(showlines=False)
@@ -3257,9 +3257,9 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                 with st.spinner("Cargando matriz 2D y barriendo derivadas..."):
                     s_data = dict_2d_drive[archivo_drive_sel]
                     csv_bytes = auth.download_file_2d(s_data[0])
-                    csv_str = csv_bytes.decode('utf-8') if csv_bytes else ""
+                    csv_str = csv_bytes.decode('utf-8-sig') if csv_bytes else ""
                     import io
-                    df_matriz = pd.read_csv(io.StringIO(csv_str))
+                    df_matriz = pd.read_csv(io.StringIO(csv_str), sep=';', decimal=',')
                     # Check column constraints
                     if 'Y' in df_matriz.columns and 'Z' in df_matriz.columns and 'Presion' in df_matriz.columns:
                         ejecutar = True
@@ -4034,7 +4034,7 @@ elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual 
 
         st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
         
-        opciones_var_3d = ["Presion Total [Actual]", "Densidad del aire en el ∞", "Velocidad en el ∞", "Presion en el ∞"]
+        opciones_var_3d = ["Presión Total [Actual]", "ρ en el ∞", "V_∞", "P_∞"]
         var_3d_sel = st.selectbox("📊 Variable a visualizar:", opciones_var_3d, key="var_3d_sel_ui")
 
         # 🔘 Checkbox para activar/desactivar puntos medidos
@@ -4429,7 +4429,7 @@ elif st.session_state.seccion_actual == 'betz_4d':
         dict_superficies = {f"{s[1]} (X={s[2]}) [{s[3]}]": s for s in mis_superficies}
         
         # Multiselect for surfaces
-        opciones_var_4d = ["Presion Total [Actual]", "Densidad del aire en el ∞", "Velocidad en el ∞", "Presion en el ∞"]
+        opciones_var_4d = ["Presión Total [Actual]", "ρ en el ∞", "V_∞", "P_∞"]
         var_4d_sel = st.selectbox("📊 Variable a visualizar:", opciones_var_4d, key="var_4d_sel_ui")
         
         sel_labels = st.multiselect("Seleccionar Superficies para Análisis:", list(dict_superficies.keys()), key="sel_4d_main")
@@ -4520,7 +4520,12 @@ elif st.session_state.seccion_actual == 'betz_4d':
                             
                     fig_4d.update_layout(
                         title="Escena 4D Integrada",
-                        scene=dict(aspectmode='data', xaxis_title="X (Pos + Presion)", yaxis_title="Y", zaxis_title="Z"),
+                        scene=dict(
+                            aspectmode='data', 
+                            xaxis=dict(title="X (Pos + Presion)", autorange="reversed"), 
+                            yaxis_title="Y", 
+                            zaxis_title="Z"
+                        ),
                         height=800,
                         margin=dict(l=0, r=0, b=0, t=40)
                     )
