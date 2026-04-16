@@ -3443,14 +3443,13 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                                 cs = ax_tmp.contour(Y_grid, Z_grid, V_grid, levels=[target_p])
                                 level_poly, level_area = None, 0.0
                                 
-                                for coln in cs.collections:
-                                    for path in coln.get_paths():
-                                        for poly in path.to_polygons():
-                                            if len(poly) > 4 and Path(poly).contains_point((y_core, z_core)):
-                                                area = 0.5 * np.abs(np.dot(poly[:,0], np.roll(poly[:,1], 1)) - np.dot(poly[:,1], np.roll(poly[:,0], 1)))
-                                                if area > level_area:
-                                                    level_area = area
-                                                    level_poly = poly
+                                for path in cs.get_paths():
+                                    for poly in path.to_polygons():
+                                        if len(poly) > 4 and Path(poly).contains_point((y_core, z_core)):
+                                            area = 0.5 * np.abs(np.dot(poly[:,0], np.roll(poly[:,1], 1)) - np.dot(poly[:,1], np.roll(poly[:,0], 1)))
+                                            if area > level_area:
+                                                level_area = area
+                                                level_poly = poly
                                 
                                 plt.close(fig_tmp)
                                 if level_poly is not None:
