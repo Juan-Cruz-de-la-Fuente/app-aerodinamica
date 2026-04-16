@@ -3406,110 +3406,70 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                     
                     try:
                         from scipy.interpolate import griddata
-                        import scipy.ndimage as ndimage
                         V_grid = griddata((y_plot, z_plot), val_plot, (Y_grid, Z_grid), method='cubic')
                         
-                        neighborhood_size = 7
-                        local_min = ndimage.minimum_filter(V_grid, size=neighborhood_size) == V_grid
-                        valid_mask = ~np.isnan(V_grid)
-                        local_min = local_min & valid_mask
+                        # --- MOTOR DE VÓRTICES ZONAL E ITERATIVO (LÓGICA INTRUSIVA) ---
+                        import scipy.ndimage as ndimage
+                        from matplotlib.path import Path
+                        import matplotlib.pyplot as plt
+
+                        # 1. Definir máscara de búsqueda (zonas con presión significativamente baja)
+                        p_threshold = np.nanmax(V_grid) - (sensibilidad_pa * 0.2)
+                        mascara_vortices = V_grid < p_threshold
+                        mascara_vortices = ndimage.binary_opening(mascara_vortices, structure=np.ones((3,3)))
                         
-                        min_indices = np.where(local_min)
+                        labels, num_features = ndimage.label(mascara_vortices)
                         vortices = []
                         
-                        dy = (y_plot.max() - y_plot.min()) / grid_res
-                        dz = (z_plot.max() - z_plot.min()) / grid_res
-                        
-                        for i in range(len(min_indices[0])):
-                            row = min_indices[0][i]
-                            col = min_indices[1][i]
+                        for i in range(1, num_features + 1):
+                            mask_zona = (labels == i)
+                            if np.sum(mask_zona) < 10: continue 
                             
-                            p_cent = V_grid[row, col]
+                            zona_values = np.where(mask_zona, V_grid, np.nan)
+                            min_idx = np.nanargmin(zona_values)
+                            row, col = np.unravel_index(min_idx, V_grid.shape)
+                            p_core = V_grid[row, col]
+                            y_core, z_core = y_grid_vals[col], z_grid_vals[row]
                             
-                            r_right, p_right = 0, p_cent
-                            for c in range(col+1, len(y_grid_vals)):
-                                if np.isnan(V_grid[row, c]) or V_grid[row, c] < V_grid[row, c-1]: break
-                                r_right = (c - col) * dy
-                                p_right = V_grid[row, c]
-                                
-                            r_left, p_left = 0, p_cent
-                            for c in range(col-1, -1, -1):
-                                if np.isnan(V_grid[row, c]) or V_grid[row, c] < V_grid[row, c+1]: break
-                                r_left = (col - c) * dy
-                                p_left = V_grid[row, c]
-                                
-                            r_up, p_up = 0, p_cent
-                            for r in range(row+1, len(z_grid_vals)):
-                                if np.isnan(V_grid[r, col]) or V_grid[r, col] < V_grid[r-1, col]: break
-                                r_up = (r - row) * dz
-                                p_up = V_grid[r, col]
-                                
-                            r_down, p_down = 0, p_cent
-                            for r in range(row-1, -1, -1):
-                                if np.isnan(V_grid[r, col]) or V_grid[r, col] < V_grid[r+1, col]: break
-                                r_down = (row - r) * dz
-                                p_down = V_grid[r, col]
-                                
-                            delta_min = min(p_right - p_cent, p_left - p_cent, p_up - p_cent, p_down - p_cent)
+                            # --- Expansión Iterativa por Isobandas (Lógica de Gradiente) ---
+                            best_poly = None
+                            best_area = 0.0
                             
-                            if delta_min >= sensibilidad_pa and (r_right > 0 and r_left > 0 and r_up > 0 and r_down > 0):
-                                r_x = (r_right + r_left) / 2.0
-                                r_z = (r_up + r_down) / 2.0
-                                radius = (r_x + r_z) / 2.0
+                            # Definimos niveles de búsqueda incrementales hasta el delta límite
+                            niveles_busqueda = np.linspace(p_core + 2, p_core + sensibilidad_pa, 20)
+                            
+                            for target_p in niveles_busqueda:
+                                fig_tmp, ax_tmp = plt.subplots()
+                                cs = ax_tmp.contour(Y_grid, Z_grid, V_grid, levels=[target_p])
+                                level_poly, level_area = None, 0.0
                                 
-                                # Validate asymmetry isn't too huge to avoid walls pseudo-vortices
-                                if (max(r_right, r_left) / max(min(r_right, r_left), 0.001) < 4.0 and
-                                    max(r_up, r_down) / max(min(r_up, r_down), 0.001) < 4.0):
-                                    
-                                    # Algoritmo de isobandas con Shoelace para Area y Radio Real
-                                    target_p = p_cent + sensibilidad_pa
-                                    best_area = 0.0
-                                    best_poly = None
-                                    try:
-                                        import matplotlib.pyplot as plt
-                                        from matplotlib.path import Path
-                                        fig_tmp, ax_tmp = plt.subplots()
-                                        cs = ax_tmp.contour(Y_grid, Z_grid, V_grid, levels=[target_p])
-                                        
-                                        y_c, z_c = y_grid_vals[col], z_grid_vals[row]
-                                        for coln in cs.collections:
-                                            for path in coln.get_paths():
-                                                poly = path.vertices
-                                                if len(poly) > 2 and Path(poly).contains_point((y_c, z_c)):
-                                                    # Teorema de Shoelace / Stokes
-                                                    x_v = poly[:, 0]
-                                                    y_v = poly[:, 1]
-                                                    area = 0.5 * np.abs(np.dot(x_v, np.roll(y_v, 1)) - np.dot(y_v, np.roll(x_v, 1)))
-                                                    if area > best_area:
-                                                        best_area = area
-                                                        best_poly = poly.tolist()  # guardar polígono real
-                                        plt.close(fig_tmp)
-                                    except Exception:
-                                        pass
-                                    
-                                    if best_area > 0:
-                                        area_final = best_area
-                                        radius = np.sqrt(best_area / np.pi)
-                                    else:
-                                        # Fallback Rombo (Shoelace básico)
-                                        pts_y = [y_grid_vals[col]+r_right, y_grid_vals[col], y_grid_vals[col]-r_left, y_grid_vals[col]]
-                                        pts_z = [z_grid_vals[row], z_grid_vals[row]+r_up, z_grid_vals[row], z_grid_vals[row]-r_down]
-                                        area_final = 0.5 * np.abs(np.dot(pts_y, np.roll(pts_z, 1)) - np.dot(pts_z, np.roll(pts_y, 1)))
-                                        radius = np.sqrt(area_final / np.pi)
-                                        
-                                    vortices.append({
-                                        'y': y_grid_vals[col],
-                                        'z': z_grid_vals[row],
-                                        'p_min': p_cent,
-                                        'r_x': r_x,
-                                        'r_z': r_z,
-                                        'area': area_final,
-                                        'diametro': radius * 2,
-                                        'r_prom': radius,
-                                        'poly_pts': best_poly  # polígono irregular para dibujar
-                                    })
-                        
-                        st.markdown("### 📊 Resultado Gráfico")
+                                for coln in cs.collections:
+                                    for path in coln.get_paths():
+                                        for poly in path.to_polygons():
+                                            if len(poly) > 4 and Path(poly).contains_point((y_core, z_core)):
+                                                area = 0.5 * np.abs(np.dot(poly[:,0], np.roll(poly[:,1], 1)) - np.dot(poly[:,1], np.roll(poly[:,0], 1)))
+                                                if area > level_area:
+                                                    level_area = area
+                                                    level_poly = poly
+                                
+                                plt.close(fig_tmp)
+                                if level_poly is not None:
+                                    # Lógica de "pasarse": Si el área explota o ya no hay gradiente claro
+                                    if best_poly is not None and level_area > best_area * 1.7: break
+                                    best_poly, best_area = level_poly, level_area
+                                else: break
+                            
+                            if best_poly is not None:
+                                vortices.append({
+                                    'id': f"V{len(vortices)+1}",
+                                    'y': y_core, 'z': z_core,
+                                    'p_min': p_core,
+                                    'area': best_area,
+                                    'poly_pts': best_poly.tolist()
+                                })
+
+                        # --- RENDERIZADO FINAL ---
+                        st.markdown(f"### 📊 Resultado Gráfico - Detección Zonal ({len(vortices)} vórtices)")
                         fig = go.Figure()
                         fig.add_trace(go.Contour(
                             x=y_grid_vals, y=z_grid_vals, z=V_grid,
@@ -3518,105 +3478,71 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                             hovertemplate="Y: %{x:.2f}<br>Z: %{y:.2f}<br>P: %{z:.2f}<extra></extra>"
                         ))
                         
-                        for idx, v in enumerate(vortices):
-                            # Dibujar el contorno real (polígono irregular de isobanda)
-                            poly_pts = v.get('poly_pts')
-                            if poly_pts is not None and len(poly_pts) > 2:
-                                # Cerrar el polígono para el trazado
-                                py_pts = [p[0] for p in poly_pts] + [poly_pts[0][0]]
-                                pz_pts = [p[1] for p in poly_pts] + [poly_pts[0][1]]
-                                
-                                # Trazar la frontera irregular (lo que el usuario espera en Negro)
-                                fig.add_trace(go.Scatter(
-                                    x=py_pts, y=pz_pts,
-                                    mode="lines",
-                                    fill="toself",
-                                    fillcolor="rgba(0, 255, 255, 0.15)", # Sutil relleno cian para resaltar el área
-                                    line=dict(color="black", width=3, dash="solid"),
-                                    name=f"Frontera Vórtice {idx+1}",
-                                    hovertemplate=f"Vórtice {idx+1}<br>Frontera Detectada<extra></extra>"
-                                ))
-                                
-                                # Marcar el núcleo con una cruz blanca
-                                fig.add_trace(go.Scatter(
-                                    x=[v['y']], y=[v['z']],
-                                    mode="markers",
-                                    marker=dict(symbol="x", color="white", size=10, line=dict(width=1)),
-                                    name=f"Núcleo V{idx+1}",
-                                    hovertemplate=f"Centro V{idx+1}<br>P_min: %{{data.p_min:.2f}} Pa<extra></extra>".replace("%{data.p_min:.2f}", f"{v['p_min']:.2f}")
-                                ))
-                            else:
-                                # Caso de respaldo: Elipse si no se pudo extraer el polígono cerrado
-                                fig.add_shape(type="circle",
-                                    xref="x", yref="y",
-                                    x0=v['y'] - v['r_x'], y0=v['z'] - v['r_z'],
-                                    x1=v['y'] + v['r_x'], y1=v['z'] + v['r_z'],
-                                    line_color="magenta", line_width=2, fillcolor="rgba(255,0,255,0.1)"
-                                )
-                                fig.add_trace(go.Scatter(
-                                    x=[v['y']], y=[v['z']],
-                                    mode="markers",
-                                    marker=dict(symbol="circle", color="magenta", size=8),
-                                    name=f"Vórtice {idx+1} (Aprox.)"
-                                ))
-                                
+                        for v in vortices:
+                            poly_pts = v['poly_pts']
+                            py_pts = [p[0] for p in poly_pts] + [poly_pts[0][0]]
+                            pz_pts = [p[1] for p in poly_pts] + [poly_pts[0][1]]
+                            
+                            # Dibujar contorno real en NEGRO (exactitud extrema)
                             fig.add_trace(go.Scatter(
-                                x=[v['y']], y=[v['z']],
-                                mode="markers+text",
-                                marker=dict(color="white", size=10, symbol="cross"),
-                                text=[f" V{idx+1}"],
-                                textposition="top right",
-                                textfont=dict(color="white", size=14, family="Orbitron"),
-                                hovertemplate=f"Vórtice {idx+1}<br>Y: %{{x:.2f}}<br>Z: %{{y:.2f}}<extra></extra>",
-                                showlegend=False
+                                x=py_pts, y=pz_pts, mode="lines", fill="toself",
+                                fillcolor="rgba(255, 255, 255, 0.15)",
+                                line=dict(color="black", width=4),
+                                name=f"Frontera {v['id']}",
+                                hovertemplate=f"{v['id']}<br>Área: {v['area']:.1f} mm²<extra></extra>"
                             ))
-                            
+                            # Núcleo con Cruz Blanca
+                            fig.add_trace(go.Scatter(
+                                x=[v['y']], y=[v['z']], mode="markers",
+                                marker=dict(symbol="x", color="white", size=12),
+                                name=f"Núcleo {v['id']}",
+                                hovertemplate=f"Centro {v['id']}<br>Pmin: {v['p_min']:.2f} Pa<extra></extra>"
+                            ))
+
                         fig.update_layout(
+                            xaxis_title="Coordenada Y [mm]", yaxis_title="Coordenada Z [mm]",
                             paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                            font=dict(color="white"),
-                            xaxis_title="Envergadura (Y) [mm]",
-                            yaxis_title="Altura (Z) [mm]",
-                            margin=dict(l=60, r=60, t=60, b=60),
-                            height=800
+                            font=dict(color="white"), height=800
                         )
-                        fig.update_xaxes(scaleanchor="y", scaleratio=1, showgrid=True, gridcolor="rgba(255,255,255,0.1)")
-                        fig.update_yaxes(showgrid=True, gridcolor="rgba(255,255,255,0.1)")
+                        fig.update_xaxes(scaleanchor="y", scaleratio=1)
                         st.plotly_chart(fig, use_container_width=True)
-                        
-                        st.markdown("### 📋 Cuadro de Vórtices Detectados")
-                        if len(vortices) == 0:
-                            st.warning("No se detectó ningún pozo de presión radial cerrado bajo estas tolerancias.")
-                        else:
-                            st.success(f"¡Se validaron matemáticamente {len(vortices)} vórtices independientes!")
-                            
+
+                        if vortices:
+                            st.markdown("### 📋 Cuadro de Vórtices Detectados")
                             df_v = pd.DataFrame(vortices)
-                            df_v.index = [f"V{i+1}" for i in range(len(vortices))]
-                            
                             df_res = pd.DataFrame({
+                                "Identificador": df_v['id'],
                                 "Centro Y [mm]": df_v['y'].round(2),
                                 "Centro Z [mm]": df_v['z'].round(2),
-                                "Presión Núcleo Mínima [Pa]": df_v['p_min'].round(2),
-                                "Área Calculada [mm²]": df_v['area'].round(2),
+                                "Presión Núcleo [Pa]": df_v['p_min'].round(2),
+                                "Área Real [mm²]": df_v['area'].round(2),
+                                "Radio Equiv. [mm]": np.sqrt(df_v['area'] / np.pi).round(2)
                             })
-                            if "Círculos" in forma_aprox:
-                                df_res["Radio Equiv [mm]"] = df_v['r_prom'].round(2)
-                                df_res["Diámetro Equiv [mm]"] = df_v['diametro'].round(2)
-                            else:
-                                df_res["Semieje Y [mm]"] = df_v['r_x'].round(2)
-                                df_res["Semieje Z [mm]"] = df_v['r_z'].round(2)
-                                
-                            st.dataframe(df_res, use_container_width=True)
+                            st.dataframe(df_res, use_container_width=True, hide_index=True)
                             
+                            # --- Cálculo de Circulación Γ ---
+                            st.markdown("### 🌀 Estimación de Circulación ($\Gamma$)")
+                            # Recuperar parámetros atmosféricos (usar promedio de df_inf_global si existe)
+                            v_inf_v = df_inf_global['V_∞'].mean() if 'df_inf_global' in locals() else 30.0
+                            rho_inf_v = df_inf_global['ρ_∞'].mean() if 'df_inf_global' in locals() else 1.2
+                            st.info(f"Parámetros atmosféricos promedio: $\\rho_\\infty$ = {rho_inf_v:.2f} kg/m³ | $V_\\infty$ = {v_inf_v:.2f} m/s")
+                            
+                            # Γ ≈ sqrt(2 * |dP_max| / ρ) * R_equiv
+                            df_res['Γ [m²/s]'] = (np.sqrt(2 * np.abs(df_res['Presión Núcleo [Pa]']) / rho_inf_v) * (df_res['Radio Equiv. [mm]'] / 1000)).round(3)
+                            st.table(df_res[['Identificador', 'Γ [m²/s]']])
+
                             if len(vortices) > 1:
-                                st.markdown("#### 📏 Geometría Inter-Centros (Distancias Reales)")
+                                st.markdown("#### 📏 Geometría Inter-Centros")
                                 pairs = []
                                 for i in range(len(vortices)):
                                     for j in range(i+1, len(vortices)):
                                         dy = vortices[i]['y'] - vortices[j]['y']
                                         dz = vortices[i]['z'] - vortices[j]['z']
                                         dist = np.sqrt(dy**2 + dz**2)
-                                        pairs.append({"Enlace": f"V{i+1} ↔ V{j+1}", "Distancia Euclídea [mm]": round(dist, 2)})
+                                        pairs.append({"Enlace": f"V{i+1} ↔ V{j+1}", "Distancia [mm]": round(dist, 2)})
                                 st.table(pd.DataFrame(pairs))
+                        else:
+                            st.warning("No se detectaron zonas cerradas con la sensibilidad ΔP actual.")
                                 
                     except Exception as e:
                         st.error(f"Error procesando la topología de vórtices: {e}")
