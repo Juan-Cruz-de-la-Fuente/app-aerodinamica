@@ -3226,7 +3226,8 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
     with c_param1:
         sensibilidad_pa = st.number_input("Caída de p Mínima [Pa] (Sensibilidad central)", min_value=1.0, max_value=500.0, value=15.0, step=1.0, help="Diferencia de presión mínima que debe existir desde el núcleo hacia los 4 ejes para validarlo como vórtice cerrado real.")
     with c_param2:
-        forma_aprox = st.radio("Visualización de Núcleo", ["Polígonos Reales (Isobanda)", "Círculos Equivalentes (Área)", "Elipses Analíticas (Ajuste)"])
+        st.info("✔️ Visualización de Frontera Exacta")
+        forma_aprox = "Polígonos Reales (Isobanda)"
     with c_param3:
         grid_res = st.slider("Resolución Grilla (Calidad)", min_value=50, max_value=300, value=150, step=10, help="Cantidad de puntos interpolados. Mayor resolución mejora precisión pero puede ser más lento.")
     
@@ -3248,7 +3249,6 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
             df_selected = st.session_state.archivos_2d_cargados[archivo_sel]
             tiempos = df_selected['Tiempo_s'].dropna().unique()
             tiempo_sel = st.selectbox("Seleccionar Tiempo Relativo:", sorted(tiempos))
-            var_sel_vort = st.selectbox("Variable a procesar:", ["Presión Total [Actual]", "ρ_∞", "V_∞", "P_∞"])
 
             if st.button("🔎 INICIAR BARRIDO NUMÉRICO", use_container_width=True, type="primary"):
                 with st.spinner("Ensamblando plano YZ y barriendo derivadas espaciales..."):
@@ -3270,8 +3270,6 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                                 )
                                 results_2d.append({'Y': y_trav, 'Z': z_real, 'Presion': val_presion})
                     df_matriz = pd.DataFrame(results_2d)
-                    if not df_matriz.empty:
-                        df_matriz['Presion'] = calcular_variable_atmosferica(df_matriz, var_sel_vort)
                     ejecutar = True
 
     elif fuente_vortices == "☁️ Cargar Matriz 2D desde Drive":
@@ -3439,9 +3437,8 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                                 fig.add_trace(go.Scatter(
                                     x=py_pts, y=pz_pts,
                                     mode="lines",
-                                    fill="toself",
-                                    fillcolor="rgba(255,0,255,0.25)",
-                                    line=dict(color=color_vortex, width=3),
+                                    fill="none",
+                                    line=dict(color="black", width=2),
                                     showlegend=False,
                                     name=f"Vórtice {idx+1}",
                                     hoverinfo="skip"
