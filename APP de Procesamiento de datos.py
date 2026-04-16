@@ -7,7 +7,7 @@ def calcular_variable_atmosferica(df, variable):
     res = df.get('Presion', pd.Series([0]*len(df)))
     if variable == 'Presión Total [Actual]':
         return res
-    elif variable == 'ρ en el ∞':
+    elif variable == 'ρ_∞':
         return df.get('rho_inf', 1.225).fillna(1.225)
     elif variable == 'V_∞':
         return df.get('V_inf', 0.0).fillna(0.0)
@@ -2975,17 +2975,24 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
                             st.session_state.archivos_2d_cargados[nombre_archivo] = datos_procesados
                             st.success(f"✅ Archivo extraído correctamente: {nombre_archivo}")
                             
+        _archivos_mem_2d = st.session_state.archivos_2d_cargados
+        try:
+            _archivos_drv_2d = auth.get_user_files_2d(st.session_state.username)
+        except:
+            _archivos_drv_2d = []
+
         # Mostrar resumen interactivo de archivos con Progress list (como en 3D)
-        if st.session_state.archivos_2d_cargados:
+        if _archivos_mem_2d:
             st.markdown("### 📋 Archivos en Memoria")
             cols = st.columns(3)
-            for idx, (nombre, datos) in enumerate(st.session_state.archivos_2d_cargados.items()):
+            for idx, (nombre, datos) in enumerate(_archivos_mem_2d.items()):
                 with cols[idx % 3]:
                     with st.container(border=True):
                         st.markdown(f"**📦 {nombre}**")
                         st.caption(f"{len(datos)} Puntos medidos • {len(datos['Tiempo_s'].unique())} Tiempos discretos")
                         st.progress(100)
 
+        if _archivos_mem_2d or _archivos_drv_2d:
             # --- PASO 3: VISUALIZADOR INTERACTIVO ---
             st.markdown("---")
             st.markdown("""
@@ -3001,14 +3008,28 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
                 cuerda_mm = st.number_input("Cuerda Referencia [mm]", value=300.0, step=1.0)
                 
                 st.markdown("### 2. Selección de Plano")
-                archivo_sel = st.selectbox("Seleccionar Archivo (X):", list(st.session_state.archivos_2d_cargados.keys()))
+                fuente_plot_2d = st.radio("Fuente de matriz:", ["Archivos Crudos (Memoria)", "Matriz Guardada (Drive)"])
                 
-                df_selected = st.session_state.archivos_2d_cargados[archivo_sel]
-                tiempos = df_selected['Tiempo_s'].dropna().unique()
-                tiempo_sel = st.selectbox("Seleccionar Tiempo:", sorted(tiempos))
+                ejecutar_viz_2d = False
+                if fuente_plot_2d == "Archivos Crudos (Memoria)":
+                    if not _archivos_mem_2d:
+                        st.warning("⚠️ No hay archivos procesados en memoria.")
+                    else:
+                        archivo_sel = st.selectbox("Seleccionar Archivo (X):", list(_archivos_mem_2d.keys()))
+                        df_selected = _archivos_mem_2d[archivo_sel]
+                        tiempos = df_selected['Tiempo_s'].dropna().unique()
+                        tiempo_sel = st.selectbox("Seleccionar Tiempo:", sorted(tiempos))
+                        ejecutar_viz_2d = True
+                else:
+                    if not _archivos_drv_2d:
+                        st.warning("⚠️ No hay matrices 2D en tu Drive.")
+                    else:
+                        dict_drv_2d = {f"{a[1]} [{a[2][:10] if a[2] else ''}]": a for a in _archivos_drv_2d}
+                        archivo_drv_sel = st.selectbox("Seleccionar Matriz Drive:", list(dict_drv_2d.keys()))
+                        ejecutar_viz_2d = True
 
                 st.markdown("### 3. Visualización")
-                opciones_var_2d = ["Presión Total [Actual]", "ρ en el ∞", "V_∞", "P_∞"]
+                opciones_var_2d = ["Presión Total [Actual]", "ρ_∞", "V_∞", "P_∞"]
                 var_2d_sel = st.selectbox("📊 Variable a visualizar:", opciones_var_2d, key="var_2d_sel_ui")
                 
                 plot_type = st.selectbox("Render de Pixeles:", ["Contour Suavizado", "Mapa de Calor (Celdas)"])
@@ -3021,35 +3042,45 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
                     st.success(f"**Longitud Equiv:** {(long_leida / cuerda_mm):.3f} c")
 
             with c_plot:
-                with st.spinner("Ensamblando proyección de contornos 2D..."):
-                    df_run = df_selected[df_selected['Tiempo_s'] == tiempo_sel].copy()
-                    
-                    results_2d = []
-                    # Ensamblar la Matriz 2D extrayendo las posiciones absolutas
-                    for _, row in df_run.iterrows():
-                        y_trav = row.get('Pos_Y_Traverser')
-                        z_base = row.get('Pos_Z_Base')
-                        for col in df_run.columns:
-                            num_sensor = obtener_numero_sensor_desde_columna(col)
-                            if num_sensor is not None:
-                                val_presion = row[col]
-                                if pd.isna(val_presion): continue
-                                z_real = calcular_altura_absoluta_z(
-                                    num_sensor, z_base, 
-                                    st.session_state.configuracion_2d.get('distancia_toma_12', -120),
-                                    st.session_state.configuracion_2d.get('distancia_entre_tomas', 10.0),
-                                    12, st.session_state.configuracion_2d.get('orden', 'asc')
-                                )
-                                results_2d.append({
-                                    'Y': y_trav, 
-                                    'Z': z_real, 
-                                    'Presion': val_presion,
-                                    'rho_inf': row.get('rho_inf', 1.225),
-                                    'V_inf': row.get('V_inf', 0.0),
-                                    'P_inf': row.get('P_inf', 101325.0)
-                                })
-                                
-                    df_matriz = pd.DataFrame(results_2d)
+                if ejecutar_viz_2d:
+                    with st.spinner("Ensamblando proyección de contornos 2D..."):
+                        if fuente_plot_2d == "Archivos Crudos (Memoria)":
+                            df_run = df_selected[df_selected['Tiempo_s'] == tiempo_sel].copy()
+                            
+                            results_2d = []
+                            # Ensamblar la Matriz 2D extrayendo las posiciones absolutas
+                            for _, row in df_run.iterrows():
+                                y_trav = row.get('Pos_Y_Traverser')
+                                z_base = row.get('Pos_Z_Base')
+                                for col in df_run.columns:
+                                    num_sensor = obtener_numero_sensor_desde_columna(col)
+                                    if num_sensor is not None:
+                                        val_presion = row[col]
+                                        if pd.isna(val_presion): continue
+                                        z_real = calcular_altura_absoluta_z(
+                                            num_sensor, z_base, 
+                                            st.session_state.configuracion_2d.get('distancia_toma_12', -120),
+                                            st.session_state.configuracion_2d.get('distancia_entre_tomas', 10.0),
+                                            12, st.session_state.configuracion_2d.get('orden', 'asc')
+                                        )
+                                        results_2d.append({
+                                            'Y': y_trav, 
+                                            'Z': z_real, 
+                                            'Presion': val_presion,
+                                            'rho_inf': row.get('rho_inf', 1.225),
+                                            'V_inf': row.get('V_inf', 0.0),
+                                            'P_inf': row.get('P_inf', 101325.0)
+                                        })
+                                        
+                            df_matriz = pd.DataFrame(results_2d)
+                        else:
+                            s_data = dict_drv_2d[archivo_drv_sel]
+                            csv_bytes = auth.download_file_2d(s_data[0])
+                            csv_str = csv_bytes.decode('utf-8-sig') if csv_bytes else ""
+                            import io
+                            df_matriz = pd.read_csv(io.StringIO(csv_str), sep=';', decimal=',')
+                            if 'Y' not in df_matriz.columns or 'Z' not in df_matriz.columns or 'Presion' not in df_matriz.columns:
+                                df_matriz = pd.read_csv(io.StringIO(csv_str), sep=',', decimal='.')
                     if not df_matriz.empty:
                         df_matriz['Presion'] = calcular_variable_atmosferica(df_matriz, var_2d_sel)
                     
@@ -3061,7 +3092,7 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
                         val_plot = df_matriz['Presion'].values
                         eje_label = "mm"
                         z_title = "P [Pa]"
-                        if var_2d_sel == "ρ en el ∞":
+                        if var_2d_sel == "ρ_∞":
                             z_title = "Densidad [kg/m³]"
                             hover_text = "Densidad: %{z:.2f} kg/m³"
                         elif var_2d_sel == "V_∞":
@@ -3087,7 +3118,7 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
                                     dtick_val = 1
                                 elif "V_∞" in var_2d_sel:
                                     dtick_val = 0.1
-                                elif "ρ en el ∞" in var_2d_sel:
+                                elif "ρ_∞" in var_2d_sel:
                                     dtick_val = 0.05
                                 
                                 c_args = dict(showlines=False)
@@ -3217,6 +3248,7 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
             df_selected = st.session_state.archivos_2d_cargados[archivo_sel]
             tiempos = df_selected['Tiempo_s'].dropna().unique()
             tiempo_sel = st.selectbox("Seleccionar Tiempo Relativo:", sorted(tiempos))
+            var_sel_vort = st.selectbox("Variable a procesar:", ["Presión Total [Actual]", "ρ_∞", "V_∞", "P_∞"])
 
             if st.button("🔎 INICIAR BARRIDO NUMÉRICO", use_container_width=True, type="primary"):
                 with st.spinner("Ensamblando plano YZ y barriendo derivadas espaciales..."):
@@ -3238,6 +3270,8 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                                 )
                                 results_2d.append({'Y': y_trav, 'Z': z_real, 'Presion': val_presion})
                     df_matriz = pd.DataFrame(results_2d)
+                    if not df_matriz.empty:
+                        df_matriz['Presion'] = calcular_variable_atmosferica(df_matriz, var_sel_vort)
                     ejecutar = True
 
     elif fuente_vortices == "☁️ Cargar Matriz 2D desde Drive":
@@ -3260,6 +3294,9 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                     csv_str = csv_bytes.decode('utf-8-sig') if csv_bytes else ""
                     import io
                     df_matriz = pd.read_csv(io.StringIO(csv_str), sep=';', decimal=',')
+                    if 'Y' not in df_matriz.columns or 'Z' not in df_matriz.columns or 'Presion' not in df_matriz.columns:
+                        df_matriz = pd.read_csv(io.StringIO(csv_str), sep=',', decimal='.')
+                    
                     # Check column constraints
                     if 'Y' in df_matriz.columns and 'Z' in df_matriz.columns and 'Presion' in df_matriz.columns:
                         ejecutar = True
@@ -4034,7 +4071,7 @@ elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual 
 
         st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
         
-        opciones_var_3d = ["Presión Total [Actual]", "ρ en el ∞", "V_∞", "P_∞"]
+        opciones_var_3d = ["Presión Total [Actual]", "ρ_∞", "V_∞", "P_∞"]
         var_3d_sel = st.selectbox("📊 Variable a visualizar:", opciones_var_3d, key="var_3d_sel_ui")
 
         # 🔘 Checkbox para activar/desactivar puntos medidos
@@ -4429,7 +4466,7 @@ elif st.session_state.seccion_actual == 'betz_4d':
         dict_superficies = {f"{s[1]} (X={s[2]}) [{s[3]}]": s for s in mis_superficies}
         
         # Multiselect for surfaces
-        opciones_var_4d = ["Presión Total [Actual]", "ρ en el ∞", "V_∞", "P_∞"]
+        opciones_var_4d = ["Presión Total [Actual]", "ρ_∞", "V_∞", "P_∞"]
         var_4d_sel = st.selectbox("📊 Variable a visualizar:", opciones_var_4d, key="var_4d_sel_ui")
         
         sel_labels = st.multiselect("Seleccionar Superficies para Análisis:", list(dict_superficies.keys()), key="sel_4d_main")
@@ -4500,7 +4537,7 @@ elif st.session_state.seccion_actual == 'betz_4d':
                             tri = Delaunay(df_clean[['Y', 'Z']].values)
                             
                             p_ref = df_clean['Presion'].max()
-                            x_def = x_base + ((df_clean['Presion'] - p_ref) * pressure_scale)
+                            x_def = x_base - ((df_clean['Presion'] - p_ref) * pressure_scale)
                             
                             fig_4d.add_trace(go.Mesh3d(
                                 x=x_def, y=df_clean['Y'], z=df_clean['Z'],
