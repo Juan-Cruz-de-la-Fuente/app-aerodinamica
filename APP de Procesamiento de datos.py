@@ -13,6 +13,8 @@ def calcular_variable_atmosferica(df, variable):
         return df.get('V_inf', 0.0).fillna(0.0)
     elif variable == 'P_∞':
         return df.get('P_inf', 101325.0).fillna(101325.0)
+    elif variable == 'T_∞':
+        return df.get('T_inf', 15.0).fillna(15.0)
     return res
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
@@ -809,14 +811,15 @@ def procesar_promedios(archivo_csv, orden="asc", archivo_infinito=None):
                                 P_d = P_hpa - P_v
                                 rho = (P_d * 100) / (287.058 * T_kelvin) + (P_v * 100) / (461.495 * T_kelvin)
                                 v_inf = float(str(row.get("velocidad", "0.0")).replace(",", "."))
-                                return rho, v_inf, P_pa
+                                return rho, v_inf, P_pa, T
                             except:
-                                return 1.225, 0.0, 101325.0
+                                return 1.225, 0.0, 101325.0, 15.0
 
                         recs = df_resultado["Timestamp"].apply(get_inf_values)
                         df_resultado["rho_inf"] = [r[0] for r in recs]
                         df_resultado["V_inf"] = [r[1] for r in recs]
                         df_resultado["P_inf"] = [r[2] for r in recs]
+                        df_resultado["T_inf"] = [r[3] for r in recs]
                 except Exception as e:
                     print("Error leyendo infinito:", e)
         else:
@@ -2323,60 +2326,62 @@ elif st.session_state.seccion_actual == 'betz_2d':
         st.session_state.uploaded_files_betz2d = []
 
     # Paso 1: Configuración inicial
-    st.markdown("## ⚙️ Paso 1: Configuración Inicial")
-
-    # --- PASO 1: CONFIGURACIÓN ---
-    st.markdown("""
-    <div class="section-card" style="margin-bottom: 20px;">
-        <h3 style="margin-top: 0; color: white;">📍 PASO 1: CONFIGURACIÓN DE GEOMETRÍA</h3>
-        <p style="color: #bbb; margin-bottom: 20px;">Defina los parámetros físicos del peine de sensores y el traverser.</p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    col_config, col_ref = st.columns([2, 1])
-    
-    with col_config:
-        st.markdown("<div style='padding: 1rem; border: 1px solid #333; border-radius: 8px; background-color: #000;'>", unsafe_allow_html=True)
-        orden_sensores = st.selectbox(
-            "Orden de lectura de sensores",
-            ["asc", "des"],
-            format_func=lambda x: "Ascendente (Sensor 1 → 12)" if x == "asc" else "Descendente (Sensor 12 → 1)",
-            help="Ascendente: Sensor 1 abajo, 12 arriba. Descendente: Sensor 12 abajo, 1 arriba."
-        )
-
-        sensor_referencia = st.selectbox(
-            "Sensor de referencia (Toma 12)",
-            [f"Sensor {i}" for i in range(1, 37)],
-            index=11,
-            help="Sensor físico conectado a la toma número 12."
-        )
-
-        c1, c2 = st.columns(2)
-        with c1:
-            distancia_toma_12 = st.number_input(
-                "Distancia Toma 12 [mm]",
-                value=-120.0, step=1.0, format="%.1f",
-                help="Posición relativa al cero del traverser."
-            )
-        with c2:
-            distancia_entre_tomas = st.number_input(
-                "Sep. entre tomas [mm]",
-                value=10.91, step=0.01, format="%.2f",
-                help="Distancia física entre centros de tomas."
+    with st.expander("💾 PASO 1: Configuración de Geometría y Sensores", expanded=True):
+        st.markdown("""
+        <div class="section-card" style="margin-bottom: 12px;">
+            <h3 style="margin-top:0; color:white;">💾 PASO 1: CONFIGURACIÓN INICIAL</h3>
+            <p style="color:#bbb; margin-bottom:0;">
+                Defina los parámetros físicos del peine de sensores y el sistema de adquisición para el entorno 1D.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        col_config, col_ref = st.columns([2, 1])
+        
+        with col_config:
+            st.markdown("<div style='padding: 1rem; border: 1px solid #333; border-radius: 8px; background-color: #000;'>", unsafe_allow_html=True)
+            orden_sensores = st.selectbox(
+                "Orden de lectura de sensores",
+                ["asc", "des"],
+                format_func=lambda x: "Ascendente (Sensor 1 → 12)" if x == "asc" else "Descendente (Sensor 12 → 1)",
+                help="Ascendente: Sensor 1 abajo, 12 arriba. Descendente: Sensor 12 abajo, 1 arriba.",
+                key="orden_1d_std"
             )
 
-        if st.button("💾 CONFIRMAR CONFIGURACIÓN", type="primary", use_container_width=True):
-            st.session_state.configuracion_inicial = {
-                'orden': orden_sensores,
-                'sensor_referencia': sensor_referencia,
-                'distancia_toma_12': distancia_toma_12,
-                'distancia_entre_tomas': distancia_entre_tomas
-            }
-            st.success("Configuración aplicada.")
-            st.rerun()
-        st.markdown("</div>", unsafe_allow_html=True)
+            sensor_referencia = st.selectbox(
+                "Sensor de referencia (Toma 12)",
+                [f"Sensor {i}" for i in range(1, 37)],
+                index=11,
+                help="Sensor físico conectado a la toma número 12.",
+                key="sensor_ref_1d_std"
+            )
 
-    with col_ref:
+            c1, c2 = st.columns(2)
+            with c1:
+                distancia_toma_12 = st.number_input(
+                    "Distancia Toma 12 [mm]",
+                    value=-120.0, step=1.0, format="%.1f",
+                    help="Posición relativa al cero del traverser.",
+                    key="dist_12_1d_std"
+                )
+            with c2:
+                distancia_entre_tomas = st.number_input(
+                    "Sep. entre tomas [mm]",
+                    value=10.91, step=0.01, format="%.2f",
+                    help="Distancia física entre centros de tomas.",
+                    key="dist_entre_1d_std"
+                )
+
+            if st.button("💾 CONFIRMAR CONFIGURACIÓN", type="primary", use_container_width=True, key="btn_conf_1d_std"):
+                st.session_state.configuracion_inicial = {
+                    'orden': orden_sensores,
+                    'sensor_referencia': sensor_referencia,
+                    'distancia_toma_12': distancia_toma_12,
+                    'distancia_entre_tomas': distancia_entre_tomas
+                }
+                st.success("✅ Configuración 1D guardada.")
+                st.rerun()
+            st.markdown("</div>", unsafe_allow_html=True)
         st.markdown("""
         <div style="background: #111; border: 1px dashed #444; border-radius: 8px; padding: 1rem; text-align: center; height: 100%;">
             <p style="color: #888; font-size: 0.8rem; margin-bottom: 10px;">REFERENCIA TÉCNICA</p>
@@ -2912,40 +2917,49 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
     """, unsafe_allow_html=True)
 
     # --- PASO 1: CONFIGURACIÓN INICIAL ---
-    st.markdown("## ⚙️ Paso 1: Configuración Inicial")
-    col_config, col_ref = st.columns([2, 1])
-    
-    with col_config:
-        st.markdown("<div style='padding: 1rem; border: 1px solid #333; border-radius: 8px; background-color: #000;'>", unsafe_allow_html=True)
-        orden_sensores = st.selectbox(
-            "Orden de lectura de sensores",
-            ["asc", "des"],
-            format_func=lambda x: "Ascendente (Sensor 1 → 12)" if x == "asc" else "Descendente (Sensor 12 → 1)",
-            key="orden_2d"
-        )
+    with st.expander("💾 PASO 1: Configuración de Geometría y Sensores", expanded=True):
+        st.markdown("""
+        <div class="section-card" style="margin-bottom: 12px;">
+            <h3 style="margin-top:0; color:white;">💾 PASO 1: CONFIGURACIÓN INICIAL</h3>
+            <p style="color:#bbb; margin-bottom:0;">
+                Defina los parámetros físicos del peine de sensores y el sistema de adquisición para el entorno 2D.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        col_config, col_ref = st.columns([2, 1])
+        
+        with col_config:
+            st.markdown("<div style='padding: 1rem; border: 1px solid #333; border-radius: 8px; background-color: #000;'>", unsafe_allow_html=True)
+            orden_sensores = st.selectbox(
+                "Orden de lectura de sensores",
+                ["asc", "des"],
+                format_func=lambda x: "Ascendente (Sensor 1 → 12)" if x == "asc" else "Descendente (Sensor 12 → 1)",
+                key="orden_2d"
+            )
 
-        sensor_referencia = st.selectbox(
-            "Sensor de referencia (Toma 12)",
-            [f"Sensor {i}" for i in range(1, 37)],
-            index=11, key="sensor_ref_2d"
-        )
+            sensor_referencia = st.selectbox(
+                "Sensor de referencia (Toma 12)",
+                [f"Sensor {i}" for i in range(1, 37)],
+                index=11, key="sensor_ref_2d"
+            )
 
-        c1, c2 = st.columns(2)
-        with c1:
-            distancia_toma_12 = st.number_input("Distancia Toma 12 [mm]", value=-120.0, step=1.0, format="%.1f", key="dist_12_2d")
-        with c2:
-            distancia_entre_tomas = st.number_input("Sep. entre tomas [mm]", value=10.00, step=0.01, format="%.2f", key="dist_entre_2d")
+            c1, c2 = st.columns(2)
+            with c1:
+                distancia_toma_12 = st.number_input("Distancia Toma 12 [mm]", value=-120.0, step=1.0, format="%.1f", key="dist_12_2d")
+            with c2:
+                distancia_entre_tomas = st.number_input("Sep. entre tomas [mm]", value=10.00, step=0.01, format="%.2f", key="dist_entre_2d")
 
-        if st.button("💾 CONFIRMAR CONFIGURACIÓN", type="primary", use_container_width=True, key="btn_conf_2d"):
-            st.session_state.configuracion_2d = {
-                'orden': orden_sensores,
-                'sensor_referencia': sensor_referencia,
-                'distancia_toma_12': distancia_toma_12,
-                'distancia_entre_tomas': distancia_entre_tomas
-            }
-            st.success("Configuración aplicada para el entorno 2D.")
-            st.rerun()
-        st.markdown("</div>", unsafe_allow_html=True)
+            if st.button("💾 CONFIRMAR CONFIGURACIÓN", type="primary", use_container_width=True, key="btn_conf_2d"):
+                st.session_state.configuracion_2d = {
+                    'orden': orden_sensores,
+                    'sensor_referencia': sensor_referencia,
+                    'distancia_toma_12': distancia_toma_12,
+                    'distancia_entre_tomas': distancia_entre_tomas
+                }
+                st.success("✅ Configuración 2D guardada.")
+                st.rerun()
+            st.markdown("</div>", unsafe_allow_html=True)
 
     with col_ref:
         st.markdown("""
@@ -3077,7 +3091,9 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
                                         'Presion': val_presion,
                                         'rho_inf': row.get('rho_inf', 1.225),
                                         'V_inf': row.get('V_inf', 0.0),
-                                        'P_inf': row.get('P_inf', 101325.0)
+                                        'P_inf': row.get('P_inf', 101325.0),
+                                        'T_inf': row.get('T_inf', 15.0),
+                                        'Timestamp': row.get('Timestamp')
                                     })
                                     
                         df_matriz = pd.DataFrame(results_2d)
@@ -3217,7 +3233,8 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
                     else:
                         st.error("Error al subir a Drive")
 
-        # --- PASO 5: ANÁLISIS DE PARÁMETROS ATMOSFÉRICOS (INFINITO) ---
+    # --- PASO 5: ANÁLISIS DE PARÁMETROS ATMOSFÉRICOS (INFINITO) ---
+    if _archivos_mem_2d:
         st.markdown("---")
         st.markdown("""
         <div class="section-card" style="margin-bottom: 20px;">
@@ -3228,17 +3245,17 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
 
         # Recolectar datos de infinito de todos los archivos cargados
         inf_data_list = []
-        for nombre, df in st.session_state.archivos_2d_cargados.items():
+        for nombre, df in _archivos_mem_2d.items():
             if 'Timestamp' in df.columns:
-                inf_cols = ['Timestamp', 'rho_inf', 'V_inf', 'P_inf']
-                # Filtrar columnas existentes
+                inf_cols = ['Timestamp', 'rho_inf', 'V_inf', 'P_inf', 'T_inf']
+                # Filtrar columnas existentes (fallback para archivos viejos sin T_inf)
                 cols_to_use = [c for c in inf_cols if c in df.columns]
                 tmp_df = df[cols_to_use].copy()
                 tmp_df['Archivo_Origen'] = nombre
                 inf_data_list.append(tmp_df)
         
         if not inf_data_list:
-            st.info("No se encontraron datos de parámetros atmosféricos en los archivos cargados.")
+            st.warning("⚠️ No se detectaron metadatos temporales en los archivos actuales. Por favor, selecciona los archivos y vuelve a cargarlos para activar este análisis.")
         else:
             df_inf_global = pd.concat(inf_data_list).drop_duplicates()
             df_inf_global['dt_val'] = pd.to_datetime(df_inf_global['Timestamp'], format='%y%m%d%H%M%S', errors='coerce')
@@ -3250,13 +3267,19 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
             
             c_inf_1, c_inf_2 = st.columns([1, 2])
             with c_inf_1:
-                var_inf_plot = st.selectbox("Variable Atmosférica:", ["ρ_∞", "V_∞", "P_∞"], key="var_inf_plot")
+                options_inf = ["ρ_∞", "V_∞", "P_∞", "T_∞"]
+                # Filtrar opciones si el archivo es viejo y no tiene T_inf
+                if 'T_inf' not in df_inf_global.columns:
+                    st.caption("Nota: Temperatura no disponible en estos datos.")
+                    options_inf.remove("T_∞")
+                
+                var_inf_plot = st.selectbox("Variable Atmosférica:", options_inf, key="var_inf_plot")
                 tipo_inf_plot = st.radio("Tipo de Análisis:", ["Evolución Temporal", "Distribución Normal"], key="tipo_inf_plot")
                 
                 # Map variable name
-                inf_col_map = {"ρ_∞": "rho_inf", "V_∞": "V_inf", "P_∞": "P_inf"}
+                inf_col_map = {"ρ_∞": "rho_inf", "V_∞": "V_inf", "P_∞": "P_inf", "T_∞": "T_inf"}
                 col_plot = inf_col_map[var_inf_plot]
-                unit_plot = {"ρ_∞": "[kg/m³]", "V_∞": "[m/s]", "P_∞": "[Pa]"}[var_inf_plot]
+                unit_plot = {"ρ_∞": "[kg/m³]", "V_∞": "[m/s]", "P_∞": "[Pa]", "T_∞": "[°C]"}[var_inf_plot]
 
             with c_inf_2:
                 if tipo_inf_plot == "Evolución Temporal":
@@ -3269,7 +3292,7 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
                     fig_inf = px.histogram(df_inf_global, x=col_plot, 
                                           title=f"Distribución de {var_inf_plot}",
                                           labels={col_plot: f"{var_inf_plot} {unit_plot}"},
-                                          marginal="box", # o "violin", "rug"
+                                          marginal="box",
                                           opacity=0.7)
                     fig_inf.update_traces(marker_color='#00d1ff')
 
@@ -3971,61 +3994,69 @@ elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual 
     st.markdown("Análisis 3D con superficie interactiva de presiones")
     
     # Paso 1: Configuración inicial
-    st.markdown("## ⚙️ Paso 1: Configuración Inicial")
+    with st.expander("💾 PASO 1: Configuración de Geometría y Sensores", expanded=True):
+        st.markdown("""
+        <div class="section-card" style="margin-bottom: 12px;">
+            <h3 style="margin-top:0; color:white;">💾 PASO 1: CONFIGURACIÓN INICIAL</h3>
+            <p style="color:#bbb; margin-bottom:0;">
+                Defina los parámetros físicos del peine de sensores y el sistema de adquisición para el entorno 3D.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Reorganizar: datos a la izquierda, imagen más pequeña a la derecha
+        col_datos, col_imagen = st.columns([2, 1])
 
-    # Reorganizar: datos a la izquierda, imagen más pequeña a la derecha
-    col_datos, col_imagen = st.columns([2, 1])
-
-    with col_datos:
-        st.markdown("### 📍 Configuración de Sensores y Geometría")
-        
-        # Orden de sensores
-        orden_sensores = st.selectbox(
-            "Orden de lectura de sensores:",
-            ["asc", "des"],
-            format_func=lambda x: "Ascendente (sensor 1 más abajo al 12 más arriba)" if x == "asc" else "Descendente (sensor 12 más abajo y sensor 1 más arriba)",
-            help="Define cómo se leen los datos de los sensores en relación a su posición física",
-            key="orden_3d"
-        )
-        
-        # Pregunta sobre el sensor de referencia
-        st.info("🔍 **Pregunta:** ¿Qué sensor corresponde a la toma número 12 (la que se encuentra cerca del piso)?")
-        sensor_referencia = st.selectbox(
-            "Sensor de referencia (toma 12):",
-            [f"Sensor {i}" for i in range(1, 13)],
-            index=11,  # Por defecto Sensor 12
-            help="Seleccione el sensor que corresponde a la toma física número 12",
-            key="sensor_ref_3d"
-        )
-        
-        distancia_toma_12 = st.number_input(
-            "Distancia de la toma 12 a la posición X=0, Y=0 (coordenadas del traverser) [mm]:",
-            value=-120.0,
-            step=1.0,
-            format="%.1f",
-            help="Distancia en mm desde el punto de referencia del traverser",
-            key="dist_toma_3d"
-        )
-        
-        distancia_entre_tomas = st.number_input(
-            "Distancia entre tomas [mm]:",
-            value=10.0,
-            step=0.01,
-            format="%.2f",
-            help="Distancia física entre tomas consecutivas según el plano técnico",
-            key="dist_entre_3d"
-        )
-        
-        # Guardar configuración
-        if st.button("💾 Guardar Configuración 3D", type="primary", key="save_3d"):
-            st.session_state.configuracion_3d = {
-                'orden': orden_sensores,
-                'sensor_referencia': sensor_referencia,
-                'distancia_toma_12': distancia_toma_12,
-                'distancia_entre_tomas': distancia_entre_tomas
-            }
-            st.success("✅ Configuración 3D guardada correctamente")
-            st.rerun()
+        with col_datos:
+            st.markdown("### 📍 Configuración de Sensores y Geometría")
+            
+            # Orden de sensores
+            orden_sensores = st.selectbox(
+                "Orden de lectura de sensores:",
+                ["asc", "des"],
+                format_func=lambda x: "Ascendente (sensor 1 más abajo al 12 más arriba)" if x == "asc" else "Descendente (sensor 12 más abajo y sensor 1 más arriba)",
+                help="Define cómo se leen los datos de los sensores en relación a su posición física",
+                key="orden_3d"
+            )
+            
+            # Pregunta sobre el sensor de referencia
+            st.info("🔍 **Pregunta:** ¿Qué sensor corresponde a la toma número 12 (la que se encuentra cerca del piso)?")
+            sensor_referencia = st.selectbox(
+                "Sensor de referencia (toma 12):",
+                [f"Sensor {i}" for i in range(1, 13)],
+                index=11,  # Por defecto Sensor 12
+                help="Seleccione el sensor que corresponde a la toma física número 12",
+                key="sensor_ref_3d"
+            )
+            
+            distancia_toma_12 = st.number_input(
+                "Distancia de la toma 12 a la posición X=0, Y=0 (coordenadas del traverser) [mm]:",
+                value=-120.0,
+                step=1.0,
+                format="%.1f",
+                help="Distancia en mm desde el punto de referencia del traverser",
+                key="dist_toma_3d"
+            )
+            
+            distancia_entre_tomas = st.number_input(
+                "Distancia entre tomas [mm]:",
+                value=10.0,
+                step=0.01,
+                format="%.2f",
+                help="Distancia física entre tomas consecutivas según el plano técnico",
+                key="dist_entre_3d"
+            )
+            
+            # Guardar configuración
+            if st.button("💾 Guardar Configuración 3D", type="primary", key="save_3d"):
+                st.session_state.configuracion_3d = {
+                    'orden': orden_sensores,
+                    'sensor_referencia': sensor_referencia,
+                    'distancia_toma_12': distancia_toma_12,
+                    'distancia_entre_tomas': distancia_entre_tomas
+                }
+                st.success("✅ Configuración 3D guardada correctamente")
+                st.rerun()
 
     with col_imagen:
         st.markdown("### 📐 Diagrama de Referencia")
