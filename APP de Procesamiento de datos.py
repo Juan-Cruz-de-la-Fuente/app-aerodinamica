@@ -7,13 +7,11 @@ def calcular_variable_atmosferica(df, variable):
     res = df.get('Presion', pd.Series([0]*len(df)))
     if variable == 'Presion Total [Actual]':
         return res
-    elif variable == 'P_t / Rho_inf':
-        rho = df.get('rho_inf', 1.225).fillna(1.225)
-        rho = rho.replace(0, 1)
-        return res / rho
-    elif variable == 'Velocidad Infinito':
+    elif variable == 'Densidad del aire en el ∞':
+        return df.get('rho_inf', 1.225).fillna(1.225)
+    elif variable == 'Velocidad en el ∞':
         return df.get('V_inf', 0.0).fillna(0.0)
-    elif variable == 'Presion Infinito':
+    elif variable == 'Presion en el ∞':
         return df.get('P_inf', 101325.0).fillna(101325.0)
     return res
 import matplotlib.pyplot as plt
@@ -3010,7 +3008,7 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
                 tiempo_sel = st.selectbox("Seleccionar Tiempo:", sorted(tiempos))
 
                 st.markdown("### 3. Visualización")
-                opciones_var_2d = ["Presion Total [Actual]", "P_t / Rho_inf", "Velocidad Infinito", "Presion Infinito"]
+                opciones_var_2d = ["Presion Total [Actual]", "Densidad del aire en el ∞", "Velocidad en el ∞", "Presion en el ∞"]
                 var_2d_sel = st.selectbox("📊 Variable a visualizar:", opciones_var_2d, key="var_2d_sel_ui")
                 
                 plot_type = st.selectbox("Render de Pixeles:", ["Contour Suavizado", "Mapa de Calor (Celdas)"])
@@ -3063,6 +3061,15 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
                         val_plot = df_matriz['Presion'].values
                         eje_label = "mm"
                         z_title = "P [Pa]"
+                        if var_2d_sel == "Densidad del aire en el ∞":
+                            z_title = "Densidad [kg/m³]"
+                            hover_text = "Densidad: %{z:.2f} kg/m³"
+                        elif var_2d_sel == "Velocidad en el ∞":
+                            z_title = "V [m/s]"
+                            hover_text = "Velocidad: %{z:.2f} m/s"
+                        else:
+                            hover_text = "Presión: %{z:.2f} Pa"
+                            
                         cs_name = "Jet"
 
                         # Create Grid Interpolation cubic 150x150 res
@@ -3076,10 +3083,12 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
                             
                             if plot_type == "Contour Suavizado":
                                 dtick_val = None
-                                if "P_∞" in var_2d_sel: 
-                                    dtick_val = 5
-                                elif "V_∞" in var_2d_sel:
+                                if "Presion en el ∞" in var_2d_sel: 
+                                    dtick_val = 1
+                                elif "Velocidad en el ∞" in var_2d_sel:
                                     dtick_val = 0.1
+                                elif "Densidad del aire en el ∞" in var_2d_sel:
+                                    dtick_val = 0.05
                                 
                                 c_args = dict(showlines=False)
                                 if dtick_val:
@@ -3091,13 +3100,13 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
                                     x=y_grid_vals, y=z_grid_vals, z=V_grid,
                                     colorscale=cs_name, colorbar=dict(title=z_title),
                                     contours=c_args,
-                                    hovertemplate="Y: %{x:.2f} mm<br>Z: %{y:.2f} mm<br>Presión: %{z:.2f} Pa<extra></extra>"
+                                    hovertemplate=f"Y: %{{x:.2f}} mm<br>Z: %{{y:.2f}} mm<br>{hover_text}<extra></extra>"
                                 ))
                             else:
                                 fig.add_trace(go.Heatmap(
                                     x=y_grid_vals, y=z_grid_vals, z=V_grid,
                                     colorscale=cs_name, colorbar=dict(title=z_title),
-                                    hovertemplate="Y: %{x:.2f} mm<br>Z: %{y:.2f} mm<br>Presión: %{z:.2f} Pa<extra></extra>"
+                                    hovertemplate=f"Y: %{{x:.2f}} mm<br>Z: %{{y:.2f}} mm<br>{hover_text}<extra></extra>"
                                 ))
 
                             fig.update_layout(
@@ -3247,7 +3256,8 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
             if st.button("🔎 INICIAR BARRIDO NUMÉRICO DESDE DRIVE", use_container_width=True, type="primary"):
                 with st.spinner("Cargando matriz 2D y barriendo derivadas..."):
                     s_data = dict_2d_drive[archivo_drive_sel]
-                    csv_str = s_data[3] # data in blob
+                    csv_bytes = auth.download_file_2d(s_data[0])
+                    csv_str = csv_bytes.decode('utf-8') if csv_bytes else ""
                     import io
                     df_matriz = pd.read_csv(io.StringIO(csv_str))
                     # Check column constraints
@@ -4024,7 +4034,7 @@ elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual 
 
         st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
         
-        opciones_var_3d = ["Presion Total [Actual]", "P_t / Rho_inf", "Velocidad Infinito", "Presion Infinito"]
+        opciones_var_3d = ["Presion Total [Actual]", "Densidad del aire en el ∞", "Velocidad en el ∞", "Presion en el ∞"]
         var_3d_sel = st.selectbox("📊 Variable a visualizar:", opciones_var_3d, key="var_3d_sel_ui")
 
         # 🔘 Checkbox para activar/desactivar puntos medidos
@@ -4419,7 +4429,7 @@ elif st.session_state.seccion_actual == 'betz_4d':
         dict_superficies = {f"{s[1]} (X={s[2]}) [{s[3]}]": s for s in mis_superficies}
         
         # Multiselect for surfaces
-        opciones_var_4d = ["Presion Total [Actual]", "P_t / Rho_inf", "Velocidad Infinito", "Presion Infinito"]
+        opciones_var_4d = ["Presion Total [Actual]", "Densidad del aire en el ∞", "Velocidad en el ∞", "Presion en el ∞"]
         var_4d_sel = st.selectbox("📊 Variable a visualizar:", opciones_var_4d, key="var_4d_sel_ui")
         
         sel_labels = st.multiselect("Seleccionar Superficies para Análisis:", list(dict_superficies.keys()), key="sel_4d_main")
@@ -4488,12 +4498,16 @@ elif st.session_state.seccion_actual == 'betz_4d':
                                 continue
                             
                             tri = Delaunay(df_clean[['Y', 'Z']].values)
-                            x_def = x_base - (df_clean['Presion'] * pressure_scale)
+                            
+                            p_ref = df_clean['Presion'].max()
+                            x_def = x_base + ((df_clean['Presion'] - p_ref) * pressure_scale)
                             
                             fig_4d.add_trace(go.Mesh3d(
                                 x=x_def, y=df_clean['Y'], z=df_clean['Z'],
                                 i=tri.simplices[:,0], j=tri.simplices[:,1], k=tri.simplices[:,2],
                                 intensity=df_clean['Presion'],
+                                customdata=np.column_stack([np.full(len(df_clean), x_base), df_clean['Presion']]),
+                                hovertemplate="X (Estación): %{customdata[0]:.2f} mm<br>Y: %{y:.2f} mm<br>Z: %{z:.2f} mm<br>Valor: %{customdata[1]:.2f}<extra></extra>",
                                 colorscale='Jet',
                                 cmin=g_min, cmax=g_max,
                                 showscale=True,
