@@ -3564,6 +3564,90 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                                         dist = np.sqrt(dy**2 + dz**2)
                                         pairs.append({"Enlace": f"V{i+1} ↔ V{j+1}", "Distancia [mm]": round(dist, 2)})
                                 st.table(pd.DataFrame(pairs))
+
+                            # ── ANÁLISIS DE SIMETRÍA Y ESTIMACIÓN DE BETA ───────────────
+                            st.markdown("---")
+                            st.markdown("### ⚖️ Análisis de Simetría — Estimación de Guiñada (β)")
+
+                            # Eje de simetría: mitad del rango Y de los datos
+                            y_min_data, y_max_data = y_plot.min(), y_plot.max()
+                            y_mid_sym = (y_min_data + y_max_data) / 2.0
+
+                            st.markdown(f"""
+                            <div style="background:#0d1f35; border:1px solid #1e4060; border-radius:8px; padding:12px; margin-bottom:12px;">
+                                <p style="color:#93c5fd; font-size:0.85rem; margin:0; line-height:1.8;">
+                                    <b>Eje de simetría Y:</b> {y_mid_sym:.1f} mm
+                                    (mitad del rango [{y_min_data:.1f} mm → {y_max_data:.1f} mm])<br>
+                                    Si la suma de áreas a izquierda (Y &lt; {y_mid_sym:.0f}) ≠ derecha (Y &gt; {y_mid_sym:.0f}),
+                                    hay asimetría de presiones → posible ángulo de guiñada β ≠ 0.
+                                </p>
+                            </div>
+                            """, unsafe_allow_html=True)
+
+                            # Calcular áreas de vórtices en cada semiplano
+                            area_izq = 0.0   # Y < y_mid (semiala izquierda)
+                            area_der = 0.0   # Y > y_mid (semiala derecha)
+                            area_desg = []
+
+                            for v in vortices:
+                                lado = "Izquierda (Y<mid)" if v['y'] < y_mid_sym else "Derecha (Y>mid)"
+                                area_desg.append({
+                                    "Vórtice": v['id'],
+                                    "Centro Y [mm]": round(v['y'], 2),
+                                    "Centro Z [mm]": round(v['z'], 2),
+                                    "Área [mm²]": round(v['area'], 2),
+                                    "Semiplano": lado
+                                })
+                                if v['y'] < y_mid_sym:
+                                    area_izq += v['area']
+                                else:
+                                    area_der += v['area']
+
+                            st.dataframe(pd.DataFrame(area_desg), use_container_width=True, hide_index=True)
+
+                            total_area = area_izq + area_der
+                            if total_area > 0:
+                                asim = (area_der - area_izq) / total_area  # -1: todo izq, +1: todo der
+                                # Estimación lineal de Beta:
+                                # Para flujo simétrico asim=0 → Beta=0
+                                # Modelo simple: beta_est [°] ≈ asim * 15° (escala empírica)
+                                beta_est = asim * 15.0
+
+                                col_iz, col_der, col_asim, col_beta = st.columns(4)
+                                col_iz.metric("Área Izquierda [mm²]", f"{area_izq:.1f}")
+                                col_der.metric("Área Derecha [mm²]", f"{area_der:.1f}")
+                                col_asim.metric("Asimetría (±1)", f"{asim:+.3f}",
+                                               help="0 = simétrico, +1 = todo a la derecha, -1 = todo a la izquierda")
+                                col_beta.metric("β estimado [°]", f"{beta_est:+.2f}°",
+                                               help="Estimación lineal: β = Asimetría × 15°. Positivo = nariz hacia ala derecha")
+
+                                # Barra visual de asimetría
+                                st.markdown(f"""
+                                <div style="background:#111; border-radius:8px; padding:12px; margin-top:8px;">
+                                    <p style="color:#aaa; margin:0 0 6px 0; font-size:0.8rem;">Distribución de Área ← Izquierda | Derecha →</p>
+                                    <div style="display:flex; height:20px; border-radius:4px; overflow:hidden;">
+                                        <div style="background:#ef4444; width:{50*(1+asim):.1f}%; transition:width 0.3s;"></div>
+                                        <div style="background:#3b82f6; width:{50*(1-asim):.1f}%; transition:width 0.3s;"></div>
+                                    </div>
+                                    <div style="display:flex; justify-content:space-between; margin-top:4px;">
+                                        <span style="color:#ef4444; font-size:0.75rem;">Izq {area_izq:.0f} mm²</span>
+                                        <span style="color:white; font-size:0.8rem;"><b>β ≈ {beta_est:+.1f}°</b></span>
+                                        <span style="color:#3b82f6; font-size:0.75rem;">{area_der:.0f} mm² Der</span>
+                                    </div>
+                                </div>
+                                """, unsafe_allow_html=True)
+
+                                if abs(asim) < 0.05:
+                                    st.success("✅ Distribución de área simétrica — flujo no presenta guiñada detectada (β ≈ 0°)")
+                                elif abs(asim) < 0.15:
+                                    st.warning(f"⚠️ Ligera asimetría ({asim:+.3f}). Posible guiñada pequeña: β ≈ {beta_est:+.1f}°")
+                                else:
+                                    lado_dominante = "derecha (+Y)" if asim > 0 else "izquierda (-Y)"
+                                    st.error(f"❌ Asimetría significativa. Área dominante en {lado_dominante}. Guiñada estimada: β ≈ {beta_est:+.1f}°")
+                            else:
+                                st.info("No hay área total detectable para el análisis de simetría.")
+
+
                         else:
                             st.warning("No se detectaron zonas cerradas con la sensibilidad ΔP actual.")
                                 
@@ -4823,21 +4907,32 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                         aoa_arr_pc = np.array([d['aoa'] for d in items_precomp])
                         x_arr_pc   = np.array([d['x']   for d in items_precomp])
 
-                        # Grilla YZ común
-                        res = 60
-                        y_grid_pc = np.linspace(min(all_y_pc), max(all_y_pc), res)
-                        z_grid_pc = np.linspace(min(all_z_pc), max(all_z_pc), res)
-                        Y_pc, Z_pc = np.meshgrid(y_grid_pc, z_grid_pc)
+                        # --- Estrategia de grilla: puntos REALES del plano ---
+                        # Usamos la unión de todos los puntos YZ como dominio de interpolación.
+                        # Esto preserva todos los puntos de medición reales sin perder resolución.
+                        all_yz_pts = np.column_stack([all_y_pc, all_z_pc])
+                        # Eliminar duplicados para la grilla base
+                        _, uniq_idx = np.unique(np.round(all_yz_pts, 4), axis=0, return_index=True)
+                        Y_base = np.array(all_y_pc)[uniq_idx]
+                        Z_base = np.array(all_z_pc)[uniq_idx]
 
-                        # Interpolar cada plano a la grilla
+                        # Interpolar cada plano a la base de puntos reales
                         grillas_pc = []
-                        status_pc.text("Interpolando planos a grilla común...")
+                        status_pc.text("Interpolando planos a la grilla de puntos reales...")
                         for ii, item in enumerate(items_precomp):
                             df_g = item['df']
                             P_g = _gd_anim(
                                 (df_g['Y'].values, df_g['Z'].values), df_g['Presion'].values,
-                                (Y_pc, Z_pc), method='linear'
+                                (Y_base, Z_base), method='linear'
                             )
+                            # Fallback NaN: completar con nearest neighbor
+                            nan_mask = np.isnan(P_g)
+                            if nan_mask.any():
+                                P_nn = _gd_anim(
+                                    (df_g['Y'].values, df_g['Z'].values), df_g['Presion'].values,
+                                    (Y_base[nan_mask], Z_base[nan_mask]), method='nearest'
+                                )
+                                P_g[nan_mask] = P_nn
                             grillas_pc.append(P_g)
                             prog_pc.progress((ii + 1) / len(items_precomp))
 
@@ -4845,17 +4940,19 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                         st.session_state.anim4d_grillas = {
                             'aoa_arr': aoa_arr_pc,
                             'x_arr': x_arr_pc,
-                            'Y': Y_pc,
-                            'Z': Z_pc,
-                            'grillas': grillas_pc,
+                            'Y': Y_base,   # 1D array de puntos Y reales
+                            'Z': Z_base,   # 1D array de puntos Z reales
+                            'grillas': grillas_pc,  # cada grilla es 1D array de igual longitud
                             'items': items_precomp,
-                            'var': var_anim_sel
+                            'var': var_anim_sel,
+                            'modo': 'puntos_reales'
                         }
                         st.session_state.anim4d_pmin = float(np.nanmin(all_p_pc))
                         st.session_state.anim4d_pmax = float(np.nanmax(all_p_pc))
                         st.session_state.anim4d_aoa_range = (float(aoa_arr_pc.min()), float(aoa_arr_pc.max()))
                         status_pc.empty(); prog_pc.empty()
-                        st.success(f"✅ Pre-computación completada: {len(items_precomp)} planos, AOA {aoa_arr_pc.min():.1f}° → {aoa_arr_pc.max():.1f}°")
+                        n_pts = len(Y_base)
+                        st.success(f"✅ Pre-computación completada: {len(items_precomp)} planos | {n_pts:,} puntos reales | AOA {aoa_arr_pc.min():.1f}° → {aoa_arr_pc.max():.1f}°")
                         st.rerun()
 
         # ── PASO 3: VISUALIZACIÓN INTERACTIVA ────────────────────────────────
@@ -4910,8 +5007,10 @@ elif st.session_state.seccion_actual == 'animacion_4d':
             with c_plot_anim:
                 # Interpolar presión al vuelo (rápido, la grilla ya está lista)
                 P_interp = (1 - t_v) * g['grillas'][idx_lo] + t_v * g['grillas'][idx_hi]
+                # Y y Z son ahora arrays 1D de puntos reales
+                Y_v = g['Y']   # 1D
+                Z_v = g['Z']   # 1D
                 mask_v = ~np.isnan(P_interp)
-                Y_v = g['Y']; Z_v = g['Z']
 
                 fig_live = go.Figure()
 
@@ -4935,134 +5034,122 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                             name="Modelo"
                         ))
 
-                # Plano interpolado
+                # Plano interpolado — con todos los puntos reales
+                # Escala: pmin_v / pmax_v son el mín/máx GLOBAL de todos los planos seleccionados
                 if mask_v.any():
-                    P_flat = P_interp[mask_v].flatten()
-                    P_max_v = float(np.nanmax(P_interp))
-                    X_def_v = x_v - ((P_interp[mask_v] - P_max_v) * sc_anim)
+                    Y_ok = Y_v[mask_v]
+                    Z_ok = Z_v[mask_v]
+                    P_ok = P_interp[mask_v]
+                    P_max_ref = float(np.nanmax(P_interp))
+                    X_def_v = x_v - ((P_ok - P_max_ref) * sc_anim)
 
                     try:
                         from scipy.spatial import Delaunay as _Del
-                        pts_yz = np.column_stack([Y_v[mask_v].flatten(), Z_v[mask_v].flatten()])
+                        pts_yz = np.column_stack([Y_ok, Z_ok])
                         tri_v = _Del(pts_yz)
                         fig_live.add_trace(go.Mesh3d(
-                            x=X_def_v.flatten(), y=pts_yz[:,0], z=pts_yz[:,1],
+                            x=X_def_v, y=Y_ok, z=Z_ok,
                             i=tri_v.simplices[:,0], j=tri_v.simplices[:,1], k=tri_v.simplices[:,2],
-                            intensity=P_flat,
+                            intensity=P_ok,
                             colorscale='Jet', cmin=pmin_v, cmax=pmax_v,
                             showscale=True, opacity=1.0, flatshading=True,
-                            name=f"Presión (α={alpha_slider:.1f}°)"
+                            name=f"Presión (α={alpha_slider:.1f}°)",
+                            colorbar=dict(title=dict(text=g.get('var','Presión'), side='right'))
                         ))
                     except Exception as e_tri:
                         fig_live.add_trace(go.Scatter3d(
-                            x=X_def_v.flatten(),
-                            y=Y_v[mask_v].flatten(),
-                            z=Z_v[mask_v].flatten(),
+                            x=X_def_v, y=Y_ok, z=Z_ok,
                             mode='markers',
-                            marker=dict(size=3, color=P_flat, colorscale='Jet', showscale=True,
+                            marker=dict(size=3, color=P_ok, colorscale='Jet', showscale=True,
                                         cmin=pmin_v, cmax=pmax_v),
                             name=f"Presión (α={alpha_slider:.1f}°)"
                         ))
 
-                fig_live.update_layout(
-                    title=f"α = {alpha_slider:.1f}°",
-                    scene=dict(
-                        aspectmode='data',
-                        xaxis=dict(title="X (Estación)", autorange="reversed"),
-                        yaxis_title="Y (Envergadura)",
-                        zaxis_title="Z (Altura)"
-                    ),
-                    paper_bgcolor='rgba(0,0,0,0)',
-                    font=dict(color='white'),
-                    height=620,
-                    margin=dict(l=0, r=0, b=0, t=40)
-                )
-                st.plotly_chart(fig_live, use_container_width=True)
-
-            # ── PASO 4: GENERADOR DE GIF ─────────────────────────────────────
+            # ── PASO 4: GENERADOR DE GIF (matplotlib, sin Chrome) ──────────────
             st.markdown("---")
             st.markdown("### 🎥 Paso 4: Generar Animación GIF")
+            st.caption("Genera un GIF 2D (plano YZ con mapa de presión por color) usando matplotlib — sin dependencia de Chrome.")
 
-            c_gif1, c_gif2, c_gif3, c_gif4 = st.columns(4)
-            fps_gif   = c_gif1.slider("FPS:", 1, 15, 3, key="fps_gif_anim")
-            n_pas_gif = c_gif2.slider("N° pasos:", 5, 40, 12, key="npasos_gif")
-            qual_gif  = c_gif3.select_slider("Calidad:", ["Baja", "Media", "Alta"], value="Media", key="quality_gif_anim")
-            sc_gif    = c_gif4.slider("Escala Relieve:", 0.1, 10.0, 1.0, 0.1, key="scale_gif_anim")
+            c_gif1, c_gif2, c_gif3 = st.columns(3)
+            fps_gif   = c_gif1.slider("FPS:", 1, 10, 3, key="fps_gif_anim")
+            n_pas_gif = c_gif2.slider("N° pasos (frames):", 5, 60, 15, key="npasos_gif")
+            sc_gif    = c_gif3.slider("Tamaño marcador:", 1, 20, 5, key="sc_gif_anim")
 
             if st.button("🎥 Generar GIF", type="primary", use_container_width=True, key="btn_gen_gif_anim"):
-                try:
-                    import kaleido
-                except ImportError:
-                    st.error("❌ 'kaleido' no encontrado.")
-                    st.stop()
+                import matplotlib
+                matplotlib.use('Agg')
+                import matplotlib.pyplot as _plt
+                import matplotlib.cm as _cm
+                import matplotlib.colors as _mcolors
 
                 alpha_range_gif = np.linspace(aoa_min_v, aoa_max_v, n_pas_gif)
                 status_gif = st.empty()
                 prog_gif = st.progress(0)
                 frames_gif = []
                 temp_dir_gif = tempfile.mkdtemp()
+                norm_gif = _mcolors.Normalize(vmin=pmin_v, vmax=pmax_v)
+                cmap_gif = _cm.get_cmap('jet')
 
                 try:
+                    # Límites fijos para toda la animación
+                    y_lim = (float(g['Y'].min()), float(g['Y'].max()))
+                    z_lim = (float(g['Z'].min()), float(g['Z'].max()))
+
                     for fi, alpha_i in enumerate(alpha_range_gif):
                         status_gif.text(f"Frame {fi+1}/{n_pas_gif} — α={alpha_i:.1f}°")
                         idx_lo_g = max(0, min(int(np.searchsorted(g['aoa_arr'], alpha_i)) - 1, len(g['aoa_arr']) - 2))
                         idx_hi_g = idx_lo_g + 1
                         t_g = (alpha_i - g['aoa_arr'][idx_lo_g]) / (g['aoa_arr'][idx_hi_g] - g['aoa_arr'][idx_lo_g]) if g['aoa_arr'][idx_hi_g] != g['aoa_arr'][idx_lo_g] else 0.0
                         P_g = (1 - t_g) * g['grillas'][idx_lo_g] + t_g * g['grillas'][idx_hi_g]
-                        x_g = (1 - t_g) * g['x_arr'][idx_lo_g] + t_g * g['x_arr'][idx_hi_g]
-                        mask_g = ~np.isnan(P_g)
+                        mask_gif = ~np.isnan(P_g)
 
-                        fig_g = go.Figure()
+                        fig_mpl, ax_mpl = _plt.subplots(figsize=(8, 6), facecolor='#0e1117')
+                        ax_mpl.set_facecolor('#0e1117')
 
-                        if 'objeto_referencia_4d' in st.session_state:
-                            obj_g = st.session_state.objeto_referencia_base if 'objeto_referencia_base' in st.session_state else st.session_state.objeto_referencia_4d
-                            cg_g = st.session_state.get('modelo_cg', {'x': 0.0, 'y': 0.0, 'z': 0.0})
-                            xm_g, ym_g, zm_g = _pose_anim(obj_g, alpha_i, 0.0, cg_g)
-                            obj_ref_g = st.session_state.objeto_referencia_4d
-                            if obj_ref_g['type'] == 'mesh':
-                                fig_g.add_trace(go.Mesh3d(x=xm_g, y=ym_g, z=zm_g,
-                                    i=obj_ref_g['i'], j=obj_ref_g['j'], k=obj_ref_g['k'],
-                                    color='#5588cc', opacity=0.25, alphahull=0, showscale=False))
+                        if mask_gif.any():
+                            sc = ax_mpl.scatter(
+                                g['Y'][mask_gif], g['Z'][mask_gif],
+                                c=P_g[mask_gif], cmap='jet',
+                                norm=norm_gif, s=sc_gif, marker='s', linewidths=0
+                            )
+                            cb = fig_mpl.colorbar(sc, ax=ax_mpl, label=g.get('var', 'Presión [Pa]'))
+                            cb.ax.yaxis.label.set_color('white')
+                            cb.ax.tick_params(colors='white')
 
-                        if mask_g.any():
-                            P_max_g = float(np.nanmax(P_g))
-                            X_def_g = x_g - ((P_g[mask_g] - P_max_g) * sc_gif)
-                            fig_g.add_trace(go.Scatter3d(
-                                x=X_def_g.flatten(),
-                                y=g['Y'][mask_g].flatten(),
-                                z=g['Z'][mask_g].flatten(),
-                                mode='markers',
-                                marker=dict(size=3, color=P_g[mask_g].flatten(),
-                                           colorscale='Jet', cmin=pmin_v, cmax=pmax_v, showscale=True),
-                                name=f"α={alpha_i:.1f}°"
-                            ))
+                        ax_mpl.set_xlim(y_lim); ax_mpl.set_ylim(z_lim)
+                        ax_mpl.set_xlabel("Y [mm]", color='white'); ax_mpl.set_ylabel("Z [mm]", color='white')
+                        ax_mpl.tick_params(colors='white')
+                        ax_mpl.set_title(f"α = {alpha_i:.1f}°  |  Plano YZ de Presión", color='white', fontsize=12)
+                        ax_mpl.set_aspect('equal', 'box')
+                        for spine in ax_mpl.spines.values(): spine.set_edgecolor('#444')
 
-                        fig_g.update_layout(
-                            title=f"α = {alpha_i:.1f}°",
-                            scene=dict(aspectmode='data',
-                                      xaxis=dict(title="X", autorange="reversed"),
-                                      yaxis_title="Y", zaxis_title="Z",
-                                      camera=dict(eye=dict(x=2.0, y=2.0, z=2.0))),
-                            margin=dict(l=0, r=0, b=0, t=40),
-                            paper_bgcolor='rgba(0,0,0,0)'
-                        )
-                        scale_q = 1.0 if qual_gif == "Baja" else (2.0 if qual_gif == "Media" else 3.0)
-                        fp = os.path.join(temp_dir_gif, f"frame_{fi:03d}.png")
-                        fig_g.write_image(fp, engine="kaleido", scale=scale_q)
-                        frames_gif.append(fp)
+                        # Línea de simetría (Y medio)
+                        y_mid = (y_lim[0] + y_lim[1]) / 2
+                        ax_mpl.axvline(y_mid, color='cyan', linestyle='--', linewidth=1, alpha=0.5, label=f'Y_mid={y_mid:.0f}')
+                        ax_mpl.legend(fontsize=8, facecolor='#222', labelcolor='white')
+
+                        fp_gif = os.path.join(temp_dir_gif, f"frame_{fi:03d}.png")
+                        fig_mpl.savefig(fp_gif, dpi=90, bbox_inches='tight', facecolor='#0e1117')
+                        _plt.close(fig_mpl)
+                        frames_gif.append(fp_gif)
                         prog_gif.progress((fi + 1) / n_pas_gif)
 
                     status_gif.text("Compilando GIF...")
                     gif_path_anim = os.path.join(temp_dir_gif, "animacion_4d.gif")
                     images_gif = [imageio.imread(f) for f in frames_gif]
                     imageio.mimsave(gif_path_anim, images_gif, fps=fps_gif, loop=0)
-                    st.success("✅ Animación completada")
+                    st.success(f"✅ GIF generado: {n_pas_gif} frames, {fps_gif} FPS")
                     st.image(gif_path_anim)
                     with open(gif_path_anim, "rb") as fg:
-                        st.download_button("📥 Descargar GIF", fg, file_name="animacion_4d.gif", mime="image/gif", key="dl_gif_anim4d")
+                        st.download_button("📥 Descargar GIF", fg, file_name="animacion_4d.gif",
+                                          mime="image/gif", key="dl_gif_anim4d")
 
                 except Exception as e_gif:
                     st.error(f"Error generando GIF: {e_gif}")
+                finally:
+                    status_gif.empty(); prog_gif.empty()
+
+
 
 elif st.session_state.seccion_actual == 'herramientas':
 
