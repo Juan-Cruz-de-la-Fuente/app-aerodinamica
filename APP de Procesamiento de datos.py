@@ -282,7 +282,7 @@ def render_navbar():
             
             with c2:
                 # Dropdown for Ensayo Estela
-                is_estela = st.session_state.seccion_actual in ['betz_2d', 'vis_2d_nueva', 'betz_3d', 'betz_4d']
+                is_estela = st.session_state.seccion_actual in ['betz_2d', 'vis_2d_nueva', 'betz_3d', 'betz_4d', 'animacion_4d']
                 if is_estela:
                     st.markdown("""<style>
                     div[data-testid='stPopover'] {
@@ -368,6 +368,9 @@ def render_navbar():
                         st.rerun()
                     if st.button("🌀 Análisis de Vórtices", use_container_width=True, type="primary" if st.session_state.seccion_actual == 'analisis_vortices' else "secondary"):
                         st.session_state.seccion_actual = 'analisis_vortices'
+                        st.rerun()
+                    if st.button("🎬 Animación 4D", use_container_width=True, type="primary" if st.session_state.seccion_actual == 'animacion_4d' else "secondary"):
+                        st.session_state.seccion_actual = 'animacion_4d'
                         st.rerun()
                     if st.button("🔧 Herramientas", use_container_width=True, type="primary" if st.session_state.seccion_actual == 'herramientas' else "secondary"):
                         st.session_state.seccion_actual = 'herramientas'
@@ -790,14 +793,27 @@ def procesar_promedios(archivo_csv, orden="asc", archivo_infinito=None):
                     df_inf.columns = [str(c).strip() for c in df_inf.columns]
                     if len(df_inf.columns) > 2:
                         first_col = df_inf.columns[0]
-                        df_inf["ts_clean"] = df_inf[first_col].astype(str).str.split(',').str[0]
-                        df_inf["dt_val"] = pd.to_datetime(df_inf["ts_clean"], format='%y%m%d%H%M%S', errors='coerce')
+                        # Limpiar timestamp: tomar solo la parte entera antes de la coma
+                        df_inf["ts_clean"] = df_inf[first_col].astype(str).str.split(',').str[0].str.strip()
+                        # Formato real: DDMMYYHHMMSS (ej: 260424144919 = 26/04/2024 14:49:19)
+                        df_inf["dt_val"] = pd.to_datetime(df_inf["ts_clean"], format='%d%m%y%H%M%S', errors='coerce')
+                        # Fallback: intentar formato alternativo YYMMDDHHMMSS
+                        mask_failed = df_inf["dt_val"].isna()
+                        if mask_failed.any():
+                            df_inf.loc[mask_failed, "dt_val"] = pd.to_datetime(
+                                df_inf.loc[mask_failed, "ts_clean"], format='%y%m%d%H%M%S', errors='coerce'
+                            )
                         df_inf = df_inf.dropna(subset=["dt_val"])
 
                         def get_inf_values(ts_str):
                             try:
-                                target_dt = pd.to_datetime(ts_str, format='%y%m%d%H%M%S', errors='coerce')
-                                if pd.isna(target_dt): return 1.225, 0.0, 101325.0
+                                if ts_str is None or str(ts_str) == 'None': return 1.225, 0.0, 101325.0, 15.0
+                                ts_clean = str(ts_str).split(',')[0].strip()
+                                # Intentar formato DDMMYYHHMMSS primero
+                                target_dt = pd.to_datetime(ts_clean, format='%d%m%y%H%M%S', errors='coerce')
+                                if pd.isna(target_dt):
+                                    target_dt = pd.to_datetime(ts_clean, format='%y%m%d%H%M%S', errors='coerce')
+                                if pd.isna(target_dt): return 1.225, 0.0, 101325.0, 15.0
                                 diffs = (df_inf["dt_val"] - target_dt).abs()
                                 idx = diffs.idxmin()
                                 row = df_inf.loc[idx]
@@ -3258,7 +3274,15 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
             st.warning("⚠️ No se detectaron metadatos temporales en los archivos actuales. Por favor, selecciona los archivos y vuelve a cargarlos para activar este análisis.")
         else:
             df_inf_global = pd.concat(inf_data_list).drop_duplicates()
-            df_inf_global['dt_val'] = pd.to_datetime(df_inf_global['Timestamp'], format='%y%m%d%H%M%S', errors='coerce')
+            # Formato real del timestamp: DDMMYYHHMMSS (ej: 260424144919 = 26/04/2024 14:49:19)
+            df_inf_global['dt_val'] = pd.to_datetime(df_inf_global['Timestamp'].astype(str).str.split(',').str[0].str.strip(), format='%d%m%y%H%M%S', errors='coerce')
+            # Fallback: intentar formato alternativo
+            mask_fail = df_inf_global['dt_val'].isna()
+            if mask_fail.any():
+                df_inf_global.loc[mask_fail, 'dt_val'] = pd.to_datetime(
+                    df_inf_global.loc[mask_fail, 'Timestamp'].astype(str).str.split(',').str[0].str.strip(),
+                    format='%y%m%d%H%M%S', errors='coerce'
+                )
             df_inf_global = df_inf_global.dropna(subset=['dt_val']).sort_values('dt_val')
 
             # Normalizar tiempo a t=0 usando segundos reales
@@ -3563,366 +3587,358 @@ elif st.session_state.seccion_actual == 'modelos':
     st.markdown("""
     <div class="header-container">
         <h1 style="font-size: 3rem; margin-bottom: 1rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
-            📦 GESTOR DE OBJETOS DE REFERENCIA
+            📦 GESTOR DE MODELOS 3D
         </h1>
         <h2 style="font-size: 1.8rem; margin-bottom: 0; opacity: 0.9;">
-            Configura modelos 3D para visualizar junto a las estelas en 4D
+            Importa o carga modelos de referencia para visualización 4D
         </h2>
     </div>
     """, unsafe_allow_html=True)
 
+    # --- INIT SESSION STATE ---
+    if 'modelo_modo' not in st.session_state:
+        st.session_state.modelo_modo = 'bd'   # 'bd' o 'importar'
+    if 'modelo_cg' not in st.session_state:
+        st.session_state.modelo_cg = {'x': 0.0, 'y': 0.0, 'z': 0.0}
+    if 'modelo_nombre_bd' not in st.session_state:
+        st.session_state.modelo_nombre_bd = None  # None = nuevo, str = actualizar
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # LAYOUT PRINCIPAL: izq = configuración, der = preview
+    # ─────────────────────────────────────────────────────────────────────────
     c_conf, c_preview = st.columns([1.2, 2])
-    
-    # --- MODIFICACIÓN ACTIVA (FUERA DE TABS) ---
-    if 'objeto_referencia_4d' in st.session_state and 'transform_active' not in st.session_state:
-         # Init si existe objeto pero no transformState (recuperación de error/estado previo)
-         st.session_state.transform_active = {'dx': 0.0, 'dy': 0.0, 'dz': 0.0, 'rx': 0.0, 'ry': 0.0, 'rz': 0.0}
-         # Si no existe base, crearla desde el actual (asumiendo que es el base)
-         if 'objeto_referencia_base' not in st.session_state:
-             st.session_state.objeto_referencia_base = st.session_state.objeto_referencia_4d.copy()
 
     with c_conf:
-        # SECCION DE MODIFICACION ACTIVA
-        if 'objeto_referencia_4d' in st.session_state:
-            with st.expander("🛠️ Modificar Transformación (Objeto Actual)", expanded=True):
-                st.info("Ajusta la posición y rotación del objeto cargado en tiempo real.")
-                
-                # Callback function to apply transform
-                def apply_transform():
-                    base = st.session_state.objeto_referencia_base
-                    t = st.session_state.transform_active
-                    
-                    # 1. Recuperar base
-                    x, y, z = base['x'].copy(), base['y'].copy(), base['z'].copy()
-                    
-                    # 2. Rotar
-                    if t['rx'] != 0 or t['ry'] != 0 or t['rz'] != 0:
-                        x, y, z = rotate_points(x, y, z, t['rx'], t['ry'], t['rz'])
-                    
-                    # 3. Trasladar
-                    x = x + t['dx']
-                    y = y + t['dy']
-                    z = z + t['dz']
-                    
-                    # 4. Actualizar objeto activo
-                    updated_obj = base.copy()
-                    updated_obj['x'] = x
-                    updated_obj['y'] = y
-                    updated_obj['z'] = z
-                    st.session_state.objeto_referencia_4d = updated_obj
 
-                # Controls binded to session_state dictionary
-                c_t1, c_t2, c_t3 = st.columns(3)
-                st.session_state.transform_active['dx'] = c_t1.number_input("dX", value=0.0, step=10.0, key="t_dx", on_change=apply_transform)
-                st.session_state.transform_active['dy'] = c_t2.number_input("dY", value=0.0, step=10.0, key="t_dy", on_change=apply_transform)
-                st.session_state.transform_active['dz'] = c_t3.number_input("dZ", value=0.0, step=10.0, key="t_dz", on_change=apply_transform)
-                
-                c_r1, c_r2, c_r3 = st.columns(3)
-                st.session_state.transform_active['rx'] = c_r1.number_input("Rot X", value=0.0, step=90.0, key="t_rx", on_change=apply_transform)
-                st.session_state.transform_active['ry'] = c_r2.number_input("Rot Y", value=0.0, step=90.0, key="t_ry", on_change=apply_transform)
-                st.session_state.transform_active['rz'] = c_r3.number_input("Rot Z", value=0.0, step=90.0, key="t_rz", on_change=apply_transform)
+        # ── SELECTOR DE MODO ──────────────────────────────────────────────
+        st.markdown("### 🔽 Fuente del Modelo")
+        modo_opts = {"🗄️ Cargar de Base de Datos": "bd", "📂 Importar Archivo (STL / CSV)": "importar"}
+        modo_sel_label = st.radio(
+            "Seleccionar fuente:",
+            list(modo_opts.keys()),
+            index=0 if st.session_state.modelo_modo == 'bd' else 1,
+            horizontal=True,
+            key="modo_modelo_radio",
+            label_visibility="collapsed"
+        )
+        st.session_state.modelo_modo = modo_opts[modo_sel_label]
 
-        st.markdown("### ⚙️ Configuración")
-        tab_gen, tab_imp, tab_load, tab_save = st.tabs(["📦 Generar Bloque", "📂 Importar Archivo", "📂 Cargar Guardado", "💾 Guardar Actual"])
-        
-        # --- GENERADOR DE BLOQUE ---
-        with tab_gen:
-            c1, c2, c3 = st.columns(3)
-            p_width = c1.number_input("Ancho Y [mm]:", value=500.0, step=10.0, key="obj_w")
-            p_height = c2.number_input("Alto Z [mm]:", value=20.0, step=10.0, key="obj_h")
-            p_length = c3.number_input("Largo X [mm]:", value=20.0, step=10.0, key="obj_l")
-            
-            c4, c5, c6 = st.columns(3)
-            p_x_pos = c4.number_input("Posición X (Frente) [mm]:", value=0.0, step=10.0, key="obj_x")
-            
-            # Helper para centrado automático
-            use_auto_center = st.checkbox("📍 Calcular Centro Automáticamente (Dimensiones Túnel)", value=False)
-            
-            if use_auto_center:
-                c_auto1, c_auto2 = st.columns(2)
-                tunnel_w = c_auto1.number_input("Ancho Total Túnel/Plano [mm]:", value=760.0, step=10.0)
-                tunnel_h = c_auto2.number_input("Alto Total Túnel/Plano [mm]:", value=860.0, step=10.0)
-                
-                # Calcular centros atomáticamente
-                val_y_center = tunnel_w / 2
-                val_z_center = tunnel_h / 2
-                st.info(f"💡 Centro Calculado: Y={val_y_center:.1f}, Z={val_z_center:.1f}")
+        st.markdown("---")
+
+        # ── MODO: CARGAR DE BASE DE DATOS ────────────────────────────────
+        if st.session_state.modelo_modo == 'bd':
+            try:
+                saved_objs = auth.get_user_objects(st.session_state.username)
+            except AttributeError:
+                st.error("Error: Función get_user_objects no encontrada en auth.py.")
+                saved_objs = []
+
+            if not saved_objs:
+                st.info("No hay modelos guardados en la base de datos. Importa uno nuevo.")
             else:
-                val_y_center = 0.0
-                val_z_center = 10.0
+                obj_labels = {f"📦 {name} ({o_type}) — {f_date}": (obj_id, name, o_type, d_json, f_date)
+                              for obj_id, name, o_type, d_json, f_date in saved_objs}
+                sel_label = st.selectbox("Seleccionar modelo guardado:", list(obj_labels.keys()), key="sel_modelo_bd")
+                
+                if sel_label:
+                    obj_id, name, o_type, d_json, f_date = obj_labels[sel_label]
+                    
+                    # Info del modelo
+                    st.markdown(f"""
+                    <div style="background:#111; border:1px solid #333; border-radius:8px; padding:12px; margin-bottom:12px;">
+                        <p style="color:#888; margin:0; font-size:0.8rem;">Nombre</p>
+                        <p style="color:white; font-weight:bold; margin:0 0 8px 0;">{name}</p>
+                        <p style="color:#888; margin:0; font-size:0.8rem;">Tipo / Guardado</p>
+                        <p style="color:#aaa; margin:0;">{o_type} | {f_date}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
 
-            # Inputs de centro (se actualizan si auto está activo, sino manuales)
-            if use_auto_center:
-                 p_y_center = c5.number_input("Centro Y [mm]:", value=float(val_y_center), disabled=True, key="obj_yc_auto")
-                 p_z_center = c6.number_input("Centro Z [mm]:", value=float(val_z_center), disabled=True, key="obj_zc_auto")
-            else:
-                 p_y_center = c5.number_input("Centro Y [mm]:", value=0.0, step=10.0, help="Desplazamiento lateral (0 = centrado)", key="obj_yc")
-                 p_z_center = c6.number_input("Centro Z [mm]:", value=10.0, step=10.0, help="Altura del centro del objeto", key="obj_zc")
-            
-            if st.button("Generar Bloque", type="primary", use_container_width=True):
-                # Crear malla de cubo (Box)
-                x_min, x_max = p_x_pos, p_x_pos + p_length
-                
-                # Centrado en Y y Z
-                y_min = p_y_center - (p_width / 2)
-                y_max = p_y_center + (p_width / 2)
-                
-                z_min = p_z_center - (p_height / 2)
-                z_max = p_z_center + (p_height / 2)
-                
-                # 8 Vértices
-                obj_x = [x_min, x_min, x_min, x_min,  x_max, x_max, x_max, x_max]
-                obj_y = [y_min, y_max, y_max, y_min,  y_min, y_max, y_max, y_min]
-                obj_z = [z_min, z_min, z_max, z_max,  z_min, z_min, z_max, z_max]
-                
-                # Triángulos (12 caras)
-                obj_i = [0, 0,  5, 5,  1, 1,  4, 4,  3, 3,  4, 4]
-                obj_j = [1, 2,  4, 7,  5, 6,  0, 3,  2, 6,  5, 1]
-                obj_k = [2, 3,  7, 6,  6, 2,  3, 7,  6, 7,  1, 0]
-                
-                st.session_state.objeto_referencia_4d = {
-                    'type': 'mesh',
-                    'x': obj_x, 'y': obj_y, 'z': obj_z,
-                    'i': obj_i, 'j': obj_j, 'k': obj_k,
-                    'name': f'Bloque {int(p_width)}x{int(p_height)}x{int(p_length)}'
-                }
-                # Guardar BASE y resetear transformaciones
-                st.session_state.objeto_referencia_base = st.session_state.objeto_referencia_4d.copy()
-                st.session_state.transform_active = {'dx': 0.0, 'dy': 0.0, 'dz': 0.0, 'rx': 0.0, 'ry': 0.0, 'rz': 0.0}
-                
-                st.success("✅ Bloque generado")
+                    # Restaurar CG si está guardado en el JSON
+                    try:
+                        _data_preview = json.loads(d_json)
+                        if 'cg' in _data_preview:
+                            _cg = _data_preview['cg']
+                            st.session_state.modelo_cg = {'x': _cg.get('x', 0.0), 'y': _cg.get('y', 0.0), 'z': _cg.get('z', 0.0)}
+                    except:
+                        pass
 
-        # --- IMPORTAR CSV/STL ---
-        with tab_imp:
-            st.markdown("##### 🔧 Configuración de Posicionamiento")
+                    col_load, col_del = st.columns(2)
+                    with col_load:
+                        if st.button("📥 Seleccionar este modelo", use_container_width=True, type="primary", key="btn_select_bd"):
+                            try:
+                                data_loaded = json.loads(d_json)
+                                data_loaded['x'] = np.array(data_loaded['x'])
+                                data_loaded['y'] = np.array(data_loaded['y'])
+                                data_loaded['z'] = np.array(data_loaded['z'])
+                                if 'i' in data_loaded:
+                                    data_loaded['i'] = np.array(data_loaded['i'])
+                                    data_loaded['j'] = np.array(data_loaded['j'])
+                                    data_loaded['k'] = np.array(data_loaded['k'])
+                                # Restaurar CG guardado
+                                if 'cg' in data_loaded:
+                                    st.session_state.modelo_cg = data_loaded['cg']
+
+                                st.session_state.objeto_referencia_4d = data_loaded
+                                st.session_state.objeto_referencia_base = data_loaded.copy()
+                                st.session_state.transform_active = {'dx': 0.0, 'dy': 0.0, 'dz': 0.0, 'rx': 0.0, 'ry': 0.0, 'rz': 0.0}
+                                st.session_state.modelo_nombre_bd = name
+                                st.success(f"✅ '{name}' cargado.")
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"Error al cargar: {e}")
+                    with col_del:
+                        if st.button("🗑️ Eliminar", use_container_width=True, key="btn_del_bd"):
+                            try:
+                                auth.delete_user_object(obj_id)
+                                st.session_state.modelo_nombre_bd = None
+                                st.rerun()
+                            except:
+                                st.error("Error al eliminar")
+
+        # ── MODO: IMPORTAR ARCHIVO ────────────────────────────────────────
+        else:
+            st.markdown("##### 📂 Cargar Archivo STL o CSV")
             
-            # Controles de Posición (Offsets)
             c_imp1, c_imp2, c_imp3 = st.columns(3)
-            imp_off_x = c_imp1.number_input("Posición X (Longitudinal) [mm]", value=0.0, step=10.0, key="imp_off_x")
-            imp_off_y = c_imp2.number_input("Posición Y (Transversal) [mm]", value=0.0, step=10.0, key="imp_off_y")
-            imp_off_z = c_imp3.number_input("Posición Z (Vertical) [mm]", value=0.0, step=10.0, key="imp_off_z")
-            
-            st.markdown("##### 🔄 2. Rotación (Grados)")
-            c_rot1, c_rot2, c_rot3 = st.columns(3)
-            rot_x = c_rot1.number_input("Rotación X", value=0.0, step=90.0, key="rot_x")
-            rot_y = c_rot2.number_input("Rotación Y", value=0.0, step=90.0, key="rot_y")
-            rot_z = c_rot3.number_input("Rotación Z", value=0.0, step=90.0, key="rot_z")
+            imp_off_x = c_imp1.number_input("Offset X [mm]", value=0.0, step=10.0, key="imp_off_x")
+            imp_off_y = c_imp2.number_input("Offset Y [mm]", value=0.0, step=10.0, key="imp_off_y")
+            imp_off_z = c_imp3.number_input("Offset Z [mm]", value=0.0, step=10.0, key="imp_off_z")
 
-            # Auto-Centrado
-            c_auto_imp1, c_auto_imp2 = st.columns([1, 2])
-            use_auto_center_imp = c_auto_imp1.checkbox("📍 Auto-Centrar Objeto Importado", value=True, help="Calcula el centro geométrico del objeto y lo mueve al origen (0,0,0) antes de aplicar los offsets.")
-            
-            st.divider()
-            
-            file_obj = st.file_uploader("Cargar Archivo (CSV o STL)", type=['csv', 'stl'])
-            
-            if file_obj and st.button("📥 Cargar y Procesar Objeto", type="primary", use_container_width=True):
-                # Determinar extensión
+            c_rot1, c_rot2, c_rot3 = st.columns(3)
+            rot_x = c_rot1.number_input("Rot X [°]", value=0.0, step=90.0, key="rot_x")
+            rot_y = c_rot2.number_input("Rot Y [°]", value=0.0, step=90.0, key="rot_y")
+            rot_z = c_rot3.number_input("Rot Z [°]", value=0.0, step=90.0, key="rot_z")
+
+            use_auto_center_imp = st.checkbox("📍 Auto-centrar objeto al importar (centroide → origen)", value=True, key="auto_center_imp")
+
+            file_obj = st.file_uploader("Cargar archivo (STL o CSV):", type=['csv', 'stl'], key="uploader_modelo_imp")
+
+            if file_obj and st.button("📥 Procesar e importar", type="primary", use_container_width=True, key="btn_importar_modelo"):
                 file_ext = file_obj.name.split('.')[-1].lower()
-                
-                x_points, y_points, z_points = None, None, None
-                faces_i, faces_j, faces_k = None, None, None
+                x_points = y_points = z_points = faces_i = faces_j = faces_k = None
                 obj_type = None
-                
+
                 try:
                     if file_ext == 'csv':
                         df_obj = pd.read_csv(file_obj, sep=None, engine='python')
                         cols_map = {c.lower(): c for c in df_obj.columns}
                         if 'x' in cols_map and 'y' in cols_map and 'z' in cols_map:
-                            # Use correct columns
-                            # Check column names carefully as user might upload anything
                             x_points = df_obj[cols_map['x']].values
                             y_points = df_obj[cols_map['y']].values
                             z_points = df_obj[cols_map['z']].values
                             obj_type = 'scatter'
                         else:
                             st.error("El CSV requiere columnas X, Y, Z")
-                
+
                     elif file_ext == 'stl':
-                        # PyVista necesita leer de archivo físico, usamos tempfile
                         with tempfile.NamedTemporaryFile(delete=False, suffix='.stl') as tmp:
                             tmp.write(file_obj.getvalue())
                             tmp_path = tmp.name
-                        
-                        # Leer con PyVista
                         mesh = pv.read(tmp_path)
-                        os.unlink(tmp_path) # Limpiar temp
-                        
-                        # Triangular si es necesario
+                        os.unlink(tmp_path)
                         if not mesh.is_all_triangles:
                             mesh = mesh.triangulate()
-                            
                         points = mesh.points
                         x_points = points[:, 0]
                         y_points = points[:, 1]
                         z_points = points[:, 2]
-                        
                         faces = mesh.faces.reshape(-1, 4)[:, 1:]
                         faces_i = faces[:, 0]
                         faces_j = faces[:, 1]
                         faces_k = faces[:, 2]
                         obj_type = 'mesh'
 
-                    # --- TRANSFORMACIONES ---
                     if x_points is not None:
-                        # 1. Auto-Centrado (Llevar Centro Geométrico a 0,0,0)
                         if use_auto_center_imp:
                             cx = (np.min(x_points) + np.max(x_points)) / 2
                             cy = (np.min(y_points) + np.max(y_points)) / 2
                             cz = (np.min(z_points) + np.max(z_points)) / 2
-                            
-                            x_points = x_points - cx
-                            y_points = y_points - cy
-                            z_points = z_points - cz
+                            x_points -= cx; y_points -= cy; z_points -= cz
 
-                        # 2. Rotación (Alrededor del centro local 0,0,0)
                         if rot_x != 0 or rot_y != 0 or rot_z != 0:
                             x_points, y_points, z_points = rotate_points(x_points, y_points, z_points, rot_x, rot_y, rot_z)
-                        
-                        # 3. Aplicar Offsets del Usuario
-                        x_points = x_points + imp_off_x
-                        y_points = y_points + imp_off_y
-                        z_points = z_points + imp_off_z
-                        
 
-                        # Guardar en Session State
-                        obj_data = {
-                            'type': obj_type,
-                            'x': x_points,
-                            'y': y_points,
-                            'z': z_points,
-                            'name': f"{file_obj.name}"
-                        }
+                        x_points += imp_off_x
+                        y_points += imp_off_y
+                        z_points += imp_off_z
+
+                        obj_data = {'type': obj_type, 'x': x_points, 'y': y_points, 'z': z_points, 'name': file_obj.name}
                         if obj_type == 'mesh':
-                             obj_data.update({'i': faces_i, 'j': faces_j, 'k': faces_k})
-                             
+                            obj_data.update({'i': faces_i, 'j': faces_j, 'k': faces_k})
+
                         st.session_state.objeto_referencia_4d = obj_data
-                        # Guardar copia BASE para permitir modificaciones posteriores sin degradación
                         st.session_state.objeto_referencia_base = obj_data.copy()
-                        # Resetear transformaciones activas al cargar nuevo
                         st.session_state.transform_active = {'dx': 0.0, 'dy': 0.0, 'dz': 0.0, 'rx': 0.0, 'ry': 0.0, 'rz': 0.0}
-                        
-                        st.success(f"✅ Objeto Cargado Exitosamente: {file_obj.name}")
-                        if use_auto_center_imp:
-                            st.info("ℹ️ Objeto centrado automáticamente y desplazado según configuración.")
-                        else:
-                            st.info("ℹ️ Objeto cargado en coordenadas originales + configuración.")
- 
+                        st.session_state.modelo_nombre_bd = None  # es nuevo → botón GUARDAR
+                        st.success(f"✅ Importado: {file_obj.name}")
+                        st.rerun()
+
                 except Exception as e:
-                    st.error(f"Error procesando archivo: {str(e)}")
- 
-        # --- CARGAR GUARDADO (Persistencia) ---
-        with tab_load:
-            # Check if using the mocked auth or real auth
-            try:
-                saved_objs = auth.get_user_objects(st.session_state.username)
-            except AttributeError:
-                st.error("Error: Función get_user_objects no encontrada en auth.py. Verifique la actualización del módulo.")
-                saved_objs = []
+                    st.error(f"Error procesando archivo: {e}")
 
-            if saved_objs:
-                st.write(f"Objetos guardados de **{st.session_state.username}**:")
-                
-                for obj_id, name, o_type, d_json, f_date in saved_objs:
-                    with st.expander(f"📦 {name} ({f_date})"):
-                        st.text(f"Tipo: {o_type}")
-                        c_l1, c_l2 = st.columns(2)
-                        with c_l1:
-                            if st.button("Cargar este Objeto", key=f"load_obj_{obj_id}"):
-                                try:
-                                    data_loaded = json.loads(d_json)
-                                    # Convert list back to numpy where needed (for consistency)
-                                    data_loaded['x'] = np.array(data_loaded['x'])
-                                    data_loaded['y'] = np.array(data_loaded['y'])
-                                    data_loaded['z'] = np.array(data_loaded['z'])
-                                    if 'i' in data_loaded:
-                                        data_loaded['i'] = np.array(data_loaded['i'])
-                                        data_loaded['j'] = np.array(data_loaded['j'])
-                                        data_loaded['k'] = np.array(data_loaded['k'])
-                                    
-                                    st.session_state.objeto_referencia_4d = data_loaded
-                                    # Guardar BASE y resetear transformaciones
-                                    st.session_state.objeto_referencia_base = data_loaded.copy()
-                                    st.session_state.transform_active = {'dx': 0.0, 'dy': 0.0, 'dz': 0.0, 'rx': 0.0, 'ry': 0.0, 'rz': 0.0}
-                                    
-                                    st.success(f"✅ {name} cargado a la sesión.")
-                                    st.rerun()
-                                except Exception as e:
-                                    st.error(f"Error cargando JSON: {e}")
-                        with c_l2:
-                            if st.button("🗑️ Eliminar", key=f"del_obj_{obj_id}"):
-                                try:
-                                    auth.delete_user_object(obj_id)
-                                    st.rerun()
-                                except:
-                                    st.error("Error al eliminar")
-            else:
-                st.info("No tienes objetos guardados.")
+        # ── TRANSFORMACIÓN ACTIVA ────────────────────────────────────────
+        if 'objeto_referencia_4d' in st.session_state:
+            st.markdown("---")
+            with st.expander("🛠️ Ajuste Fino de Posición / Rotación", expanded=False):
+                def apply_transform_modelos():
+                    base = st.session_state.objeto_referencia_base
+                    t = st.session_state.transform_active
+                    x, y, z = np.array(base['x'], dtype=float), np.array(base['y'], dtype=float), np.array(base['z'], dtype=float)
+                    if t['rx'] != 0 or t['ry'] != 0 or t['rz'] != 0:
+                        x, y, z = rotate_points(x, y, z, t['rx'], t['ry'], t['rz'])
+                    x += t['dx']; y += t['dy']; z += t['dz']
+                    upd = base.copy(); upd['x'] = x; upd['y'] = y; upd['z'] = z
+                    st.session_state.objeto_referencia_4d = upd
 
-        # --- GUARDAR ACTUAL (Persistencia) ---
-        with tab_save:
-            if 'objeto_referencia_4d' in st.session_state:
-                st.info("Objeto actual en memoria listo para guardar:")
-                st.write(f"**Nombre:** {st.session_state.objeto_referencia_4d.get('name', 'Sin Nombre')}")
-                st.write(f"**Tipo:** {st.session_state.objeto_referencia_4d.get('type')}")
-                
-                name_to_save = st.text_input("Nombre para guardar:", value=st.session_state.objeto_referencia_4d.get('name', 'MiObjeto'))
-                
-                if st.button("💾 Guardar en Base de Datos"):
-                    # Serializar a JSON
-                    # Numpy arrays need to be converted to lists
+                ct1, ct2, ct3 = st.columns(3)
+                st.session_state.transform_active['dx'] = ct1.number_input("dX [mm]", value=st.session_state.transform_active.get('dx', 0.0), step=10.0, key="t_dx_m", on_change=apply_transform_modelos)
+                st.session_state.transform_active['dy'] = ct2.number_input("dY [mm]", value=st.session_state.transform_active.get('dy', 0.0), step=10.0, key="t_dy_m", on_change=apply_transform_modelos)
+                st.session_state.transform_active['dz'] = ct3.number_input("dZ [mm]", value=st.session_state.transform_active.get('dz', 0.0), step=10.0, key="t_dz_m", on_change=apply_transform_modelos)
+                cr1, cr2, cr3 = st.columns(3)
+                st.session_state.transform_active['rx'] = cr1.number_input("Rot X [°]", value=st.session_state.transform_active.get('rx', 0.0), step=90.0, key="t_rx_m", on_change=apply_transform_modelos)
+                st.session_state.transform_active['ry'] = cr2.number_input("Rot Y [°]", value=st.session_state.transform_active.get('ry', 0.0), step=90.0, key="t_ry_m", on_change=apply_transform_modelos)
+                st.session_state.transform_active['rz'] = cr3.number_input("Rot Z [°]", value=st.session_state.transform_active.get('rz', 0.0), step=90.0, key="t_rz_m", on_change=apply_transform_modelos)
+
+        # ── SISTEMA DE REFERENCIA Y CENTRO DE GRAVEDAD ───────────────────
+        if 'objeto_referencia_4d' in st.session_state:
+            st.markdown("---")
+            st.markdown("""
+            <div style="background:#0a1628; border:1px solid #1e3a5f; border-radius:8px; padding:14px; margin-bottom:14px;">
+                <h4 style="color:#60a5fa; margin:0 0 8px 0;">🧭 Sistema de Referencia del Modelo</h4>
+                <p style="color:#93c5fd; font-size:0.85rem; margin:0; line-height:1.6;">
+                    <b>Origen (Datum):</b> Nariz del avión<br>
+                    <b>X+</b> → hacia la cola &nbsp;|&nbsp; <b>Y+</b> → semiala derecha &nbsp;|&nbsp; <b>Z+</b> → techo
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+            st.markdown("#### 🎯 Centro de Gravedad (CG) — Punto de Rotación")
+            st.caption("El CG define el pivote para el cabeceo (Alpha) y la guiñada (Beta) en la visualización 4D.")
+
+            cg_cols = st.columns(3)
+            st.session_state.modelo_cg['x'] = cg_cols[0].number_input("CG — X [mm desde nariz]", value=float(st.session_state.modelo_cg.get('x', 0.0)), step=5.0, format="%.1f", key="cg_x")
+            st.session_state.modelo_cg['y'] = cg_cols[1].number_input("CG — Y [mm]", value=float(st.session_state.modelo_cg.get('y', 0.0)), step=5.0, format="%.1f", key="cg_y")
+            st.session_state.modelo_cg['z'] = cg_cols[2].number_input("CG — Z [mm]", value=float(st.session_state.modelo_cg.get('z', 0.0)), step=5.0, format="%.1f", key="cg_z")
+
+            if st.button("📍 Auto-centrar CG (X=0, Y/Z = centroide del modelo)", use_container_width=True, key="btn_autocg"):
+                obj_actual = st.session_state.objeto_referencia_4d
+                x_arr = np.array(obj_actual['x']); y_arr = np.array(obj_actual['y']); z_arr = np.array(obj_actual['z'])
+                st.session_state.modelo_cg['x'] = 0.0
+                st.session_state.modelo_cg['y'] = float((np.min(y_arr) + np.max(y_arr)) / 2)
+                st.session_state.modelo_cg['z'] = float((np.min(z_arr) + np.max(z_arr)) / 2)
+                st.success(f"✅ CG auto-calculado: X=0, Y={st.session_state.modelo_cg['y']:.1f}, Z={st.session_state.modelo_cg['z']:.1f} mm")
+                st.rerun()
+
+            # ── NOMBRE DEL MODELO ────────────────────────────────────────
+            st.markdown("---")
+            nombre_actual = st.session_state.objeto_referencia_4d.get('name', 'MiModelo')
+            nombre_modelo = st.text_input("📝 Nombre del modelo:", value=nombre_actual, key="nombre_modelo_final")
+
+            # ── BOTONES FINALES ──────────────────────────────────────────
+            c_btn1, c_btn2 = st.columns(2)
+
+            # GUARDAR / ACTUALIZAR
+            es_existente = st.session_state.modelo_nombre_bd is not None
+            lbl_save = f"🔄 ACTUALIZAR '{st.session_state.modelo_nombre_bd}'" if es_existente else "💾 GUARDAR modelo"
+
+            with c_btn1:
+                if st.button(lbl_save, use_container_width=True, type="primary", key="btn_guardar_modelo"):
                     obj_to_save = st.session_state.objeto_referencia_4d.copy()
-                    
+                    obj_to_save['name'] = nombre_modelo
+                    obj_to_save['cg'] = st.session_state.modelo_cg.copy()
+
                     class NumpyEncoder(json.JSONEncoder):
                         def default(self, obj):
-                            if isinstance(obj, np.ndarray):
-                                return obj.tolist()
+                            if isinstance(obj, np.ndarray): return obj.tolist()
                             return json.JSONEncoder.default(self, obj)
-                    
+
                     try:
                         json_str = json.dumps(obj_to_save, cls=NumpyEncoder)
-                        if auth.save_user_object(
-                            st.session_state.username, 
-                            name_to_save, 
-                            obj_to_save['type'], 
-                            json_str
-                        ):
-                            st.success(f"✅ Objeto '{name_to_save}' guardado exitosamente.")
+                        if auth.save_user_object(st.session_state.username, nombre_modelo, obj_to_save['type'], json_str):
+                            st.success(f"✅ '{nombre_modelo}' guardado en la BD.")
+                            st.session_state.modelo_nombre_bd = nombre_modelo
                         else:
-                            st.error("Error al guardar en base de datos.")
+                            st.error("Error al guardar en la base de datos.")
                     except Exception as e:
-                        st.error(f"Error serializando objeto: {e}")
-            else:
-                st.warning("⚠️ No hay ningún objeto cargado/generado actualmente.")
+                        st.error(f"Error serializando: {e}")
 
+            # USAR EN LA PÁGINA
+            with c_btn2:
+                if st.button("✅ USAR MODELO EN LA PÁGINA", use_container_width=True, key="btn_usar_modelo"):
+                    st.session_state.objeto_referencia_4d['name'] = nombre_modelo
+                    st.session_state.objeto_referencia_4d['cg'] = st.session_state.modelo_cg.copy()
+                    st.success(f"✅ Modelo '{nombre_modelo}' activado. CG: X={st.session_state.modelo_cg['x']:.1f}, Y={st.session_state.modelo_cg['y']:.1f}, Z={st.session_state.modelo_cg['z']:.1f} mm")
+
+    # ── PREVIEW 3D ────────────────────────────────────────────────────────
     with c_preview:
         st.markdown("### 👁️ Vista Previa 3D")
         if 'objeto_referencia_4d' in st.session_state:
             obj = st.session_state.objeto_referencia_4d
+            cg = st.session_state.modelo_cg
             fig_prev = go.Figure()
-            
+
             if obj['type'] == 'mesh':
                 fig_prev.add_trace(go.Mesh3d(
                     x=obj['x'], y=obj['y'], z=obj['z'],
                     i=obj['i'], j=obj['j'], k=obj['k'],
-                    color='gray', opacity=0.8, name=obj['name'],
-                    alphahull=0, showscale=False
+                    color='#4a90d9', opacity=0.75, name=obj['name'],
+                    alphahull=0, showscale=False, lighting=dict(ambient=0.4, diffuse=0.8)
                 ))
             elif obj['type'] == 'scatter':
                 fig_prev.add_trace(go.Scatter3d(
                     x=obj['x'], y=obj['y'], z=obj['z'],
-                    mode='markers', marker=dict(size=2, color='gray'),
+                    mode='markers', marker=dict(size=2, color='#4a90d9', opacity=0.8),
                     name=obj['name']
                 ))
-                
+
+            # Mostrar CG como punto rojo
+            fig_prev.add_trace(go.Scatter3d(
+                x=[cg['x']], y=[cg['y']], z=[cg['z']],
+                mode='markers+text',
+                marker=dict(size=10, color='#ff4444', symbol='cross'),
+                text=["CG"], textposition="top center",
+                textfont=dict(color='#ff4444', size=12),
+                name="Centro de Gravedad"
+            ))
+
             fig_prev.update_layout(
-                scene=dict(aspectmode='data', xaxis_title="X", yaxis_title="Y", zaxis_title="Z"),
-                margin=dict(l=0, r=0, b=0, t=0),
-                height=500
+                scene=dict(
+                    aspectmode='data',
+                    xaxis_title="X (Longitudinal)",
+                    yaxis_title="Y (Transversal)",
+                    zaxis_title="Z (Vertical)",
+                    bgcolor='rgba(0,0,0,0)'
+                ),
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
+                font=dict(color='white'),
+                margin=dict(l=0, r=0, b=0, t=30),
+                height=550,
+                legend=dict(font=dict(color='white'))
             )
             st.plotly_chart(fig_prev, use_container_width=True)
+
+            # Info del modelo activo
+            x_arr = np.array(obj['x']); y_arr = np.array(obj['y']); z_arr = np.array(obj['z'])
+            st.markdown(f"""
+            <div style="background:#111; border:1px solid #333; border-radius:8px; padding:12px; margin-top:8px;">
+                <p style="color:#888; margin:0; font-size:0.8rem;">Modelo activo</p>
+                <p style="color:white; font-weight:bold; margin:0 0 6px 0;">{obj.get('name','—')}</p>
+                <p style="color:#aaa; margin:0; font-size:0.8rem;">
+                    Tipo: {obj.get('type','—')} | Vértices: {len(x_arr):,}<br>
+                    X: [{np.min(x_arr):.1f}, {np.max(x_arr):.1f}] mm<br>
+                    Y: [{np.min(y_arr):.1f}, {np.max(y_arr):.1f}] mm<br>
+                    Z: [{np.min(z_arr):.1f}, {np.max(z_arr):.1f}] mm
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
         else:
-            st.warning("No hay objeto definido. Genera uno o importa un CSV.")
+            st.markdown("""
+            <div style="background:#0a0a0a; border:2px dashed #333; border-radius:12px; padding:3rem; text-align:center; margin-top:2rem;">
+                <p style="font-size:3rem; margin:0;">📦</p>
+                <p style="color:#666; margin:8px 0 0 0;">Ningún modelo cargado aún.<br>Carga uno desde la base de datos o importa un archivo STL/CSV.</p>
+            </div>
+            """, unsafe_allow_html=True)
+
 
 
 elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual == 'betz_3d':
@@ -4816,7 +4832,371 @@ elif st.session_state.seccion_actual == 'betz_4d':
                          pass
 
 
+elif st.session_state.seccion_actual == 'animacion_4d':
+    st.markdown("""
+    <div class="header-container">
+        <h1 style="font-size: 3rem; margin-bottom: 1rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
+            🎬 ANIMACIÓN 4D
+        </h1>
+        <h2 style="font-size: 1.8rem; margin-bottom: 0; opacity: 0.9;">
+            Interpolación de planos de presión y cabeceo del modelo geométrico
+        </h2>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Helper: extraer AOA del nombre del archivo (formato OAO{neg}{N})
+    def extraer_aoa_de_nombre(nombre):
+        import re
+        m = re.search(r'OAO(neg)?(\d+(?:[.,]\d+)?)', str(nombre), re.IGNORECASE)
+        if m:
+            signo = -1 if m.group(1) else 1
+            return signo * float(str(m.group(2)).replace(',', '.'))
+        return None
+
+    # Cargar planos 4D disponibles
+    try:
+        mis_superficies_anim = auth.get_user_surfaces_4d(st.session_state.username)
+    except AttributeError:
+        st.error("Error conectando con base de datos (función get_user_surfaces_4d no encontrada).")
+        mis_superficies_anim = []
+
+    if not mis_superficies_anim:
+        st.info("⚠️ No hay planos 4D guardados. Ve a **Vis. Estela 4D → Paso 1** para guardar planos primero.")
+    else:
+        # ── PASO 1: SELECCIÓN DE PLANOS ──────────────────────────────────────
+        st.markdown("## 📂 Paso 1: Selección de Planos")
+
+        dict_sup_anim = {f"{s[1]} (X={s[2]}mm) [{s[3][:10] if s[3] else ''}]": s for s in mis_superficies_anim}
+
+        # Selector rápido por AOA
+        col_modo_anim, col_vars_anim = st.columns([1, 2])
+        with col_modo_anim:
+            modo_sel_anim = st.radio("Modo de selección:", ["✅ Individual", "⚡ Todos los planos", "🎯 Filtrar por AOA"], key="modo_sel_anim")
+        
+        with col_vars_anim:
+            opciones_var_anim4d = ["Presión Total [Actual]", "ρ_∞", "V_∞", "P_∞"]
+            var_anim_sel = st.selectbox("📊 Variable a visualizar:", opciones_var_anim4d, key="var_anim4d_sel")
+
+        if modo_sel_anim == "✅ Individual":
+            sel_anim_labels = st.multiselect("Seleccionar planos:", list(dict_sup_anim.keys()), key="sel_anim_ind")
+        elif modo_sel_anim == "⚡ Todos los planos":
+            sel_anim_labels = list(dict_sup_anim.keys())
+            st.success(f"✅ {len(sel_anim_labels)} planos seleccionados automáticamente.")
+        else:
+            # Filtrar por AOA
+            all_aoas = sorted(set([
+                extraer_aoa_de_nombre(s[1]) for s in mis_superficies_anim
+                if extraer_aoa_de_nombre(s[1]) is not None
+            ]))
+            if not all_aoas:
+                st.warning("⚠️ No se pudieron detectar AOAs en los nombres. Verifique el formato (OAO{N} o OAOneg{N}).")
+                sel_anim_labels = []
+            else:
+                aoas_sel = st.multiselect(
+                    "Seleccionar AOAs [°]:",
+                    [f"{a}°" for a in all_aoas],
+                    default=[f"{a}°" for a in all_aoas],
+                    key="sel_aoas_anim"
+                )
+                aoas_num = [float(a.replace('°', '')) for a in aoas_sel]
+                sel_anim_labels = [
+                    lbl for lbl, s in dict_sup_anim.items()
+                    if extraer_aoa_de_nombre(s[1]) in aoas_num
+                ]
+                st.info(f"📊 {len(sel_anim_labels)} planos coincidentes con los AOAs seleccionados.")
+
+        if sel_anim_labels:
+            # Cargar DataFrames
+            anim_loaded = {}
+            for lbl in sel_anim_labels:
+                s_data = dict_sup_anim[lbl]
+                try:
+                    df_tmp = pd.DataFrame(json.loads(s_data[4]))
+                    df_tmp['Presion'] = calcular_variable_atmosferica(df_tmp, var_anim_sel)
+                    aoa_val = extraer_aoa_de_nombre(s_data[1])
+                    anim_loaded[lbl] = {
+                        'df': df_tmp,
+                        'x': s_data[2],
+                        'name': s_data[1],
+                        'aoa': aoa_val if aoa_val is not None else 0.0
+                    }
+                except Exception as e:
+                    st.warning(f"Error cargando {lbl}: {e}")
+
+            if anim_loaded:
+                # Ordenar por AOA
+                anim_items_sorted = sorted(anim_loaded.values(), key=lambda d: d['aoa'])
+                aoa_vals = [d['aoa'] for d in anim_items_sorted]
+                aoa_min, aoa_max = min(aoa_vals), max(aoa_vals)
+
+                st.markdown("---")
+                # ── PASO 2: VISUALIZACIÓN INTERACTIVA CON SLIDER ─────────────────
+                st.markdown("## 🎛️ Paso 2: Visualización Interactiva")
+
+                c_sl_conf, c_sl_plot = st.columns([1, 2.5])
+                with c_sl_conf:
+                    st.markdown("#### Configuración")
+                    pressure_scale_anim = st.slider("Escala de Relieve [presión→X]:", 0.1, 10.0, 1.0, 0.1, key="scale_anim_interp")
+
+                    # Slider de Alpha
+                    if aoa_min != aoa_max:
+                        alpha_slider = st.slider(
+                            f"Alpha [°] — ({aoa_min}° a {aoa_max}°):",
+                            min_value=float(aoa_min),
+                            max_value=float(aoa_max),
+                            value=float(aoa_min),
+                            step=0.5,
+                            key="alpha_slider_anim"
+                        )
+                    else:
+                        alpha_slider = float(aoa_min)
+                        st.info(f"Solo un AOA disponible: {aoa_min}°")
+
+                    mostrar_modelo_anim = st.checkbox("Mostrar modelo 3D", value=True, key="show_model_anim")
+
+                with c_sl_plot:
+                    # Interpolación bilineal del plano de presión
+                    # Encontrar los dos planos vecinos al alpha_slider
+                    if len(anim_items_sorted) == 1:
+                        df_interp = anim_items_sorted[0]['df'].copy()
+                        x_interp = anim_items_sorted[0]['x']
+                        aoa_render = anim_items_sorted[0]['aoa']
+                    else:
+                        # Buscar los dos planos más cercanos
+                        aoa_arr = np.array(aoa_vals)
+                        idx_sorted_aoa = np.argsort(aoa_arr)
+                        aoa_sorted = aoa_arr[idx_sorted_aoa]
+                        items_sorted_by_aoa = [anim_items_sorted[i] for i in idx_sorted_aoa]
+
+                        # Encontrar el índice inferior
+                        idx_lower = np.searchsorted(aoa_sorted, alpha_slider) - 1
+                        idx_lower = max(0, min(idx_lower, len(aoa_sorted) - 2))
+                        idx_upper = idx_lower + 1
+
+                        aoa_lo = aoa_sorted[idx_lower]
+                        aoa_hi = aoa_sorted[idx_upper]
+                        item_lo = items_sorted_by_aoa[idx_lower]
+                        item_hi = items_sorted_by_aoa[idx_upper]
+
+                        # Parámetro de interpolación
+                        t_interp = (alpha_slider - aoa_lo) / (aoa_hi - aoa_lo) if aoa_hi != aoa_lo else 0.0
+
+                        # Interpolar en grilla YZ común
+                        try:
+                            from scipy.interpolate import griddata
+                            df_lo = item_lo['df'].dropna(subset=['Y', 'Z', 'Presion'])
+                            df_hi = item_hi['df'].dropna(subset=['Y', 'Z', 'Presion'])
+
+                            y_all = np.concatenate([df_lo['Y'].values, df_hi['Y'].values])
+                            z_all = np.concatenate([df_lo['Z'].values, df_hi['Z'].values])
+                            y_grid = np.linspace(y_all.min(), y_all.max(), 60)
+                            z_grid = np.linspace(z_all.min(), z_all.max(), 60)
+                            Y_g, Z_g = np.meshgrid(y_grid, z_grid)
+
+                            P_lo = griddata((df_lo['Y'].values, df_lo['Z'].values), df_lo['Presion'].values,
+                                           (Y_g, Z_g), method='linear')
+                            P_hi = griddata((df_hi['Y'].values, df_hi['Z'].values), df_hi['Presion'].values,
+                                           (Y_g, Z_g), method='linear')
+
+                            # Interpolar presiones
+                            P_interp = (1 - t_interp) * P_lo + t_interp * P_hi
+                            mask_valid = ~np.isnan(P_interp)
+                            df_interp = pd.DataFrame({
+                                'Y': Y_g[mask_valid],
+                                'Z': Z_g[mask_valid],
+                                'Presion': P_interp[mask_valid]
+                            })
+                            x_interp = (1 - t_interp) * item_lo['x'] + t_interp * item_hi['x']
+                            aoa_render = alpha_slider
+                        except Exception as e_interp:
+                            # Fallback: usar el plano más cercano
+                            item_closest = item_lo if abs(alpha_slider - aoa_lo) <= abs(alpha_slider - aoa_hi) else item_hi
+                            df_interp = item_closest['df'].copy()
+                            x_interp = item_closest['x']
+                            aoa_render = item_closest['aoa']
+                            st.warning(f"Interpolación no disponible (scipy): {e_interp}. Usando plano más cercano.")
+
+                    # Renderizar gráfico 3D
+                    fig_anim_live = go.Figure()
+
+                    # Modelo 3D con cabeceo
+                    if mostrar_modelo_anim and 'objeto_referencia_4d' in st.session_state:
+                        obj_anim = st.session_state.objeto_referencia_4d
+                        cg_anim = st.session_state.get('modelo_cg', {'x': 0.0, 'y': 0.0, 'z': 0.0})
+
+                        # Rotar modelo en torno al CG (pitch = rotación eje Y = Alpha)
+                        x_m = np.array(obj_anim['x'], dtype=float) - cg_anim['x']
+                        y_m = np.array(obj_anim['y'], dtype=float) - cg_anim['y']
+                        z_m = np.array(obj_anim['z'], dtype=float) - cg_anim['z']
+                        x_m, y_m, z_m = rotate_points(x_m, y_m, z_m, 0, -aoa_render, 0)
+                        x_m += cg_anim['x']; y_m += cg_anim['y']; z_m += cg_anim['z']
+
+                        if obj_anim['type'] == 'mesh':
+                            fig_anim_live.add_trace(go.Mesh3d(
+                                x=x_m, y=y_m, z=z_m,
+                                i=obj_anim['i'], j=obj_anim['j'], k=obj_anim['k'],
+                                color='#888', opacity=0.35, name="Modelo",
+                                alphahull=0, showscale=False
+                            ))
+                        elif obj_anim['type'] == 'scatter':
+                            fig_anim_live.add_trace(go.Scatter3d(
+                                x=x_m, y=y_m, z=z_m,
+                                mode='markers', marker=dict(size=2, color='gray', opacity=0.5),
+                                name="Modelo"
+                            ))
+
+                    # Plano de presión interpolado
+                    try:
+                        df_clean_anim = df_interp.dropna(subset=['Y', 'Z', 'Presion']).drop_duplicates(subset=['Y', 'Z'])
+                        if len(df_clean_anim) >= 3:
+                            tri_anim = Delaunay(df_clean_anim[['Y', 'Z']].values)
+                            p_ref_anim = df_clean_anim['Presion'].max()
+                            x_def_anim = x_interp - ((df_clean_anim['Presion'] - p_ref_anim) * pressure_scale_anim)
+                            fig_anim_live.add_trace(go.Mesh3d(
+                                x=x_def_anim, y=df_clean_anim['Y'], z=df_clean_anim['Z'],
+                                i=tri_anim.simplices[:, 0], j=tri_anim.simplices[:, 1], k=tri_anim.simplices[:, 2],
+                                intensity=df_clean_anim['Presion'],
+                                colorscale='Jet', showscale=True,
+                                opacity=1.0, flatshading=True,
+                                name=f"Presión (α={aoa_render:.1f}°)"
+                            ))
+                    except Exception as e_plot:
+                        st.warning(f"Error renderizando plano: {e_plot}")
+
+                    fig_anim_live.update_layout(
+                        title=f"α = {aoa_render:.1f}°",
+                        scene=dict(
+                            aspectmode='data',
+                            xaxis=dict(title="X (Estación)", autorange="reversed"),
+                            yaxis_title="Y (Envergadura)",
+                            zaxis_title="Z (Altura)"
+                        ),
+                        paper_bgcolor='rgba(0,0,0,0)',
+                        height=600,
+                        margin=dict(l=0, r=0, b=0, t=40)
+                    )
+                    st.plotly_chart(fig_anim_live, use_container_width=True)
+
+                st.markdown("---")
+                # ── PASO 3: GENERADOR DE GIF ──────────────────────────────────────
+                st.markdown("## 🎥 Paso 3: Generar Animación GIF")
+                st.info("Genera un GIF animando la transición de Alpha en el rango de los planos cargados.")
+
+                c_gif1, c_gif2, c_gif3, c_gif4 = st.columns(4)
+                fps_gif = c_gif1.slider("FPS:", 1, 15, 3, key="fps_gif_anim")
+                n_pasos_gif = c_gif2.slider("N° pasos intermedios:", 2, 30, 10, key="npasos_gif")
+                quality_gif = c_gif3.select_slider("Calidad:", options=["Baja", "Media", "Alta"], value="Media", key="quality_gif_anim")
+                scale_gif = c_gif4.slider("Escala Relieve:", 0.1, 10.0, 1.0, 0.1, key="scale_gif_anim")
+
+                if st.button("🎥 Generar GIF de Animación Alpha", type="primary", use_container_width=True, key="btn_gen_gif_anim"):
+                    try:
+                        import kaleido
+                    except ImportError:
+                        st.error("❌ Librería 'kaleido' no encontrada. Contacte al administrador.")
+                        st.stop()
+
+                    from scipy.interpolate import griddata as _gd
+
+                    alpha_range = np.linspace(aoa_min, aoa_max, n_pasos_gif)
+                    status_gif = st.empty()
+                    prog_gif = st.progress(0)
+                    frames_gif = []
+                    temp_dir_gif = tempfile.mkdtemp()
+
+                    # Pre-computar grilla común
+                    all_y_gif, all_z_gif = [], []
+                    for item in anim_items_sorted:
+                        df_tmp = item['df'].dropna(subset=['Y', 'Z', 'Presion'])
+                        all_y_gif.extend(df_tmp['Y'].tolist()); all_z_gif.extend(df_tmp['Z'].tolist())
+                    y_gif_grid = np.linspace(min(all_y_gif), max(all_y_gif), 50)
+                    z_gif_grid = np.linspace(min(all_z_gif), max(all_z_gif), 50)
+                    Y_gg, Z_gg = np.meshgrid(y_gif_grid, z_gif_grid)
+
+                    # Pre-interpolar todos los planos a la grilla común
+                    grillas_presion = []
+                    aoa_arr_gif = np.array([d['aoa'] for d in anim_items_sorted])
+                    x_arr_gif = np.array([d['x'] for d in anim_items_sorted])
+                    for item in anim_items_sorted:
+                        df_g = item['df'].dropna(subset=['Y', 'Z', 'Presion'])
+                        P_g = _gd((df_g['Y'].values, df_g['Z'].values), df_g['Presion'].values,
+                                  (Y_gg, Z_gg), method='linear')
+                        grillas_presion.append(P_g)
+
+                    try:
+                        for fi, alpha_i in enumerate(alpha_range):
+                            status_gif.text(f"Renderizando frame {fi+1}/{n_pasos_gif} (α={alpha_i:.1f}°)...")
+
+                            # Interpolar presión
+                            idx_lo_g = max(0, min(np.searchsorted(aoa_arr_gif, alpha_i) - 1, len(aoa_arr_gif) - 2))
+                            idx_hi_g = idx_lo_g + 1
+                            t_g = (alpha_i - aoa_arr_gif[idx_lo_g]) / (aoa_arr_gif[idx_hi_g] - aoa_arr_gif[idx_lo_g]) if aoa_arr_gif[idx_hi_g] != aoa_arr_gif[idx_lo_g] else 0
+                            P_frame = (1 - t_g) * grillas_presion[idx_lo_g] + t_g * grillas_presion[idx_hi_g]
+                            x_frame = (1 - t_g) * x_arr_gif[idx_lo_g] + t_g * x_arr_gif[idx_hi_g]
+
+                            fig_f = go.Figure()
+
+                            # Modelo con cabeceo
+                            if 'objeto_referencia_4d' in st.session_state:
+                                obj_f = st.session_state.objeto_referencia_4d
+                                cg_f = st.session_state.get('modelo_cg', {'x': 0.0, 'y': 0.0, 'z': 0.0})
+                                xf = np.array(obj_f['x'], dtype=float) - cg_f['x']
+                                yf = np.array(obj_f['y'], dtype=float) - cg_f['y']
+                                zf = np.array(obj_f['z'], dtype=float) - cg_f['z']
+                                xf, yf, zf = rotate_points(xf, yf, zf, 0, -alpha_i, 0)
+                                xf += cg_f['x']; yf += cg_f['y']; zf += cg_f['z']
+                                if obj_f['type'] == 'mesh':
+                                    fig_f.add_trace(go.Mesh3d(x=xf, y=yf, z=zf,
+                                        i=obj_f['i'], j=obj_f['j'], k=obj_f['k'],
+                                        color='#888', opacity=0.3, alphahull=0, showscale=False))
+
+                            # Plano interpolado
+                            mask_f = ~np.isnan(P_frame)
+                            if mask_f.any():
+                                P_max_f = np.nanmax(P_frame)
+                                X_def_f = x_frame - ((P_frame - P_max_f) * scale_gif)
+                                fig_f.add_trace(go.Scatter3d(
+                                    x=X_def_f[mask_f].flatten(),
+                                    y=Y_gg[mask_f].flatten(),
+                                    z=Z_gg[mask_f].flatten(),
+                                    mode='markers',
+                                    marker=dict(size=3, color=P_frame[mask_f].flatten(),
+                                               colorscale='Jet', showscale=True),
+                                    name=f"α={alpha_i:.1f}°"
+                                ))
+
+                            fig_f.update_layout(
+                                title=f"α = {alpha_i:.1f}°",
+                                scene=dict(aspectmode='data',
+                                          xaxis=dict(title="X", autorange="reversed"),
+                                          yaxis_title="Y", zaxis_title="Z",
+                                          camera=dict(eye=dict(x=2.0, y=2.0, z=2.0))),
+                                margin=dict(l=0, r=0, b=0, t=40),
+                                paper_bgcolor='rgba(0,0,0,0)'
+                            )
+
+                            frame_path_gif = os.path.join(temp_dir_gif, f"frame_{fi:03d}.png")
+                            scale_q = 1.0 if quality_gif == "Baja" else (2.0 if quality_gif == "Media" else 3.0)
+                            fig_f.write_image(frame_path_gif, engine="kaleido", scale=scale_q)
+                            frames_gif.append(frame_path_gif)
+                            prog_gif.progress((fi + 1) / n_pasos_gif)
+
+                        # Compilar GIF
+                        status_gif.text("Compilando GIF...")
+                        gif_path_anim = os.path.join(temp_dir_gif, "animacion_4d.gif")
+                        images_gif = [imageio.imread(f) for f in frames_gif]
+                        imageio.mimsave(gif_path_anim, images_gif, fps=fps_gif, loop=0)
+
+                        st.success("✅ Animación completada")
+                        st.image(gif_path_anim)
+                        with open(gif_path_anim, "rb") as fg:
+                            st.download_button("📥 Descargar GIF", fg, file_name="animacion_4d.gif", mime="image/gif", key="dl_gif_anim4d")
+
+                    except Exception as e_gif:
+                        st.error(f"Error generando GIF: {e_gif}")
+
+
 elif st.session_state.seccion_actual == 'herramientas':
+
     st.markdown("""
     <div class="header-container">
         <h1 style="font-size: 3rem; margin-bottom: 1rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
