@@ -3336,15 +3336,22 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
         </div>
     """, unsafe_allow_html=True)
     
-    st.markdown("## ⚙️ Paso 1: Configuración de Parámetros Matemáticos")
+    st.markdown("## ⚙️ Paso 1: Configuración de Parámetros")
     c_param1, c_param2, c_param3 = st.columns(3)
     with c_param1:
-        sensibilidad_pa = st.number_input("Diferencial para Borde del Vórtice (ΔP) [Pa]", min_value=1.0, max_value=500.0, value=15.0, step=1.0, help="Diferencial de presión desde el núcleo hasta el borde que define la frontera del vórtice. Ej: Núcleo -260Pa y Borde -180Pa -> ΔP = 80Pa.")
+        sensibilidad_pa = st.slider(
+            "🌟 Cobertura mínima de gradiente [%]",
+            min_value=10, max_value=95, value=60, step=5,
+            help="""¿Qué tanto debe subir la presión desde el núcleo hasta P_libre para considerarse vórtice?
+60% = el contorno exterior debe alcanzar al menos el 60% del camino entre P_core y P_∞.
+Estelas y soportes no llegan a P_libre → quedan descartados."""
+        )
     with c_param2:
-        st.info("✔️ Visualización de Frontera Exacta")
+        st.info("✔️ Criterio: Núcleo → Gradiente → P_libre")
         forma_aprox = "Polígonos Reales (Isobanda)"
     with c_param3:
-        grid_res = st.slider("Resolución Grilla (Calidad)", min_value=50, max_value=300, value=150, step=10, help="Cantidad de puntos interpolados. Mayor resolución mejora precisión pero puede ser más lento.")
+        grid_res = st.slider("📐 Resolución Grilla", min_value=50, max_value=300, value=150, step=10,
+                             help="Cantidad de puntos interpolados.")
     
     st.markdown("---")
     st.markdown("## 🚀 Paso 2: Selección de Fuente y Ejecución")
@@ -3444,29 +3451,42 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                         
                         labels, num_features = ndimage.label(mascara_vortices)
                         vortices = []
-                        
+
+                        # Referencia de presión libre (P_∞)
+                        p_libre = float(np.nanmax(V_grid))       # Presion máxima = flujo no perturbado
+                        p_minimo_global = float(np.nanmin(V_grid))
+                        rango_total = p_libre - p_minimo_global  # rango completo del campo
+
                         for i in range(1, num_features + 1):
                             mask_zona = (labels == i)
-                            if np.sum(mask_zona) < 10: continue 
-                            
+                            if np.sum(mask_zona) < 10: continue
+
                             zona_values = np.where(mask_zona, V_grid, np.nan)
                             min_idx = np.nanargmin(zona_values)
                             row, col = np.unravel_index(min_idx, V_grid.shape)
                             p_core = V_grid[row, col]
                             y_core, z_core = y_grid_vals[col], z_grid_vals[row]
-                            
-                            # --- Expansión Iterativa por Isobandas (Lógica de Gradiente) ---
+
+                            # --- CRITERIO DE VÓRTICE REAL: la isobanda debe escalar desde
+                            # el núcleo hasta cerca de P_libre (flujo no perturbado).
+                            # Si el contorno exterior no llega a ~P_libre, es estela/soporte.
+                            # Cobertura = (P_borde - P_core) / (P_libre - P_core)
+                            # Debe ser >= umbral_cobertura para considerarse vórtice.
+                            umbral_cobertura = sensibilidad_pa / 100.0  # Slider 0-100%: default=70
+
                             best_poly = None
                             best_area = 0.0
-                            
-                            # Definimos niveles de búsqueda incrementales hasta el delta límite
-                            niveles_busqueda = np.linspace(p_core + 2, p_core + sensibilidad_pa, 20)
-                            
+                            cobertura_alcanzada = 0.0
+
+                            # Barrer isobandas desde el núcleo hacia P_libre
+                            niveles_busqueda = np.linspace(p_core + 1.0, p_libre - 1.0, 40)
+
                             for target_p in niveles_busqueda:
+                                cobertura_nivel = (target_p - p_core) / (p_libre - p_core) if (p_libre - p_core) != 0 else 0
                                 fig_tmp, ax_tmp = plt.subplots()
                                 cs = ax_tmp.contour(Y_grid, Z_grid, V_grid, levels=[target_p])
                                 level_poly, level_area = None, 0.0
-                                
+
                                 for path in cs.get_paths():
                                     for poly in path.to_polygons():
                                         if len(poly) > 4 and Path(poly).contains_point((y_core, z_core)):
@@ -3474,22 +3494,29 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                                             if area > level_area:
                                                 level_area = area
                                                 level_poly = poly
-                                
+
                                 plt.close(fig_tmp)
+
                                 if level_poly is not None:
-                                    # Lógica de "pasarse": Si el área explota o ya no hay gradiente claro
-                                    if best_poly is not None and level_area > best_area * 1.7: break
+                                    # El contorno se "abrió" (explota de tamaño): llegamos al límite
+                                    if best_poly is not None and level_area > best_area * 2.0: break
                                     best_poly, best_area = level_poly, level_area
-                                else: break
-                            
-                            if best_poly is not None:
+                                    cobertura_alcanzada = cobertura_nivel
+                                else:
+                                    # Contorno cerrado que ya no contiene el núcleo
+                                    break
+
+                            # Verificar cobertura: el vórtice real debe escalar hasta cerca de P_libre
+                            if best_poly is not None and cobertura_alcanzada >= umbral_cobertura:
                                 vortices.append({
                                     'id': f"V{len(vortices)+1}",
                                     'y': y_core, 'z': z_core,
                                     'p_min': p_core,
                                     'area': best_area,
+                                    'cobertura': round(cobertura_alcanzada * 100, 1),
                                     'poly_pts': best_poly.tolist()
                                 })
+
 
                         # --- RENDERIZADO FINAL ---
                         st.markdown(f"### 📊 Resultado Gráfico - Detección Zonal ({len(vortices)} vórtices)")
@@ -3538,8 +3565,10 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                                 "Centro Y [mm]": df_v['y'].round(2),
                                 "Centro Z [mm]": df_v['z'].round(2),
                                 "Presión Núcleo [Pa]": df_v['p_min'].round(2),
+                                "ΔP Núcleo→P_∞ [Pa]": (p_libre - df_v['p_min']).round(2),
                                 "Área Real [mm²]": df_v['area'].round(2),
-                                "Radio Equiv. [mm]": np.sqrt(df_v['area'] / np.pi).round(2)
+                                "Radio Equiv. [mm]": np.sqrt(df_v['area'] / np.pi).round(2),
+                                "Cobertura [%]": df_v['cobertura']
                             })
                             st.dataframe(df_res, use_container_width=True, hide_index=True)
                             
@@ -5064,16 +5093,30 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                                         cmin=pmin_v, cmax=pmax_v),
                             name=f"Presión (α={alpha_slider:.1f}°)"
                         ))
+                fig_live.update_layout(
+                    title=f"α = {alpha_slider:.1f}°",
+                    scene=dict(
+                        aspectmode='data',
+                        xaxis=dict(title="X (Estación)", autorange="reversed"),
+                        yaxis_title="Y (Envergadura)",
+                        zaxis_title="Z (Altura)"
+                    ),
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    font=dict(color='white'),
+                    height=620,
+                    margin=dict(l=0, r=0, b=0, t=40)
+                )
+                st.plotly_chart(fig_live, use_container_width=True)
 
-            # ── PASO 4: GENERADOR DE GIF (matplotlib, sin Chrome) ──────────────
             st.markdown("---")
             st.markdown("### 🎥 Paso 4: Generar Animación GIF")
-            st.caption("Genera un GIF 2D (plano YZ con mapa de presión por color) usando matplotlib — sin dependencia de Chrome.")
+            st.caption("💡 Matplotlib puro — sin Chrome ni kaleido. Dos modos: 2D suave (contourf) o 4D isométrico con modelo.")
 
-            c_gif1, c_gif2, c_gif3 = st.columns(3)
+            c_gif0, c_gif1, c_gif2, c_gif3 = st.columns(4)
+            tipo_gif  = c_gif0.radio("Tipo:", ["🗺️ 2D suave", "🚀 4D isométrico"], key="tipo_gif_sel")
             fps_gif   = c_gif1.slider("FPS:", 1, 10, 3, key="fps_gif_anim")
-            n_pas_gif = c_gif2.slider("N° pasos (frames):", 5, 60, 15, key="npasos_gif")
-            sc_gif    = c_gif3.slider("Tamaño marcador:", 1, 20, 5, key="sc_gif_anim")
+            n_pas_gif = c_gif2.slider("N° frames:", 5, 60, 15, key="npasos_gif")
+            sc_gif    = c_gif3.slider("× relieve (4D):", 0.1, 10.0, 1.0, 0.1, key="sc_gif_anim")
 
             if st.button("🎥 Generar GIF", type="primary", use_container_width=True, key="btn_gen_gif_anim"):
                 import matplotlib
@@ -5081,55 +5124,111 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                 import matplotlib.pyplot as _plt
                 import matplotlib.cm as _cm
                 import matplotlib.colors as _mcolors
+                from mpl_toolkits.mplot3d import Axes3D as _Axes3D  # noqa
+                from scipy.interpolate import griddata as _gd_gif
+                from scipy.spatial import Delaunay as _Del_gif
 
                 alpha_range_gif = np.linspace(aoa_min_v, aoa_max_v, n_pas_gif)
                 status_gif = st.empty()
-                prog_gif = st.progress(0)
+                prog_gif   = st.progress(0)
                 frames_gif = []
                 temp_dir_gif = tempfile.mkdtemp()
                 norm_gif = _mcolors.Normalize(vmin=pmin_v, vmax=pmax_v)
-                cmap_gif = _cm.get_cmap('jet')
+
+                # Grilla regular densa para contourf (2D suave)
+                N_GRID = 200
+                y_lim = (float(g['Y'].min()), float(g['Y'].max()))
+                z_lim = (float(g['Z'].min()), float(g['Z'].max()))
+                y_reg = np.linspace(y_lim[0], y_lim[1], N_GRID)
+                z_reg = np.linspace(z_lim[0], z_lim[1], N_GRID)
+                Yr, Zr = np.meshgrid(y_reg, z_reg)
 
                 try:
-                    # Límites fijos para toda la animación
-                    y_lim = (float(g['Y'].min()), float(g['Y'].max()))
-                    z_lim = (float(g['Z'].min()), float(g['Z'].max()))
-
                     for fi, alpha_i in enumerate(alpha_range_gif):
-                        status_gif.text(f"Frame {fi+1}/{n_pas_gif} — α={alpha_i:.1f}°")
+                        status_gif.text(f"Frame {fi+1}/{n_pas_gif}  α={alpha_i:.1f}°")
                         idx_lo_g = max(0, min(int(np.searchsorted(g['aoa_arr'], alpha_i)) - 1, len(g['aoa_arr']) - 2))
                         idx_hi_g = idx_lo_g + 1
-                        t_g = (alpha_i - g['aoa_arr'][idx_lo_g]) / (g['aoa_arr'][idx_hi_g] - g['aoa_arr'][idx_lo_g]) if g['aoa_arr'][idx_hi_g] != g['aoa_arr'][idx_lo_g] else 0.0
-                        P_g = (1 - t_g) * g['grillas'][idx_lo_g] + t_g * g['grillas'][idx_hi_g]
-                        mask_gif = ~np.isnan(P_g)
+                        denom_t = g['aoa_arr'][idx_hi_g] - g['aoa_arr'][idx_lo_g]
+                        t_g = (alpha_i - g['aoa_arr'][idx_lo_g]) / denom_t if denom_t != 0 else 0.0
+                        P_g  = (1 - t_g) * g['grillas'][idx_lo_g] + t_g * g['grillas'][idx_hi_g]
+                        x_g  = (1 - t_g) * g['x_arr'][idx_lo_g]  + t_g * g['x_arr'][idx_hi_g]
+                        mask_g = ~np.isnan(P_g)
 
-                        fig_mpl, ax_mpl = _plt.subplots(figsize=(8, 6), facecolor='#0e1117')
-                        ax_mpl.set_facecolor('#0e1117')
+                        if tipo_gif == "🗺️ 2D suave":
+                            # ── 2D: contourf suave sobre grilla densa ─────────────
+                            fig_mpl, ax_mpl = _plt.subplots(figsize=(9, 7), facecolor='#0e1117')
+                            ax_mpl.set_facecolor('#0e1117')
 
-                        if mask_gif.any():
-                            sc = ax_mpl.scatter(
-                                g['Y'][mask_gif], g['Z'][mask_gif],
-                                c=P_g[mask_gif], cmap='jet',
-                                norm=norm_gif, s=sc_gif, marker='s', linewidths=0
-                            )
-                            cb = fig_mpl.colorbar(sc, ax=ax_mpl, label=g.get('var', 'Presión [Pa]'))
-                            cb.ax.yaxis.label.set_color('white')
-                            cb.ax.tick_params(colors='white')
+                            if mask_g.any():
+                                # Interpolar puntos reales a grilla regular
+                                Pr = _gd_gif((g['Y'][mask_g], g['Z'][mask_g]), P_g[mask_g],
+                                             (Yr, Zr), method='linear')
+                                # Relleno smooth con contourf
+                                cf = ax_mpl.contourf(Yr, Zr, Pr, levels=40, cmap='jet', norm=norm_gif)
+                                # Isolíneas encima
+                                ax_mpl.contour(Yr, Zr, Pr, levels=12, colors='white', linewidths=0.4, alpha=0.4)
+                                cb = fig_mpl.colorbar(cf, ax=ax_mpl, label=g.get('var', 'Presión [Pa]'))
+                                cb.ax.yaxis.label.set_color('white')
+                                cb.ax.tick_params(colors='white')
 
-                        ax_mpl.set_xlim(y_lim); ax_mpl.set_ylim(z_lim)
-                        ax_mpl.set_xlabel("Y [mm]", color='white'); ax_mpl.set_ylabel("Z [mm]", color='white')
-                        ax_mpl.tick_params(colors='white')
-                        ax_mpl.set_title(f"α = {alpha_i:.1f}°  |  Plano YZ de Presión", color='white', fontsize=12)
-                        ax_mpl.set_aspect('equal', 'box')
-                        for spine in ax_mpl.spines.values(): spine.set_edgecolor('#444')
+                            # Línea de simetría
+                            y_mid_g = (y_lim[0] + y_lim[1]) / 2
+                            ax_mpl.axvline(y_mid_g, color='cyan', lw=1.2, ls='--', alpha=0.7, label=f'Y_mid={y_mid_g:.0f}')
+                            ax_mpl.set_xlim(y_lim); ax_mpl.set_ylim(z_lim)
+                            ax_mpl.set_xlabel("Y [mm]", color='white')
+                            ax_mpl.set_ylabel("Z [mm]", color='white')
+                            ax_mpl.tick_params(colors='white')
+                            ax_mpl.set_title(f"α = {alpha_i:.1f}°  |  Plano YZ — {g.get('var','Presión')}",
+                                             color='white', fontsize=13, pad=10)
+                            ax_mpl.set_aspect('equal', 'box')
+                            ax_mpl.legend(fontsize=8, facecolor='#1a1a2e', labelcolor='white',
+                                          edgecolor='#444', loc='upper right')
+                            for sp in ax_mpl.spines.values(): sp.set_edgecolor('#444')
 
-                        # Línea de simetría (Y medio)
-                        y_mid = (y_lim[0] + y_lim[1]) / 2
-                        ax_mpl.axvline(y_mid, color='cyan', linestyle='--', linewidth=1, alpha=0.5, label=f'Y_mid={y_mid:.0f}')
-                        ax_mpl.legend(fontsize=8, facecolor='#222', labelcolor='white')
+                        else:
+                            # ── 4D isométrico con modelo ──────────────────────────
+                            fig_mpl = _plt.figure(figsize=(11, 8), facecolor='#0e1117')
+                            ax3 = fig_mpl.add_subplot(111, projection='3d')
+                            ax3.set_facecolor('#0e1117')
+
+                            # Plano de presión
+                            if mask_g.any():
+                                Y_ok_g = g['Y'][mask_g]; Z_ok_g = g['Z'][mask_g]; P_ok_g = P_g[mask_g]
+                                # Interpolar a grilla regular para superficie suave
+                                Pr3 = _gd_gif((Y_ok_g, Z_ok_g), P_ok_g, (Yr, Zr), method='linear')
+                                P_ref_g = float(np.nanmax(P_g))
+                                Xr3 = x_g - ((Pr3 - P_ref_g) * sc_gif)
+                                valid3 = ~np.isnan(Pr3)
+                                # Renderizar con scatter3D (matplotlib 3D no tiene facecolor map en plot_surface con NaN)
+                                ax3.scatter(Xr3[valid3].ravel(), Yr[valid3].ravel(), Zr[valid3].ravel(),
+                                            c=Pr3[valid3].ravel(), cmap='jet', norm=norm_gif,
+                                            s=4, alpha=0.85, linewidths=0, depthshade=False)
+
+                            # Modelo 3D rotado
+                            if 'objeto_referencia_4d' in st.session_state:
+                                obj_b = st.session_state.get('objeto_referencia_base',
+                                        st.session_state.objeto_referencia_4d)
+                                cg_g2 = st.session_state.get('modelo_cg', {'x': 0.0, 'y': 0.0, 'z': 0.0})
+                                xm_g2, ym_g2, zm_g2 = _pose_anim(obj_b, alpha_i, 0.0, cg_g2)
+                                ax3.scatter(xm_g2, ym_g2, zm_g2,
+                                            c='#5588cc', s=1, alpha=0.25, linewidths=0)
+
+                            ax3.set_xlabel("X", color='white', fontsize=9)
+                            ax3.set_ylabel("Y", color='white', fontsize=9)
+                            ax3.set_zlabel("Z", color='white', fontsize=9)
+                            ax3.tick_params(colors='white', labelsize=7)
+                            ax3.xaxis.pane.fill = False; ax3.yaxis.pane.fill = False; ax3.zaxis.pane.fill = False
+                            ax3.xaxis.pane.set_edgecolor('#333'); ax3.yaxis.pane.set_edgecolor('#333'); ax3.zaxis.pane.set_edgecolor('#333')
+                            # Vista isométrica
+                            ax3.view_init(elev=25, azim=-135)
+                            ax3.set_title(f"α = {alpha_i:.1f}°  |  Vista 4D Isométrica",
+                                          color='white', fontsize=12, pad=12)
+                            # Invertir eje X (avance del avión)
+                            ax3.invert_xaxis()
+                            fig_mpl.tight_layout()
 
                         fp_gif = os.path.join(temp_dir_gif, f"frame_{fi:03d}.png")
-                        fig_mpl.savefig(fp_gif, dpi=90, bbox_inches='tight', facecolor='#0e1117')
+                        fig_mpl.savefig(fp_gif, dpi=110, bbox_inches='tight', facecolor='#0e1117')
                         _plt.close(fig_mpl)
                         frames_gif.append(fp_gif)
                         prog_gif.progress((fi + 1) / n_pas_gif)
@@ -5138,17 +5237,18 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                     gif_path_anim = os.path.join(temp_dir_gif, "animacion_4d.gif")
                     images_gif = [imageio.imread(f) for f in frames_gif]
                     imageio.mimsave(gif_path_anim, images_gif, fps=fps_gif, loop=0)
-                    st.success(f"✅ GIF generado: {n_pas_gif} frames, {fps_gif} FPS")
+                    st.success(f"✅ GIF generado: {n_pas_gif} frames · {fps_gif} FPS · {tipo_gif}")
                     st.image(gif_path_anim)
+                    nombre_gif = "animacion_2d.gif" if "2D" in tipo_gif else "animacion_4d_iso.gif"
                     with open(gif_path_anim, "rb") as fg:
-                        st.download_button("📥 Descargar GIF", fg, file_name="animacion_4d.gif",
+                        st.download_button("📥 Descargar GIF", fg, file_name=nombre_gif,
                                           mime="image/gif", key="dl_gif_anim4d")
 
                 except Exception as e_gif:
                     st.error(f"Error generando GIF: {e_gif}")
+                    import traceback; st.code(traceback.format_exc())
                 finally:
                     status_gif.empty(); prog_gif.empty()
-
 
 
 elif st.session_state.seccion_actual == 'herramientas':
