@@ -3680,7 +3680,6 @@ elif st.session_state.seccion_actual == 'modelos':
 
                                 st.session_state.objeto_referencia_4d = data_loaded
                                 st.session_state.objeto_referencia_base = data_loaded.copy()
-                                st.session_state.transform_active = {'dx': 0.0, 'dy': 0.0, 'dz': 0.0, 'rx': 0.0, 'ry': 0.0, 'rz': 0.0}
                                 st.session_state.modelo_nombre_bd = name
                                 st.success(f"✅ '{name}' cargado.")
                                 st.rerun()
@@ -3698,16 +3697,7 @@ elif st.session_state.seccion_actual == 'modelos':
         # ── MODO: IMPORTAR ARCHIVO ────────────────────────────────────────
         else:
             st.markdown("##### 📂 Cargar Archivo STL o CSV")
-            
-            c_imp1, c_imp2, c_imp3 = st.columns(3)
-            imp_off_x = c_imp1.number_input("Offset X [mm]", value=0.0, step=10.0, key="imp_off_x")
-            imp_off_y = c_imp2.number_input("Offset Y [mm]", value=0.0, step=10.0, key="imp_off_y")
-            imp_off_z = c_imp3.number_input("Offset Z [mm]", value=0.0, step=10.0, key="imp_off_z")
-
-            c_rot1, c_rot2, c_rot3 = st.columns(3)
-            rot_x = c_rot1.number_input("Rot X [°]", value=0.0, step=90.0, key="rot_x")
-            rot_y = c_rot2.number_input("Rot Y [°]", value=0.0, step=90.0, key="rot_y")
-            rot_z = c_rot3.number_input("Rot Z [°]", value=0.0, step=90.0, key="rot_z")
+            st.caption("El modelo se importa con los ejes del archivo. Los desplazamientos y rotaciones se configuran desde la sección 4D.")
 
             use_auto_center_imp = st.checkbox("📍 Auto-centrar objeto al importar (centroide → origen)", value=True, key="auto_center_imp")
 
@@ -3755,20 +3745,12 @@ elif st.session_state.seccion_actual == 'modelos':
                             cz = (np.min(z_points) + np.max(z_points)) / 2
                             x_points -= cx; y_points -= cy; z_points -= cz
 
-                        if rot_x != 0 or rot_y != 0 or rot_z != 0:
-                            x_points, y_points, z_points = rotate_points(x_points, y_points, z_points, rot_x, rot_y, rot_z)
-
-                        x_points += imp_off_x
-                        y_points += imp_off_y
-                        z_points += imp_off_z
-
                         obj_data = {'type': obj_type, 'x': x_points, 'y': y_points, 'z': z_points, 'name': file_obj.name}
                         if obj_type == 'mesh':
                             obj_data.update({'i': faces_i, 'j': faces_j, 'k': faces_k})
 
                         st.session_state.objeto_referencia_4d = obj_data
                         st.session_state.objeto_referencia_base = obj_data.copy()
-                        st.session_state.transform_active = {'dx': 0.0, 'dy': 0.0, 'dz': 0.0, 'rx': 0.0, 'ry': 0.0, 'rz': 0.0}
                         st.session_state.modelo_nombre_bd = None  # es nuevo → botón GUARDAR
                         st.success(f"✅ Importado: {file_obj.name}")
                         st.rerun()
@@ -3776,28 +3758,6 @@ elif st.session_state.seccion_actual == 'modelos':
                 except Exception as e:
                     st.error(f"Error procesando archivo: {e}")
 
-        # ── TRANSFORMACIÓN ACTIVA ────────────────────────────────────────
-        if 'objeto_referencia_4d' in st.session_state:
-            st.markdown("---")
-            with st.expander("🛠️ Ajuste Fino de Posición / Rotación", expanded=False):
-                def apply_transform_modelos():
-                    base = st.session_state.objeto_referencia_base
-                    t = st.session_state.transform_active
-                    x, y, z = np.array(base['x'], dtype=float), np.array(base['y'], dtype=float), np.array(base['z'], dtype=float)
-                    if t['rx'] != 0 or t['ry'] != 0 or t['rz'] != 0:
-                        x, y, z = rotate_points(x, y, z, t['rx'], t['ry'], t['rz'])
-                    x += t['dx']; y += t['dy']; z += t['dz']
-                    upd = base.copy(); upd['x'] = x; upd['y'] = y; upd['z'] = z
-                    st.session_state.objeto_referencia_4d = upd
-
-                ct1, ct2, ct3 = st.columns(3)
-                st.session_state.transform_active['dx'] = ct1.number_input("dX [mm]", value=st.session_state.transform_active.get('dx', 0.0), step=10.0, key="t_dx_m", on_change=apply_transform_modelos)
-                st.session_state.transform_active['dy'] = ct2.number_input("dY [mm]", value=st.session_state.transform_active.get('dy', 0.0), step=10.0, key="t_dy_m", on_change=apply_transform_modelos)
-                st.session_state.transform_active['dz'] = ct3.number_input("dZ [mm]", value=st.session_state.transform_active.get('dz', 0.0), step=10.0, key="t_dz_m", on_change=apply_transform_modelos)
-                cr1, cr2, cr3 = st.columns(3)
-                st.session_state.transform_active['rx'] = cr1.number_input("Rot X [°]", value=st.session_state.transform_active.get('rx', 0.0), step=90.0, key="t_rx_m", on_change=apply_transform_modelos)
-                st.session_state.transform_active['ry'] = cr2.number_input("Rot Y [°]", value=st.session_state.transform_active.get('ry', 0.0), step=90.0, key="t_ry_m", on_change=apply_transform_modelos)
-                st.session_state.transform_active['rz'] = cr3.number_input("Rot Z [°]", value=st.session_state.transform_active.get('rz', 0.0), step=90.0, key="t_rz_m", on_change=apply_transform_modelos)
 
         # ── SISTEMA DE REFERENCIA Y CENTRO DE GRAVEDAD ───────────────────
         if 'objeto_referencia_4d' in st.session_state:
@@ -4493,10 +4453,37 @@ elif st.session_state.seccion_actual == 'betz_4d':
 
     st.markdown("---")
 
+
+    st.markdown("---")
+
     # ══════════════════════════════════════════════════
-    # PASO 2: VISUALIZACIÓN Y ANIMACIÓN 4D
+    # PASO 2: VISUALIZACIÓN 4D
     # ══════════════════════════════════════════════════
-    st.markdown("### 🌌 Paso 2: Visualización y Animación")
+    st.markdown("### 🌌 Paso 2: Visualización 4D")
+
+    # --- INIT session state para modelo 4D ---
+    if 'modelo_4d_alpha' not in st.session_state: st.session_state.modelo_4d_alpha = 0.0
+    if 'modelo_4d_beta'  not in st.session_state: st.session_state.modelo_4d_beta  = 0.0
+    if 'modelo_4d_dx'    not in st.session_state: st.session_state.modelo_4d_dx    = 0.0
+    if 'modelo_4d_dy'    not in st.session_state: st.session_state.modelo_4d_dy    = 0.0
+    if 'modelo_4d_dz'    not in st.session_state: st.session_state.modelo_4d_dz    = 0.0
+
+    # Helper local: aplicar alpha/beta + traslación al modelo
+    def _aplicar_pose_modelo_4d(obj_base, alpha_deg, beta_deg, dx, dy, dz, cg):
+        """Retorna (x, y, z) del modelo rotado en torno al CG y luego trasladado.
+        Convención:
+          Alpha (+) = cabeceo → nariz sube  → rotación +Y en rotate_points
+          Beta  (+) = guiñada → nariz hacia ala derecha (+Y) → rotación -Z en rotate_points
+        """
+        x = np.array(obj_base['x'], dtype=float) - cg['x']
+        y = np.array(obj_base['y'], dtype=float) - cg['y']
+        z = np.array(obj_base['z'], dtype=float) - cg['z']
+        # Rotar: angle_x=0, angle_y=alpha, angle_z=-beta
+        x, y, z = rotate_points(x, y, z, 0.0, float(alpha_deg), float(-beta_deg))
+        x = x + cg['x'] + dx
+        y = y + cg['y'] + dy
+        z = z + cg['z'] + dz
+        return x, y, z
 
     # Cargar superficies 4D del usuario
     try:
@@ -4508,328 +4495,198 @@ elif st.session_state.seccion_actual == 'betz_4d':
     if not mis_superficies:
         st.info("⚠️ No tienes planos 4D guardados. Usá el Paso 1 para procesar y guardar planos.")
     else:
-
-        # Dictionary for selection: Label -> Data Tuple
-        # Data Tuple: (id, filename, x_pos, created_at, data_json)
         dict_superficies = {f"{s[1]} (X={s[2]}) [{s[3]}]": s for s in mis_superficies}
-        
-        # Multiselect for surfaces
-        opciones_var_4d = ["Presión Total [Actual]", "ρ_∞", "V_∞", "P_∞"]
-        var_4d_sel = st.selectbox("📊 Variable a visualizar:", opciones_var_4d, key="var_4d_sel_ui")
-        
-        sel_labels = st.multiselect("Seleccionar Superficies para Análisis:", list(dict_superficies.keys()), key="sel_4d_main")
-        
-        if sel_labels:
-            # Prepare data common for both tabs
-            loaded_dfs = {}
-            all_pressures = []
-            
-            for label in sel_labels:
-                s_data = dict_superficies[label]
-                try:
-                    import json
-                    df = pd.DataFrame(json.loads(s_data[4]))
-                    df['Presion'] = calcular_variable_atmosferica(df, var_4d_sel)
-                    loaded_dfs[label] = df
-                    if 'Presion' in df.columns:
-                        all_pressures.extend(df['Presion'].tolist())
-                except Exception as e:
-                    st.error(f"Error cargando datos de {label}: {str(e)}")
 
-            if all_pressures:
-                g_min, g_max = min(all_pressures), max(all_pressures)
-            else:
-                g_min, g_max = 0, 1
-            
-            tab_viz, tab_anim = st.tabs(["👁️ Visualización Estática 4D", "🎬 Generador de Animación (GIF)"])
-            
-            # --- TAB 1: VISUALIZACIÓN 4D ---
-            with tab_viz:
-                st.markdown("### 🌌 Visualización Espacial (Deformación por Presión)")
-                st.info("💡 La presión se representa como una deformación en el eje X (Estación).")
-                
-                pressure_scale = st.slider("Factor de Escala de Relieve:", 0.1, 10.0, 1.0, 0.1, key="scale_4d_viz")
-                
-                if st.button("🚀 Generar Escena 4D", key="btn_render_4d"):
+        # ── COLUMNAS PRINCIPALES ──────────────────────────────────────────
+        c4d_left, c4d_right = st.columns([1.1, 2.5])
+
+        with c4d_left:
+            # ── VARIABLE Y MODO DE SELECCIÓN ─────────────────────────────
+            opciones_var_4d = ["Presión Total [Actual]", "ρ_∞", "V_∞", "P_∞"]
+            var_4d_sel = st.selectbox("📊 Variable a visualizar:", opciones_var_4d, key="var_4d_sel_ui")
+
+            modo_sel_4d = st.radio(
+                "Modo de selección de planos:",
+                ["✅ Individual", "📍 Por Posición X", "🎯 Por AOA"],
+                horizontal=True,
+                key="modo_sel_4d"
+            )
+
+            # Helper AOA
+            def _extraer_aoa_4d(nombre):
+                m = re.search(r'OAO(neg)?(\d+(?:[.,]\d+)?)', str(nombre), re.IGNORECASE)
+                if m:
+                    return (-1 if m.group(1) else 1) * float(str(m.group(2)).replace(',', '.'))
+                return None
+
+            if modo_sel_4d == "✅ Individual":
+                sel_labels = st.multiselect("Seleccionar planos:", list(dict_superficies.keys()), key="sel_4d_main")
+
+            elif modo_sel_4d == "📍 Por Posición X":
+                # Agrupar por X
+                x_positions = sorted(set(s[2] for s in mis_superficies))
+                x_sel = st.multiselect("Posiciones X [mm]:", x_positions, default=x_positions, key="sel_x_4d")
+                sel_labels = [lbl for lbl, s in dict_superficies.items() if s[2] in x_sel]
+                st.caption(f"📊 {len(sel_labels)} planos en {len(x_sel)} posiciones X")
+
+            else:  # Por AOA
+                all_aoas_4d = sorted(set(
+                    _extraer_aoa_4d(s[1]) for s in mis_superficies
+                    if _extraer_aoa_4d(s[1]) is not None
+                ))
+                if not all_aoas_4d:
+                    st.warning("No se detectaron AOAs en los nombres (formato esperado: OAO{N} o OAOneg{N})")
+                    sel_labels = []
+                else:
+                    aoas_sel_4d = st.multiselect(
+                        "AOAs [°]:", [f"{a}°" for a in all_aoas_4d],
+                        default=[f"{a}°" for a in all_aoas_4d],
+                        key="sel_aoa_4d"
+                    )
+                    aoas_num_4d = [float(a.replace('°','')) for a in aoas_sel_4d]
+                    sel_labels = [lbl for lbl, s in dict_superficies.items()
+                                  if _extraer_aoa_4d(s[1]) in aoas_num_4d]
+                    st.caption(f"📊 {len(sel_labels)} planos seleccionados")
+
+            st.markdown("---")
+
+            # ── ESCALA DE RELIEVE ─────────────────────────────────────────
+            pressure_scale = st.slider("Escala de Relieve (Presión→X):", 0.1, 10.0, 1.0, 0.1, key="scale_4d_viz")
+
+            # ── POSICIONAMIENTO DEL MODELO 3D ─────────────────────────────
+            if 'objeto_referencia_4d' in st.session_state:
+                st.markdown("---")
+                st.markdown("""
+                <div style="background:#0d1f35; border:1px solid #1e4060; border-radius:8px; padding:12px; margin-bottom:8px;">
+                    <h5 style="color:#60a5fa; margin:0 0 6px 0;">✈️ Posición y Actitud del Modelo</h5>
+                    <p style="color:#93c5fd; font-size:0.78rem; margin:0; line-height:1.6;">
+                        <b>Alpha α (+)</b> → nariz sube (plano XZ)<br>
+                        <b>Beta β (+)</b> → nariz hacia ala derecha (plano XY)<br>
+                        Rotación en torno al CG definido en Modelos.
+                    </p>
+                </div>
+                """, unsafe_allow_html=True)
+
+                c_ab1, c_ab2 = st.columns(2)
+                st.session_state.modelo_4d_alpha = c_ab1.number_input(
+                    "α Alpha [°]", value=float(st.session_state.modelo_4d_alpha),
+                    min_value=-90.0, max_value=90.0, step=1.0, format="%.1f", key="inp_alpha_4d"
+                )
+                st.session_state.modelo_4d_beta = c_ab2.number_input(
+                    "β Beta [°]", value=float(st.session_state.modelo_4d_beta),
+                    min_value=-90.0, max_value=90.0, step=1.0, format="%.1f", key="inp_beta_4d"
+                )
+
+                st.markdown("**Traslación [mm]:**")
+                c_t1, c_t2, c_t3 = st.columns(3)
+                st.session_state.modelo_4d_dx = c_t1.number_input("dX", value=float(st.session_state.modelo_4d_dx), step=10.0, format="%.1f", key="inp_dx_4d")
+                st.session_state.modelo_4d_dy = c_t2.number_input("dY", value=float(st.session_state.modelo_4d_dy), step=10.0, format="%.1f", key="inp_dy_4d")
+                st.session_state.modelo_4d_dz = c_t3.number_input("dZ", value=float(st.session_state.modelo_4d_dz), step=10.0, format="%.1f", key="inp_dz_4d")
+
+                if st.button("🔄 Resetear posición del modelo", key="btn_reset_pose_4d", use_container_width=True):
+                    st.session_state.modelo_4d_alpha = 0.0
+                    st.session_state.modelo_4d_beta  = 0.0
+                    st.session_state.modelo_4d_dx    = 0.0
+                    st.session_state.modelo_4d_dy    = 0.0
+                    st.session_state.modelo_4d_dz    = 0.0
+                    st.rerun()
+
+        with c4d_right:
+            if sel_labels:
+                # Cargar datos
+                loaded_dfs = {}
+                all_pressures = []
+                for label in sel_labels:
+                    s_data = dict_superficies[label]
+                    try:
+                        df = pd.DataFrame(json.loads(s_data[4]))
+                        df['Presion'] = calcular_variable_atmosferica(df, var_4d_sel)
+                        loaded_dfs[label] = df
+                        if 'Presion' in df.columns:
+                            all_pressures.extend(df['Presion'].dropna().tolist())
+                    except Exception as e:
+                        st.warning(f"Error cargando {label}: {e}")
+
+                g_min, g_max = (min(all_pressures), max(all_pressures)) if all_pressures else (0, 1)
+
+                if st.button("🚀 Generar Escena 4D", key="btn_render_4d", type="primary", use_container_width=True):
                     fig_4d = go.Figure()
-                    
-                    # 1. Render Reference Object
+
+                    # Modelo 3D con Alpha/Beta aplicados
                     if 'objeto_referencia_4d' in st.session_state:
-                         obj = st.session_state.objeto_referencia_4d
-                         if obj['type'] == 'mesh':
-                             fig_4d.add_trace(go.Mesh3d(
-                                 x=obj['x'], y=obj['y'], z=obj['z'],
-                                 i=obj['i'], j=obj['j'], k=obj['k'],
-                                 color='gray', opacity=0.3, name=obj['name'], alphahull=0
-                             ))
-                         elif obj['type'] == 'scatter':
-                             fig_4d.add_trace(go.Scatter3d(
-                                 x=obj['x'], y=obj['y'], z=obj['z'],
-                                 mode='markers', marker=dict(size=2, color='gray', opacity=0.5), name=obj['name']
-                             ))
-                    
-                    # 2. Render Surfaces
+                        obj_b = st.session_state.objeto_referencia_base if 'objeto_referencia_base' in st.session_state else st.session_state.objeto_referencia_4d
+                        cg_4d = st.session_state.get('modelo_cg', {'x': 0.0, 'y': 0.0, 'z': 0.0})
+                        xm, ym, zm = _aplicar_pose_modelo_4d(
+                            obj_b,
+                            st.session_state.modelo_4d_alpha,
+                            st.session_state.modelo_4d_beta,
+                            st.session_state.modelo_4d_dx,
+                            st.session_state.modelo_4d_dy,
+                            st.session_state.modelo_4d_dz,
+                            cg_4d
+                        )
+                        obj = st.session_state.objeto_referencia_4d
+                        if obj['type'] == 'mesh':
+                            fig_4d.add_trace(go.Mesh3d(
+                                x=xm, y=ym, z=zm,
+                                i=obj['i'], j=obj['j'], k=obj['k'],
+                                color='#5588cc', opacity=0.3, name=obj.get('name','Modelo'),
+                                alphahull=0, showscale=False,
+                                lighting=dict(ambient=0.4, diffuse=0.8)
+                            ))
+                        elif obj['type'] == 'scatter':
+                            fig_4d.add_trace(go.Scatter3d(
+                                x=xm, y=ym, z=zm,
+                                mode='markers', marker=dict(size=2, color='#5588cc', opacity=0.5),
+                                name=obj.get('name', 'Modelo')
+                            ))
+
+                    # Planos de presión
                     for label in sel_labels:
                         df = loaded_dfs.get(label)
                         if df is None: continue
-                        
                         s_data = dict_superficies[label]
                         x_base = s_data[2]
-                        
-                        # Triangulate
                         try:
                             df_clean = df.dropna(subset=['Y', 'Z', 'Presion']).drop_duplicates(subset=['Y', 'Z'])
-                            if len(df_clean) < 3:
-                                continue
-                            
+                            if len(df_clean) < 3: continue
                             tri = Delaunay(df_clean[['Y', 'Z']].values)
-                            
                             p_ref = df_clean['Presion'].max()
                             x_def = x_base - ((df_clean['Presion'] - p_ref) * pressure_scale)
-                            
                             fig_4d.add_trace(go.Mesh3d(
                                 x=x_def, y=df_clean['Y'], z=df_clean['Z'],
                                 i=tri.simplices[:,0], j=tri.simplices[:,1], k=tri.simplices[:,2],
                                 intensity=df_clean['Presion'],
                                 customdata=np.column_stack([np.full(len(df_clean), x_base), df_clean['Presion']]),
-                                hovertemplate="X (Estación): %{customdata[0]:.2f} mm<br>Y: %{y:.2f} mm<br>Z: %{z:.2f} mm<br>Valor: %{customdata[1]:.2f}<extra></extra>",
-                                colorscale='Jet',
-                                cmin=g_min, cmax=g_max,
-                                showscale=True,
-                                opacity=1.0,
-                                flatshading=True,
+                                hovertemplate="X: %{customdata[0]:.1f} mm<br>Y: %{y:.1f} mm<br>Z: %{z:.1f} mm<br>Val: %{customdata[1]:.2f}<extra></extra>",
+                                colorscale='Jet', cmin=g_min, cmax=g_max,
+                                showscale=True, opacity=1.0, flatshading=True,
                                 name=f"{s_data[1]} (X={x_base})"
                             ))
                         except Exception as e:
                             st.warning(f"Error ploteando {s_data[1]}: {e}")
-                            
+
                     fig_4d.update_layout(
-                        title="Escena 4D Integrada",
+                        title=f"Escena 4D — α={st.session_state.modelo_4d_alpha:.1f}° β={st.session_state.modelo_4d_beta:.1f}°",
                         scene=dict(
-                            aspectmode='data', 
-                            xaxis=dict(title="X (Pos + Presion)", autorange="reversed"), 
-                            yaxis_title="Y", 
-                            zaxis_title="Z"
+                            aspectmode='data',
+                            xaxis=dict(title="X (Estación)", autorange="reversed"),
+                            yaxis_title="Y (Envergadura)",
+                            zaxis_title="Z (Altura)"
                         ),
-                        height=800,
+                        paper_bgcolor='rgba(0,0,0,0)',
+                        font=dict(color='white'),
+                        height=750,
                         margin=dict(l=0, r=0, b=0, t=40)
                     )
-                    st.plotly_chart(fig_4d, use_container_width=True)
+                    st.session_state['fig_4d_cache'] = fig_4d
 
-            # --- TAB 2: ANIMACIÓN GIF ---
-            with tab_anim:
-                st.markdown("### 🎬 Generador de Secuencia Temporal")
-                st.markdown("Crea un GIF animado interpolando entre las superficies seleccionadas.")
-                
-                c_anim1, c_anim2, c_anim3 = st.columns(3)
-                fps = c_anim1.slider("Velocidad (Cuadros por segundo):", 1, 30, 2, key="fps_anim")
-                quality = c_anim2.select_slider("Calidad de Renderizado:", options=["Baja", "Media", "Alta"], value="Media")
-                pressure_scale_gif = c_anim3.slider("Escala de Relieve (GIF):", 0.1, 10.0, 1.0, 0.1, key="scale_anim")
-                
-                # Checkbox for accumulative view
-                acumular_frames = st.checkbox("Visualizar progresión acumulativa (Mostrar anteriores)", value=True, key="anim_accum")
-                
-                # Sort logic
-                # We want to animate in order. Either by X position or by Time.
-                # Let's extract metadata to sort.
-                anim_items = []
-                for label in sel_labels:
-                    s_data = dict_superficies[label]  # (id, name, x, created, json)
-                    # Try to extract 'Time' from name if possible, or use X
-                    # Name format usually "File_T10s"
-                    time_val = 0
-                    try:
-                        import re
-                        m = re.search(r'T(\d+)s', s_data[1])
-                        if m: time_val = int(m.group(1))
-                    except: pass
-                    
-                    df_cargado = loaded_dfs.get(label)
-                    if df_cargado is not None:
-                        anim_items.append({
-                            'label': label,
-                            'x': s_data[2],
-                            'time': time_val,
-                            'df': df_cargado,
-                            'name': s_data[1]
-                        })
-                
-                c_sort1, c_sort2 = st.columns([2, 1])
-                sort_mode = c_sort1.radio("Ordenar secuencia por:", ["Posición X (Espacial)", "Tiempo (Temporal)"], horizontal=True, key="sort_mode_anim")
-                sort_desc = c_sort2.checkbox("Invertir orden (Descendente)", value=True, help="Ordena de Mayor a Menor (Positivo -> Negativo)", key="sort_desc_anim")
-                
-                if sort_mode == "Posición X (Espacial)":
-                    anim_items.sort(key=lambda x: x['x'], reverse=sort_desc)
-                else:
-                    anim_items.sort(key=lambda x: x['time'], reverse=sort_desc)
-                
-                if st.button("🎥 Renderizar Animación (GIF)", type="primary"):
-                    # Check for kaleido
-                    try:
-                        import kaleido
-                    except ImportError:
-                        st.error("❌ Librería 'kaleido' no encontrada. Es necesaria para exportar imágenes. Contacte al administrador.")
-                        st.stop()
-                        
-                    status_text = st.empty()
-                    prog_bar = st.progress(0)
-                    
-                    frames = []
-                    temp_dir = tempfile.mkdtemp()
-                    
-                    try:
-                        # 1. Calcular límites globales (Bounding Box de TODA la animación + Objeto ref)
-                        all_x, all_y, all_z = [], [], []
-                        
-                        # Límites de superficies
-                        for item in anim_items:
-                            df = item['df'].dropna(subset=['Y', 'Z', 'Presion'])
-                            if df.empty: continue
-                            
-                            # Considerar deformación maxima aproximada para el bounding box
-                            # (Asumiendo que la presion positiva deforma hacia +X)
-                            max_p = df['Presion'].max()
-                            if pd.isna(max_p): max_p = 0
-                            
-                            all_x.append(item['x'])
-                            all_x.append(item['x'] + max_p * pressure_scale_gif) # Incluir deformación
-                            
-                            all_y.extend(df['Y'].tolist())
-                            all_z.extend(df['Z'].tolist())
-                            
-                        # Límites de objeto referencia (si existe)
-                        if 'objeto_referencia_4d' in st.session_state:
-                             obj = st.session_state.objeto_referencia_4d
-                             all_x.extend(obj.get('x', []))
-                             all_y.extend(obj.get('y', []))
-                             all_z.extend(obj.get('z', []))
-                        
-                        if not all_x: all_x = [0, 1]
-                        if not all_y: all_y = [0, 1]
-                        if not all_z: all_z = [0, 1]
+                # Mostrar figura cacheada
+                if 'fig_4d_cache' in st.session_state:
+                    st.plotly_chart(st.session_state['fig_4d_cache'], use_container_width=True)
+            else:
+                st.info("Seleccioná al menos un plano para visualizar.")
 
-                        # Calcular min/max con un margen MAYOR para alejar la cámara
-                        pad = 1.0  # Aumentado a 1.0 para mucho márgen (zoom out)
-                        x_min, x_max = min(all_x), max(all_x)
-                        y_min, y_max = min(all_y), max(all_y)
-                        z_min, z_max = min(all_z), max(all_z)
-                        
-                        dx = x_max - x_min if x_max != x_min else 1.0
-                        dy = y_max - y_min if y_max != y_min else 1.0
-                        dz = z_max - z_min if z_max != z_min else 1.0
-                        
-                        x_range = [x_min - dx*pad, x_max + dx*pad]
-                        y_range = [y_min - dy*pad, y_max + dy*pad]
-                        z_range = [z_min - dz*pad, z_max + dz*pad]
-
-                        # Generate frames
-                        val_range = [g_min, g_max]
-                        
-                        for i, item in enumerate(anim_items):
-                            status_text.text(f"Renderizando cuadro {i+1}/{len(anim_items)}: {item['name']}...")
-                            
-                            # Create individual figure for this frame
-                            fig_frame = go.Figure()
-                            
-                            # Add Reference Object (Static background)
-                            if 'objeto_referencia_4d' in st.session_state:
-                                obj = st.session_state.objeto_referencia_4d
-                                if obj['type'] == 'mesh':
-                                    fig_frame.add_trace(go.Mesh3d(
-                                        x=obj['x'], y=obj['y'], z=obj['z'],
-                                        i=obj['i'], j=obj['j'], k=obj['k'],
-                                        color='black', opacity=0.15, alphahull=0, showscale=False
-                                    ))
-                                elif obj['type'] == 'scatter':
-                                     fig_frame.add_trace(go.Scatter3d(
-                                     x=obj['x'], y=obj['y'], z=obj['z'],
-                                     mode='markers', marker=dict(size=2, color='black', opacity=0.5), name=obj['name']
-                                     ))
-                            
-                            # DETERMINAR QUÉ MOSTRAR: Solo actual o Acumulado
-                            items_to_show = anim_items[:i+1] if acumular_frames else [item]
-                            
-                            for frame_item in items_to_show:
-                                df_f = frame_item['df']
-                                df_clean = df_f.dropna(subset=['Y', 'Z', 'Presion']).drop_duplicates(subset=['Y', 'Z'])
-                                if len(df_clean) < 3:
-                                    continue
-                                
-                                try:
-                                    tri = Delaunay(df_clean[['Y', 'Z']].values)
-                                    
-                                    # Invertimos el signo para que el hueco caiga en dirección +X (Hacia adelante relativo al eje)
-                                    x_def = frame_item['x'] - (df_clean['Presion'] * pressure_scale_gif)
-                                    
-                                    fig_frame.add_trace(go.Mesh3d(
-                                        x=x_def, 
-                                        y=df_clean['Y'],
-                                        z=df_clean['Z'],
-                                        i=tri.simplices[:,0], j=tri.simplices[:,1], k=tri.simplices[:,2],
-                                        intensity=df_clean['Presion'],
-                                        colorscale='Jet',
-                                        cmin=val_range[0], cmax=val_range[1],
-                                        showscale=(frame_item == items_to_show[-1]), 
-                                        opacity=1.0,
-                                        flatshading=True
-                                    ))
-                                except Exception as e:
-                                    pass
-                            
-                            # Layout - ISOMETRIC FIXED VIEW ZOOMED OUT
-                            fig_frame.update_layout(
-                                title=f"Secuencia: {item['name']} (X={item['x']})",
-                                scene=dict(
-                                    xaxis=dict(range=x_range, title="X (Estación)"),
-                                    yaxis=dict(range=y_range, title="Y (Envergadura)"),
-                                    zaxis=dict(range=z_range, title="Z (Altura)"),
-                                    aspectmode='data',
-                                    camera=dict(
-                                        projection=dict(type="orthographic"), 
-                                        eye=dict(x=2.5, y=2.5, z=2.5)  # Más alejado aún (antes 2.0)
-                                    )
-                                ),
-                                margin=dict(l=0,r=0,b=0,t=40)
-                            )
-                            
-                            # Save frame
-                            frame_path = os.path.join(temp_dir, f"frame_{i:03d}.png")
-                            # Scale factor for quality
-                            scale = 1.0 if quality == "Baja" else (2.0 if quality == "Media" else 3.0)
-                            fig_frame.write_image(frame_path, engine="kaleido", scale=scale)
-                            frames.append(frame_path)
-                            
-                            prog_bar.progress((i + 1) / len(anim_items))
-                        
-                        # Build GIF
-                        status_text.text("Compilando GIF...")
-                        gif_path = os.path.join(temp_dir, "animation.gif")
-                        
-                        images = []
-                        for filename in frames:
-                            images.append(imageio.imread(filename))
-                        
-                        imageio.mimsave(gif_path, images, fps=fps, loop=0)
-                        
-                        # Show
-                        st.success("✅ Animación completada")
-                        st.image(gif_path)
-                        
-                        # Download using file read
-                        with open(gif_path, "rb") as f:
-                            btn = st.download_button(
-                                label="📥 Descargar GIF",
-                                data=f,
-                                file_name="betz_4d_animation.gif",
-                                mime="image/gif"
-                            )
-                            
-                    except Exception as e:
-                        st.error(f"Error generando animación: {e}")
-                    finally:
-                        # Cleanup done automatically by temp dir removal? No, explicit needed usually but mkdtemp persists.
-                        # We leave it for now or try to clean up.
-                         pass
 
 
 elif st.session_state.seccion_actual == 'animacion_4d':
@@ -4844,16 +4701,29 @@ elif st.session_state.seccion_actual == 'animacion_4d':
     </div>
     """, unsafe_allow_html=True)
 
-    # Helper: extraer AOA del nombre del archivo (formato OAO{neg}{N})
-    def extraer_aoa_de_nombre(nombre):
-        import re
+    # ── INIT SESSION STATE ────────────────────────────────────────────────────
+    if 'anim4d_grillas' not in st.session_state: st.session_state.anim4d_grillas = None
+    if 'anim4d_aoa_range' not in st.session_state: st.session_state.anim4d_aoa_range = None
+    if 'anim4d_x_range' not in st.session_state: st.session_state.anim4d_x_range = None
+    if 'anim4d_pmin' not in st.session_state: st.session_state.anim4d_pmin = 0.0
+    if 'anim4d_pmax' not in st.session_state: st.session_state.anim4d_pmax = 1.0
+
+    # Helper: extraer AOA del nombre
+    def _aoa_from_name_anim(nombre):
         m = re.search(r'OAO(neg)?(\d+(?:[.,]\d+)?)', str(nombre), re.IGNORECASE)
         if m:
-            signo = -1 if m.group(1) else 1
-            return signo * float(str(m.group(2)).replace(',', '.'))
+            return (-1 if m.group(1) else 1) * float(str(m.group(2)).replace(',', '.'))
         return None
 
-    # Cargar planos 4D disponibles
+    # Helper: aplicar pose
+    def _pose_anim(obj_base, alpha_deg, beta_deg, cg):
+        x = np.array(obj_base['x'], dtype=float) - cg['x']
+        y = np.array(obj_base['y'], dtype=float) - cg['y']
+        z = np.array(obj_base['z'], dtype=float) - cg['z']
+        x, y, z = rotate_points(x, y, z, 0.0, float(alpha_deg), float(-beta_deg))
+        return x + cg['x'], y + cg['y'], z + cg['z']
+
+    # Cargar planos 4D
     try:
         mis_superficies_anim = auth.get_user_surfaces_4d(st.session_state.username)
     except AttributeError:
@@ -4863,337 +4733,336 @@ elif st.session_state.seccion_actual == 'animacion_4d':
     if not mis_superficies_anim:
         st.info("⚠️ No hay planos 4D guardados. Ve a **Vis. Estela 4D → Paso 1** para guardar planos primero.")
     else:
-        # ── PASO 1: SELECCIÓN DE PLANOS ──────────────────────────────────────
-        st.markdown("## 📂 Paso 1: Selección de Planos")
-
         dict_sup_anim = {f"{s[1]} (X={s[2]}mm) [{s[3][:10] if s[3] else ''}]": s for s in mis_superficies_anim}
 
-        # Selector rápido por AOA
-        col_modo_anim, col_vars_anim = st.columns([1, 2])
-        with col_modo_anim:
-            modo_sel_anim = st.radio("Modo de selección:", ["✅ Individual", "⚡ Todos los planos", "🎯 Filtrar por AOA"], key="modo_sel_anim")
-        
-        with col_vars_anim:
+        # ── PASO 1: SELECCIÓN DE PLANOS ──────────────────────────────────────
+        c_sel_left, c_sel_right = st.columns([1.2, 2])
+
+        with c_sel_left:
+            st.markdown("### 📂 Paso 1: Selección de Planos")
+
             opciones_var_anim4d = ["Presión Total [Actual]", "ρ_∞", "V_∞", "P_∞"]
             var_anim_sel = st.selectbox("📊 Variable a visualizar:", opciones_var_anim4d, key="var_anim4d_sel")
 
-        if modo_sel_anim == "✅ Individual":
-            sel_anim_labels = st.multiselect("Seleccionar planos:", list(dict_sup_anim.keys()), key="sel_anim_ind")
-        elif modo_sel_anim == "⚡ Todos los planos":
-            sel_anim_labels = list(dict_sup_anim.keys())
-            st.success(f"✅ {len(sel_anim_labels)} planos seleccionados automáticamente.")
-        else:
-            # Filtrar por AOA
-            all_aoas = sorted(set([
-                extraer_aoa_de_nombre(s[1]) for s in mis_superficies_anim
-                if extraer_aoa_de_nombre(s[1]) is not None
-            ]))
-            if not all_aoas:
-                st.warning("⚠️ No se pudieron detectar AOAs en los nombres. Verifique el formato (OAO{N} o OAOneg{N}).")
-                sel_anim_labels = []
-            else:
-                aoas_sel = st.multiselect(
-                    "Seleccionar AOAs [°]:",
-                    [f"{a}°" for a in all_aoas],
-                    default=[f"{a}°" for a in all_aoas],
-                    key="sel_aoas_anim"
-                )
-                aoas_num = [float(a.replace('°', '')) for a in aoas_sel]
-                sel_anim_labels = [
-                    lbl for lbl, s in dict_sup_anim.items()
-                    if extraer_aoa_de_nombre(s[1]) in aoas_num
-                ]
-                st.info(f"📊 {len(sel_anim_labels)} planos coincidentes con los AOAs seleccionados.")
+            modo_fil_anim = st.radio(
+                "Filtrar por:",
+                ["✅ Individual", "📍 Por Plano (X)", "🎯 Por AOA"],
+                key="modo_fil_anim4d",
+                horizontal=True
+            )
 
-        if sel_anim_labels:
-            # Cargar DataFrames
-            anim_loaded = {}
-            for lbl in sel_anim_labels:
-                s_data = dict_sup_anim[lbl]
-                try:
-                    df_tmp = pd.DataFrame(json.loads(s_data[4]))
-                    df_tmp['Presion'] = calcular_variable_atmosferica(df_tmp, var_anim_sel)
-                    aoa_val = extraer_aoa_de_nombre(s_data[1])
-                    anim_loaded[lbl] = {
-                        'df': df_tmp,
-                        'x': s_data[2],
-                        'name': s_data[1],
-                        'aoa': aoa_val if aoa_val is not None else 0.0
-                    }
-                except Exception as e:
-                    st.warning(f"Error cargando {lbl}: {e}")
+            if modo_fil_anim == "✅ Individual":
+                sel_anim_labels = st.multiselect("Seleccionar planos:", list(dict_sup_anim.keys()), key="sel_anim_ind")
 
-            if anim_loaded:
-                # Ordenar por AOA
-                anim_items_sorted = sorted(anim_loaded.values(), key=lambda d: d['aoa'])
-                aoa_vals = [d['aoa'] for d in anim_items_sorted]
-                aoa_min, aoa_max = min(aoa_vals), max(aoa_vals)
+            elif modo_fil_anim == "📍 Por Plano (X)":
+                x_positions_anim = sorted(set(s[2] for s in mis_superficies_anim))
+                x_sel_anim = st.multiselect("Posiciones X [mm]:", x_positions_anim, default=x_positions_anim, key="sel_x_anim")
+                sel_anim_labels = [lbl for lbl, s in dict_sup_anim.items() if s[2] in x_sel_anim]
+                st.caption(f"📊 {len(sel_anim_labels)} planos en {len(x_sel_anim)} posiciones X")
 
-                st.markdown("---")
-                # ── PASO 2: VISUALIZACIÓN INTERACTIVA CON SLIDER ─────────────────
-                st.markdown("## 🎛️ Paso 2: Visualización Interactiva")
-
-                c_sl_conf, c_sl_plot = st.columns([1, 2.5])
-                with c_sl_conf:
-                    st.markdown("#### Configuración")
-                    pressure_scale_anim = st.slider("Escala de Relieve [presión→X]:", 0.1, 10.0, 1.0, 0.1, key="scale_anim_interp")
-
-                    # Slider de Alpha
-                    if aoa_min != aoa_max:
-                        alpha_slider = st.slider(
-                            f"Alpha [°] — ({aoa_min}° a {aoa_max}°):",
-                            min_value=float(aoa_min),
-                            max_value=float(aoa_max),
-                            value=float(aoa_min),
-                            step=0.5,
-                            key="alpha_slider_anim"
-                        )
-                    else:
-                        alpha_slider = float(aoa_min)
-                        st.info(f"Solo un AOA disponible: {aoa_min}°")
-
-                    mostrar_modelo_anim = st.checkbox("Mostrar modelo 3D", value=True, key="show_model_anim")
-
-                with c_sl_plot:
-                    # Interpolación bilineal del plano de presión
-                    # Encontrar los dos planos vecinos al alpha_slider
-                    if len(anim_items_sorted) == 1:
-                        df_interp = anim_items_sorted[0]['df'].copy()
-                        x_interp = anim_items_sorted[0]['x']
-                        aoa_render = anim_items_sorted[0]['aoa']
-                    else:
-                        # Buscar los dos planos más cercanos
-                        aoa_arr = np.array(aoa_vals)
-                        idx_sorted_aoa = np.argsort(aoa_arr)
-                        aoa_sorted = aoa_arr[idx_sorted_aoa]
-                        items_sorted_by_aoa = [anim_items_sorted[i] for i in idx_sorted_aoa]
-
-                        # Encontrar el índice inferior
-                        idx_lower = np.searchsorted(aoa_sorted, alpha_slider) - 1
-                        idx_lower = max(0, min(idx_lower, len(aoa_sorted) - 2))
-                        idx_upper = idx_lower + 1
-
-                        aoa_lo = aoa_sorted[idx_lower]
-                        aoa_hi = aoa_sorted[idx_upper]
-                        item_lo = items_sorted_by_aoa[idx_lower]
-                        item_hi = items_sorted_by_aoa[idx_upper]
-
-                        # Parámetro de interpolación
-                        t_interp = (alpha_slider - aoa_lo) / (aoa_hi - aoa_lo) if aoa_hi != aoa_lo else 0.0
-
-                        # Interpolar en grilla YZ común
-                        try:
-                            from scipy.interpolate import griddata
-                            df_lo = item_lo['df'].dropna(subset=['Y', 'Z', 'Presion'])
-                            df_hi = item_hi['df'].dropna(subset=['Y', 'Z', 'Presion'])
-
-                            y_all = np.concatenate([df_lo['Y'].values, df_hi['Y'].values])
-                            z_all = np.concatenate([df_lo['Z'].values, df_hi['Z'].values])
-                            y_grid = np.linspace(y_all.min(), y_all.max(), 60)
-                            z_grid = np.linspace(z_all.min(), z_all.max(), 60)
-                            Y_g, Z_g = np.meshgrid(y_grid, z_grid)
-
-                            P_lo = griddata((df_lo['Y'].values, df_lo['Z'].values), df_lo['Presion'].values,
-                                           (Y_g, Z_g), method='linear')
-                            P_hi = griddata((df_hi['Y'].values, df_hi['Z'].values), df_hi['Presion'].values,
-                                           (Y_g, Z_g), method='linear')
-
-                            # Interpolar presiones
-                            P_interp = (1 - t_interp) * P_lo + t_interp * P_hi
-                            mask_valid = ~np.isnan(P_interp)
-                            df_interp = pd.DataFrame({
-                                'Y': Y_g[mask_valid],
-                                'Z': Z_g[mask_valid],
-                                'Presion': P_interp[mask_valid]
-                            })
-                            x_interp = (1 - t_interp) * item_lo['x'] + t_interp * item_hi['x']
-                            aoa_render = alpha_slider
-                        except Exception as e_interp:
-                            # Fallback: usar el plano más cercano
-                            item_closest = item_lo if abs(alpha_slider - aoa_lo) <= abs(alpha_slider - aoa_hi) else item_hi
-                            df_interp = item_closest['df'].copy()
-                            x_interp = item_closest['x']
-                            aoa_render = item_closest['aoa']
-                            st.warning(f"Interpolación no disponible (scipy): {e_interp}. Usando plano más cercano.")
-
-                    # Renderizar gráfico 3D
-                    fig_anim_live = go.Figure()
-
-                    # Modelo 3D con cabeceo
-                    if mostrar_modelo_anim and 'objeto_referencia_4d' in st.session_state:
-                        obj_anim = st.session_state.objeto_referencia_4d
-                        cg_anim = st.session_state.get('modelo_cg', {'x': 0.0, 'y': 0.0, 'z': 0.0})
-
-                        # Rotar modelo en torno al CG (pitch = rotación eje Y = Alpha)
-                        x_m = np.array(obj_anim['x'], dtype=float) - cg_anim['x']
-                        y_m = np.array(obj_anim['y'], dtype=float) - cg_anim['y']
-                        z_m = np.array(obj_anim['z'], dtype=float) - cg_anim['z']
-                        x_m, y_m, z_m = rotate_points(x_m, y_m, z_m, 0, -aoa_render, 0)
-                        x_m += cg_anim['x']; y_m += cg_anim['y']; z_m += cg_anim['z']
-
-                        if obj_anim['type'] == 'mesh':
-                            fig_anim_live.add_trace(go.Mesh3d(
-                                x=x_m, y=y_m, z=z_m,
-                                i=obj_anim['i'], j=obj_anim['j'], k=obj_anim['k'],
-                                color='#888', opacity=0.35, name="Modelo",
-                                alphahull=0, showscale=False
-                            ))
-                        elif obj_anim['type'] == 'scatter':
-                            fig_anim_live.add_trace(go.Scatter3d(
-                                x=x_m, y=y_m, z=z_m,
-                                mode='markers', marker=dict(size=2, color='gray', opacity=0.5),
-                                name="Modelo"
-                            ))
-
-                    # Plano de presión interpolado
-                    try:
-                        df_clean_anim = df_interp.dropna(subset=['Y', 'Z', 'Presion']).drop_duplicates(subset=['Y', 'Z'])
-                        if len(df_clean_anim) >= 3:
-                            tri_anim = Delaunay(df_clean_anim[['Y', 'Z']].values)
-                            p_ref_anim = df_clean_anim['Presion'].max()
-                            x_def_anim = x_interp - ((df_clean_anim['Presion'] - p_ref_anim) * pressure_scale_anim)
-                            fig_anim_live.add_trace(go.Mesh3d(
-                                x=x_def_anim, y=df_clean_anim['Y'], z=df_clean_anim['Z'],
-                                i=tri_anim.simplices[:, 0], j=tri_anim.simplices[:, 1], k=tri_anim.simplices[:, 2],
-                                intensity=df_clean_anim['Presion'],
-                                colorscale='Jet', showscale=True,
-                                opacity=1.0, flatshading=True,
-                                name=f"Presión (α={aoa_render:.1f}°)"
-                            ))
-                    except Exception as e_plot:
-                        st.warning(f"Error renderizando plano: {e_plot}")
-
-                    fig_anim_live.update_layout(
-                        title=f"α = {aoa_render:.1f}°",
-                        scene=dict(
-                            aspectmode='data',
-                            xaxis=dict(title="X (Estación)", autorange="reversed"),
-                            yaxis_title="Y (Envergadura)",
-                            zaxis_title="Z (Altura)"
-                        ),
-                        paper_bgcolor='rgba(0,0,0,0)',
-                        height=600,
-                        margin=dict(l=0, r=0, b=0, t=40)
+            else:  # Por AOA
+                all_aoas_anim = sorted(set(
+                    _aoa_from_name_anim(s[1]) for s in mis_superficies_anim
+                    if _aoa_from_name_anim(s[1]) is not None
+                ))
+                if not all_aoas_anim:
+                    st.warning("⚠️ No se detectaron AOAs en los nombres (formato: OAO{N} o OAOneg{N})")
+                    sel_anim_labels = []
+                else:
+                    aoas_sel_anim = st.multiselect(
+                        "Seleccionar AOAs [°]:", [f"{a}°" for a in all_aoas_anim],
+                        default=[f"{a}°" for a in all_aoas_anim], key="sel_aoas_anim4d"
                     )
-                    st.plotly_chart(fig_anim_live, use_container_width=True)
+                    aoas_num_anim = [float(a.replace('°', '')) for a in aoas_sel_anim]
+                    sel_anim_labels = [lbl for lbl, s in dict_sup_anim.items()
+                                       if _aoa_from_name_anim(s[1]) in aoas_num_anim]
+                    st.caption(f"📊 {len(sel_anim_labels)} planos seleccionados")
 
-                st.markdown("---")
-                # ── PASO 3: GENERADOR DE GIF ──────────────────────────────────────
-                st.markdown("## 🎥 Paso 3: Generar Animación GIF")
-                st.info("Genera un GIF animando la transición de Alpha en el rango de los planos cargados.")
+            pressure_scale_anim = st.slider("Escala de Relieve [presión→X]:", 0.1, 10.0, 1.0, 0.1, key="scale_anim_interp")
+            mostrar_modelo_anim = st.checkbox("Mostrar modelo 3D", value=True, key="show_model_anim")
 
-                c_gif1, c_gif2, c_gif3, c_gif4 = st.columns(4)
-                fps_gif = c_gif1.slider("FPS:", 1, 15, 3, key="fps_gif_anim")
-                n_pasos_gif = c_gif2.slider("N° pasos intermedios:", 2, 30, 10, key="npasos_gif")
-                quality_gif = c_gif3.select_slider("Calidad:", options=["Baja", "Media", "Alta"], value="Media", key="quality_gif_anim")
-                scale_gif = c_gif4.slider("Escala Relieve:", 0.1, 10.0, 1.0, 0.1, key="scale_gif_anim")
+        with c_sel_right:
+            if sel_anim_labels:
+                st.markdown("### 🔢 Paso 2: Pre-computar Interpolación")
+                st.info("Computá la grilla una vez. Luego el slider moverá el gráfico al instante sin recalcular.")
 
-                if st.button("🎥 Generar GIF de Animación Alpha", type="primary", use_container_width=True, key="btn_gen_gif_anim"):
-                    try:
-                        import kaleido
-                    except ImportError:
-                        st.error("❌ Librería 'kaleido' no encontrada. Contacte al administrador.")
-                        st.stop()
+                if st.button("⚡ Pre-computar interpolación", type="primary", use_container_width=True, key="btn_precompute"):
+                    from scipy.interpolate import griddata as _gd_anim
 
-                    from scipy.interpolate import griddata as _gd
+                    # Cargar todos los planos seleccionados
+                    items_precomp = []
+                    all_y_pc, all_z_pc = [], []
+                    all_p_pc = []
 
-                    alpha_range = np.linspace(aoa_min, aoa_max, n_pasos_gif)
-                    status_gif = st.empty()
-                    prog_gif = st.progress(0)
-                    frames_gif = []
-                    temp_dir_gif = tempfile.mkdtemp()
+                    prog_pc = st.progress(0)
+                    status_pc = st.empty()
 
-                    # Pre-computar grilla común
-                    all_y_gif, all_z_gif = [], []
-                    for item in anim_items_sorted:
-                        df_tmp = item['df'].dropna(subset=['Y', 'Z', 'Presion'])
-                        all_y_gif.extend(df_tmp['Y'].tolist()); all_z_gif.extend(df_tmp['Z'].tolist())
-                    y_gif_grid = np.linspace(min(all_y_gif), max(all_y_gif), 50)
-                    z_gif_grid = np.linspace(min(all_z_gif), max(all_z_gif), 50)
-                    Y_gg, Z_gg = np.meshgrid(y_gif_grid, z_gif_grid)
+                    for fi, lbl in enumerate(sel_anim_labels):
+                        s_data = dict_sup_anim[lbl]
+                        try:
+                            df_tmp = pd.DataFrame(json.loads(s_data[4]))
+                            df_tmp['Presion'] = calcular_variable_atmosferica(df_tmp, var_anim_sel)
+                            df_c = df_tmp.dropna(subset=['Y', 'Z', 'Presion'])
+                            aoa_v = _aoa_from_name_anim(s_data[1])
+                            items_precomp.append({
+                                'aoa': aoa_v if aoa_v is not None else 0.0,
+                                'x': float(s_data[2]),
+                                'df': df_c,
+                                'name': s_data[1]
+                            })
+                            all_y_pc.extend(df_c['Y'].tolist())
+                            all_z_pc.extend(df_c['Z'].tolist())
+                            all_p_pc.extend(df_c['Presion'].tolist())
+                        except Exception as e:
+                            st.warning(f"Error cargando {lbl}: {e}")
+                        prog_pc.progress((fi + 1) / len(sel_anim_labels))
 
-                    # Pre-interpolar todos los planos a la grilla común
-                    grillas_presion = []
-                    aoa_arr_gif = np.array([d['aoa'] for d in anim_items_sorted])
-                    x_arr_gif = np.array([d['x'] for d in anim_items_sorted])
-                    for item in anim_items_sorted:
-                        df_g = item['df'].dropna(subset=['Y', 'Z', 'Presion'])
-                        P_g = _gd((df_g['Y'].values, df_g['Z'].values), df_g['Presion'].values,
-                                  (Y_gg, Z_gg), method='linear')
-                        grillas_presion.append(P_g)
+                    if items_precomp:
+                        # Ordenar por AOA
+                        items_precomp.sort(key=lambda d: d['aoa'])
+                        aoa_arr_pc = np.array([d['aoa'] for d in items_precomp])
+                        x_arr_pc   = np.array([d['x']   for d in items_precomp])
 
-                    try:
-                        for fi, alpha_i in enumerate(alpha_range):
-                            status_gif.text(f"Renderizando frame {fi+1}/{n_pasos_gif} (α={alpha_i:.1f}°)...")
+                        # Grilla YZ común
+                        res = 60
+                        y_grid_pc = np.linspace(min(all_y_pc), max(all_y_pc), res)
+                        z_grid_pc = np.linspace(min(all_z_pc), max(all_z_pc), res)
+                        Y_pc, Z_pc = np.meshgrid(y_grid_pc, z_grid_pc)
 
-                            # Interpolar presión
-                            idx_lo_g = max(0, min(np.searchsorted(aoa_arr_gif, alpha_i) - 1, len(aoa_arr_gif) - 2))
-                            idx_hi_g = idx_lo_g + 1
-                            t_g = (alpha_i - aoa_arr_gif[idx_lo_g]) / (aoa_arr_gif[idx_hi_g] - aoa_arr_gif[idx_lo_g]) if aoa_arr_gif[idx_hi_g] != aoa_arr_gif[idx_lo_g] else 0
-                            P_frame = (1 - t_g) * grillas_presion[idx_lo_g] + t_g * grillas_presion[idx_hi_g]
-                            x_frame = (1 - t_g) * x_arr_gif[idx_lo_g] + t_g * x_arr_gif[idx_hi_g]
-
-                            fig_f = go.Figure()
-
-                            # Modelo con cabeceo
-                            if 'objeto_referencia_4d' in st.session_state:
-                                obj_f = st.session_state.objeto_referencia_4d
-                                cg_f = st.session_state.get('modelo_cg', {'x': 0.0, 'y': 0.0, 'z': 0.0})
-                                xf = np.array(obj_f['x'], dtype=float) - cg_f['x']
-                                yf = np.array(obj_f['y'], dtype=float) - cg_f['y']
-                                zf = np.array(obj_f['z'], dtype=float) - cg_f['z']
-                                xf, yf, zf = rotate_points(xf, yf, zf, 0, -alpha_i, 0)
-                                xf += cg_f['x']; yf += cg_f['y']; zf += cg_f['z']
-                                if obj_f['type'] == 'mesh':
-                                    fig_f.add_trace(go.Mesh3d(x=xf, y=yf, z=zf,
-                                        i=obj_f['i'], j=obj_f['j'], k=obj_f['k'],
-                                        color='#888', opacity=0.3, alphahull=0, showscale=False))
-
-                            # Plano interpolado
-                            mask_f = ~np.isnan(P_frame)
-                            if mask_f.any():
-                                P_max_f = np.nanmax(P_frame)
-                                X_def_f = x_frame - ((P_frame - P_max_f) * scale_gif)
-                                fig_f.add_trace(go.Scatter3d(
-                                    x=X_def_f[mask_f].flatten(),
-                                    y=Y_gg[mask_f].flatten(),
-                                    z=Z_gg[mask_f].flatten(),
-                                    mode='markers',
-                                    marker=dict(size=3, color=P_frame[mask_f].flatten(),
-                                               colorscale='Jet', showscale=True),
-                                    name=f"α={alpha_i:.1f}°"
-                                ))
-
-                            fig_f.update_layout(
-                                title=f"α = {alpha_i:.1f}°",
-                                scene=dict(aspectmode='data',
-                                          xaxis=dict(title="X", autorange="reversed"),
-                                          yaxis_title="Y", zaxis_title="Z",
-                                          camera=dict(eye=dict(x=2.0, y=2.0, z=2.0))),
-                                margin=dict(l=0, r=0, b=0, t=40),
-                                paper_bgcolor='rgba(0,0,0,0)'
+                        # Interpolar cada plano a la grilla
+                        grillas_pc = []
+                        status_pc.text("Interpolando planos a grilla común...")
+                        for ii, item in enumerate(items_precomp):
+                            df_g = item['df']
+                            P_g = _gd_anim(
+                                (df_g['Y'].values, df_g['Z'].values), df_g['Presion'].values,
+                                (Y_pc, Z_pc), method='linear'
                             )
+                            grillas_pc.append(P_g)
+                            prog_pc.progress((ii + 1) / len(items_precomp))
 
-                            frame_path_gif = os.path.join(temp_dir_gif, f"frame_{fi:03d}.png")
-                            scale_q = 1.0 if quality_gif == "Baja" else (2.0 if quality_gif == "Media" else 3.0)
-                            fig_f.write_image(frame_path_gif, engine="kaleido", scale=scale_q)
-                            frames_gif.append(frame_path_gif)
-                            prog_gif.progress((fi + 1) / n_pasos_gif)
+                        # Guardar en session_state
+                        st.session_state.anim4d_grillas = {
+                            'aoa_arr': aoa_arr_pc,
+                            'x_arr': x_arr_pc,
+                            'Y': Y_pc,
+                            'Z': Z_pc,
+                            'grillas': grillas_pc,
+                            'items': items_precomp,
+                            'var': var_anim_sel
+                        }
+                        st.session_state.anim4d_pmin = float(np.nanmin(all_p_pc))
+                        st.session_state.anim4d_pmax = float(np.nanmax(all_p_pc))
+                        st.session_state.anim4d_aoa_range = (float(aoa_arr_pc.min()), float(aoa_arr_pc.max()))
+                        status_pc.empty(); prog_pc.empty()
+                        st.success(f"✅ Pre-computación completada: {len(items_precomp)} planos, AOA {aoa_arr_pc.min():.1f}° → {aoa_arr_pc.max():.1f}°")
+                        st.rerun()
 
-                        # Compilar GIF
-                        status_gif.text("Compilando GIF...")
-                        gif_path_anim = os.path.join(temp_dir_gif, "animacion_4d.gif")
-                        images_gif = [imageio.imread(f) for f in frames_gif]
-                        imageio.mimsave(gif_path_anim, images_gif, fps=fps_gif, loop=0)
+        # ── PASO 3: VISUALIZACIÓN INTERACTIVA ────────────────────────────────
+        if st.session_state.anim4d_grillas is not None:
+            st.markdown("---")
+            st.markdown("### 🎛️ Paso 3: Visualización Interactiva")
 
-                        st.success("✅ Animación completada")
-                        st.image(gif_path_anim)
-                        with open(gif_path_anim, "rb") as fg:
-                            st.download_button("📥 Descargar GIF", fg, file_name="animacion_4d.gif", mime="image/gif", key="dl_gif_anim4d")
+            g = st.session_state.anim4d_grillas
+            aoa_min_v, aoa_max_v = st.session_state.anim4d_aoa_range
+            pmin_v = st.session_state.anim4d_pmin
+            pmax_v = st.session_state.anim4d_pmax
 
-                    except Exception as e_gif:
-                        st.error(f"Error generando GIF: {e_gif}")
+            c_ctrl_anim, c_plot_anim = st.columns([1, 2.5])
 
+            with c_ctrl_anim:
+                if aoa_min_v != aoa_max_v:
+                    alpha_slider = st.slider(
+                        f"α Alpha [°]  ({aoa_min_v:.1f}° → {aoa_max_v:.1f}°):",
+                        min_value=float(aoa_min_v), max_value=float(aoa_max_v),
+                        value=float(aoa_min_v), step=0.5, key="alpha_slider_anim4d"
+                    )
+                else:
+                    alpha_slider = float(aoa_min_v)
+                    st.info(f"Solo un AOA: {aoa_min_v}°")
+
+                sc_anim = st.slider("Escala Relieve:", 0.1, 10.0, pressure_scale_anim, 0.1, key="sc_anim_live")
+
+                # Info del plano interpolado
+                aoa_arr = g['aoa_arr']
+                idx_lo = max(0, min(int(np.searchsorted(aoa_arr, alpha_slider)) - 1, len(aoa_arr) - 2))
+                idx_hi = idx_lo + 1
+                t_v = (alpha_slider - aoa_arr[idx_lo]) / (aoa_arr[idx_hi] - aoa_arr[idx_lo]) if aoa_arr[idx_hi] != aoa_arr[idx_lo] else 0.0
+                x_v = (1 - t_v) * g['x_arr'][idx_lo] + t_v * g['x_arr'][idx_hi]
+
+                st.markdown(f"""
+                <div style="background:#111; border:1px solid #333; border-radius:8px; padding:10px; margin-top:10px;">
+                    <p style="color:#888; font-size:0.75rem; margin:0;">Interpolación activa</p>
+                    <p style="color:white; font-size:0.9rem; margin:4px 0;">α = {alpha_slider:.1f}°</p>
+                    <p style="color:#aaa; font-size:0.75rem; margin:0;">
+                        Entre {g['items'][idx_lo]['name']}<br>
+                        y {g['items'][idx_hi]['name']}<br>
+                        t = {t_v:.2f} | X ≈ {x_v:.1f} mm
+                    </p>
+                </div>
+                """, unsafe_allow_html=True)
+
+                if st.button("🗑️ Limpiar pre-computación", key="btn_clear_precomp", use_container_width=True):
+                    st.session_state.anim4d_grillas = None
+                    st.session_state.anim4d_aoa_range = None
+                    st.rerun()
+
+            with c_plot_anim:
+                # Interpolar presión al vuelo (rápido, la grilla ya está lista)
+                P_interp = (1 - t_v) * g['grillas'][idx_lo] + t_v * g['grillas'][idx_hi]
+                mask_v = ~np.isnan(P_interp)
+                Y_v = g['Y']; Z_v = g['Z']
+
+                fig_live = go.Figure()
+
+                # Modelo 3D rotado
+                if mostrar_modelo_anim and 'objeto_referencia_4d' in st.session_state:
+                    obj_anim = st.session_state.objeto_referencia_base if 'objeto_referencia_base' in st.session_state else st.session_state.objeto_referencia_4d
+                    cg_anim = st.session_state.get('modelo_cg', {'x': 0.0, 'y': 0.0, 'z': 0.0})
+                    xm_a, ym_a, zm_a = _pose_anim(obj_anim, alpha_slider, 0.0, cg_anim)
+                    obj_ref = st.session_state.objeto_referencia_4d
+                    if obj_ref['type'] == 'mesh':
+                        fig_live.add_trace(go.Mesh3d(
+                            x=xm_a, y=ym_a, z=zm_a,
+                            i=obj_ref['i'], j=obj_ref['j'], k=obj_ref['k'],
+                            color='#5588cc', opacity=0.3, name="Modelo",
+                            alphahull=0, showscale=False
+                        ))
+                    elif obj_ref['type'] == 'scatter':
+                        fig_live.add_trace(go.Scatter3d(
+                            x=xm_a, y=ym_a, z=zm_a,
+                            mode='markers', marker=dict(size=2, color='#5588cc', opacity=0.5),
+                            name="Modelo"
+                        ))
+
+                # Plano interpolado
+                if mask_v.any():
+                    P_flat = P_interp[mask_v].flatten()
+                    P_max_v = float(np.nanmax(P_interp))
+                    X_def_v = x_v - ((P_interp[mask_v] - P_max_v) * sc_anim)
+
+                    try:
+                        from scipy.spatial import Delaunay as _Del
+                        pts_yz = np.column_stack([Y_v[mask_v].flatten(), Z_v[mask_v].flatten()])
+                        tri_v = _Del(pts_yz)
+                        fig_live.add_trace(go.Mesh3d(
+                            x=X_def_v.flatten(), y=pts_yz[:,0], z=pts_yz[:,1],
+                            i=tri_v.simplices[:,0], j=tri_v.simplices[:,1], k=tri_v.simplices[:,2],
+                            intensity=P_flat,
+                            colorscale='Jet', cmin=pmin_v, cmax=pmax_v,
+                            showscale=True, opacity=1.0, flatshading=True,
+                            name=f"Presión (α={alpha_slider:.1f}°)"
+                        ))
+                    except Exception as e_tri:
+                        fig_live.add_trace(go.Scatter3d(
+                            x=X_def_v.flatten(),
+                            y=Y_v[mask_v].flatten(),
+                            z=Z_v[mask_v].flatten(),
+                            mode='markers',
+                            marker=dict(size=3, color=P_flat, colorscale='Jet', showscale=True,
+                                        cmin=pmin_v, cmax=pmax_v),
+                            name=f"Presión (α={alpha_slider:.1f}°)"
+                        ))
+
+                fig_live.update_layout(
+                    title=f"α = {alpha_slider:.1f}°",
+                    scene=dict(
+                        aspectmode='data',
+                        xaxis=dict(title="X (Estación)", autorange="reversed"),
+                        yaxis_title="Y (Envergadura)",
+                        zaxis_title="Z (Altura)"
+                    ),
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    font=dict(color='white'),
+                    height=620,
+                    margin=dict(l=0, r=0, b=0, t=40)
+                )
+                st.plotly_chart(fig_live, use_container_width=True)
+
+            # ── PASO 4: GENERADOR DE GIF ─────────────────────────────────────
+            st.markdown("---")
+            st.markdown("### 🎥 Paso 4: Generar Animación GIF")
+
+            c_gif1, c_gif2, c_gif3, c_gif4 = st.columns(4)
+            fps_gif   = c_gif1.slider("FPS:", 1, 15, 3, key="fps_gif_anim")
+            n_pas_gif = c_gif2.slider("N° pasos:", 5, 40, 12, key="npasos_gif")
+            qual_gif  = c_gif3.select_slider("Calidad:", ["Baja", "Media", "Alta"], value="Media", key="quality_gif_anim")
+            sc_gif    = c_gif4.slider("Escala Relieve:", 0.1, 10.0, 1.0, 0.1, key="scale_gif_anim")
+
+            if st.button("🎥 Generar GIF", type="primary", use_container_width=True, key="btn_gen_gif_anim"):
+                try:
+                    import kaleido
+                except ImportError:
+                    st.error("❌ 'kaleido' no encontrado.")
+                    st.stop()
+
+                alpha_range_gif = np.linspace(aoa_min_v, aoa_max_v, n_pas_gif)
+                status_gif = st.empty()
+                prog_gif = st.progress(0)
+                frames_gif = []
+                temp_dir_gif = tempfile.mkdtemp()
+
+                try:
+                    for fi, alpha_i in enumerate(alpha_range_gif):
+                        status_gif.text(f"Frame {fi+1}/{n_pas_gif} — α={alpha_i:.1f}°")
+                        idx_lo_g = max(0, min(int(np.searchsorted(g['aoa_arr'], alpha_i)) - 1, len(g['aoa_arr']) - 2))
+                        idx_hi_g = idx_lo_g + 1
+                        t_g = (alpha_i - g['aoa_arr'][idx_lo_g]) / (g['aoa_arr'][idx_hi_g] - g['aoa_arr'][idx_lo_g]) if g['aoa_arr'][idx_hi_g] != g['aoa_arr'][idx_lo_g] else 0.0
+                        P_g = (1 - t_g) * g['grillas'][idx_lo_g] + t_g * g['grillas'][idx_hi_g]
+                        x_g = (1 - t_g) * g['x_arr'][idx_lo_g] + t_g * g['x_arr'][idx_hi_g]
+                        mask_g = ~np.isnan(P_g)
+
+                        fig_g = go.Figure()
+
+                        if 'objeto_referencia_4d' in st.session_state:
+                            obj_g = st.session_state.objeto_referencia_base if 'objeto_referencia_base' in st.session_state else st.session_state.objeto_referencia_4d
+                            cg_g = st.session_state.get('modelo_cg', {'x': 0.0, 'y': 0.0, 'z': 0.0})
+                            xm_g, ym_g, zm_g = _pose_anim(obj_g, alpha_i, 0.0, cg_g)
+                            obj_ref_g = st.session_state.objeto_referencia_4d
+                            if obj_ref_g['type'] == 'mesh':
+                                fig_g.add_trace(go.Mesh3d(x=xm_g, y=ym_g, z=zm_g,
+                                    i=obj_ref_g['i'], j=obj_ref_g['j'], k=obj_ref_g['k'],
+                                    color='#5588cc', opacity=0.25, alphahull=0, showscale=False))
+
+                        if mask_g.any():
+                            P_max_g = float(np.nanmax(P_g))
+                            X_def_g = x_g - ((P_g[mask_g] - P_max_g) * sc_gif)
+                            fig_g.add_trace(go.Scatter3d(
+                                x=X_def_g.flatten(),
+                                y=g['Y'][mask_g].flatten(),
+                                z=g['Z'][mask_g].flatten(),
+                                mode='markers',
+                                marker=dict(size=3, color=P_g[mask_g].flatten(),
+                                           colorscale='Jet', cmin=pmin_v, cmax=pmax_v, showscale=True),
+                                name=f"α={alpha_i:.1f}°"
+                            ))
+
+                        fig_g.update_layout(
+                            title=f"α = {alpha_i:.1f}°",
+                            scene=dict(aspectmode='data',
+                                      xaxis=dict(title="X", autorange="reversed"),
+                                      yaxis_title="Y", zaxis_title="Z",
+                                      camera=dict(eye=dict(x=2.0, y=2.0, z=2.0))),
+                            margin=dict(l=0, r=0, b=0, t=40),
+                            paper_bgcolor='rgba(0,0,0,0)'
+                        )
+                        scale_q = 1.0 if qual_gif == "Baja" else (2.0 if qual_gif == "Media" else 3.0)
+                        fp = os.path.join(temp_dir_gif, f"frame_{fi:03d}.png")
+                        fig_g.write_image(fp, engine="kaleido", scale=scale_q)
+                        frames_gif.append(fp)
+                        prog_gif.progress((fi + 1) / n_pas_gif)
+
+                    status_gif.text("Compilando GIF...")
+                    gif_path_anim = os.path.join(temp_dir_gif, "animacion_4d.gif")
+                    images_gif = [imageio.imread(f) for f in frames_gif]
+                    imageio.mimsave(gif_path_anim, images_gif, fps=fps_gif, loop=0)
+                    st.success("✅ Animación completada")
+                    st.image(gif_path_anim)
+                    with open(gif_path_anim, "rb") as fg:
+                        st.download_button("📥 Descargar GIF", fg, file_name="animacion_4d.gif", mime="image/gif", key="dl_gif_anim4d")
+
+                except Exception as e_gif:
+                    st.error(f"Error generando GIF: {e_gif}")
 
 elif st.session_state.seccion_actual == 'herramientas':
 
