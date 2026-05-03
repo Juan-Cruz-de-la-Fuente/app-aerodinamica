@@ -3445,8 +3445,9 @@ Estelas y soportes no llegan a P_libre → quedan descartados."""
                         import matplotlib.pyplot as plt
 
                         # 1. Definir núcleos (mínimos locales) en lugar de un umbral global
-                        p_libre = float(np.nanmax(V_grid))       # Presion máxima = flujo no perturbado
-                        p_minimo_global = float(np.nanmin(V_grid))
+                        # Usar percentiles para evitar artefactos de ringing de la interpolación cúbica
+                        p_libre = float(np.nanpercentile(V_grid, 99))       # Presion máxima = flujo no perturbado
+                        p_minimo_global = float(np.nanpercentile(V_grid, 1))
                         rango_total = p_libre - p_minimo_global  # rango completo del campo
 
                         # Usar filtro de mínimo local para encontrar los núcleos de los vórtices
@@ -3499,7 +3500,7 @@ Estelas y soportes no llegan a P_libre → quedan descartados."""
 
                                 for path in cs.get_paths():
                                     for poly in path.to_polygons():
-                                        if len(poly) > 4 and Path(poly).contains_point((y_core, z_core)):
+                                        if len(poly) > 2 and Path(poly).contains_point((y_core, z_core)):
                                             area = 0.5 * np.abs(np.dot(poly[:,0], np.roll(poly[:,1], 1)) - np.dot(poly[:,1], np.roll(poly[:,0], 1)))
                                             if area > level_area:
                                                 level_area = area
