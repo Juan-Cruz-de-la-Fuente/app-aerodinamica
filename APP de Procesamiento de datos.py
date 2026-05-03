@@ -3337,21 +3337,31 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
     """, unsafe_allow_html=True)
     
     st.markdown("## ⚙️ Paso 1: Configuración de Parámetros")
+    
+    modo_deteccion = st.radio("Estrategia de Detección:", 
+        ["Automática Restrictiva (Solo vórtices aislados)", "Forzar Búsqueda por Zonas (Ignorar soporte y buscar simetría)"],
+        horizontal=True, index=1
+    )
+    
     c_param1, c_param2, c_param3 = st.columns(3)
     with c_param1:
         sensibilidad_pa = st.slider(
-            "🌟 Cobertura mínima de gradiente [%]",
-            min_value=10, max_value=95, value=60, step=5,
-            help="""¿Qué tanto debe subir la presión desde el núcleo hasta P_libre para considerarse vórtice?
-60% = el contorno exterior debe alcanzar al menos el 60% del camino entre P_core y P_∞.
-Estelas y soportes no llegan a P_libre → quedan descartados."""
+            "🌟 Cobertura mínima (Aislamiento) [%]",
+            min_value=5, max_value=95, value=20, step=5,
+            help="Menor valor = detecta vórtices aunque se fusionen muy rápido con la estela principal. 20% recomendado para vórtices secundarios pegados al fuselaje."
         )
     with c_param2:
-        st.info("✔️ Criterio: Núcleo → Gradiente → P_libre")
-        forma_aprox = "Polígonos Reales (Isobanda)"
+        if modo_deteccion == "Forzar Búsqueda por Zonas (Ignorar soporte y buscar simetría)":
+            st.info("🚫 ZONA CENTRAL (SOPORTE/FUSELAJE) BLOQUEADA")
+            forzar_cantidad = st.number_input("Cantidad de Vórtices a forzar por Semiala", min_value=1, max_value=5, value=2)
+            ignorar_centro = True
+        else:
+            st.info("✔️ Buscando libremente en todo el dominio")
+            forzar_cantidad = 0
+            ignorar_centro = False
     with c_param3:
         grid_res = st.slider("📐 Resolución Grilla", min_value=50, max_value=300, value=150, step=10,
-                             help="Cantidad de puntos interpolados.")
+                             help="Aumentar resolución ayuda a delimitar mejor polígonos de vórtices chicos.")
     
     st.markdown("---")
     st.markdown("## 🚀 Paso 2: Selección de Fuente y Ejecución")
@@ -3460,11 +3470,42 @@ Estelas y soportes no llegan a P_libre → quedan descartados."""
                         # Obtener las coordenadas de los núcleos
                         min_coords = np.argwhere(mascara_vortices)
                         
-                        # Ordenar por profundidad (presión) y tomar los 15 más profundos para no colgar el sistema
+                        # Ordenar por profundidad (presión) y tomar los 30 más profundos como base
                         if len(min_coords) > 0:
                             presiones_min = V_grid[min_coords[:, 0], min_coords[:, 1]]
                             indices_ordenados = np.argsort(presiones_min)
-                            min_coords = min_coords[indices_ordenados][:15]
+                            min_coords = min_coords[indices_ordenados][:30]
+                            
+                            # Filtro 1: Ignorar zona central (Estela de soporte/fuselaje)
+                            if ignorar_centro:
+                                y_min_data, y_max_data = y_plot.min(), y_plot.max()
+                                y_mid_sym = (y_min_data + y_max_data) / 2.0
+                                ancho_excluir = (y_max_data - y_min_data) * 0.12 # Excluir 12% del centro a cada lado (24% total)
+                                valid_coords = []
+                                for r, c in min_coords:
+                                    if abs(y_grid_vals[c] - y_mid_sym) > ancho_excluir:
+                                        valid_coords.append([r, c])
+                                min_coords = np.array(valid_coords) if valid_coords else np.array([])
+
+                            # Filtro 2: Forzar cantidad por semiala
+                            if forzar_cantidad > 0 and len(min_coords) > 0:
+                                y_min_data, y_max_data = y_plot.min(), y_plot.max()
+                                y_mid_sym = (y_min_data + y_max_data) / 2.0
+                                left_coords = []
+                                right_coords = []
+                                # min_coords ya está ordenado por profundidad
+                                for r, c in min_coords:
+                                    if y_grid_vals[c] < y_mid_sym: left_coords.append([r, c])
+                                    else: right_coords.append([r, c])
+                                
+                                final_coords = []
+                                final_coords.extend(left_coords[:int(forzar_cantidad)])
+                                final_coords.extend(right_coords[:int(forzar_cantidad)])
+                                min_coords = np.array(final_coords) if final_coords else np.array([])
+                                # Si forzamos la cantidad, ignoramos el umbral de cobertura para asegurar que se muestren
+                                sensibilidad_pa = 0 
+                            else:
+                                min_coords = min_coords[:15] # Límite de seguridad estándar
 
                         vortices = []
                         fig_tmp, ax_tmp = plt.subplots()
