@@ -3444,28 +3444,35 @@ Estelas y soportes no llegan a P_libre → quedan descartados."""
                         from matplotlib.path import Path
                         import matplotlib.pyplot as plt
 
-                        # 1. Definir máscara de búsqueda (zonas con presión significativamente baja)
-                        p_threshold = np.nanmax(V_grid) - (sensibilidad_pa * 0.2)
-                        mascara_vortices = V_grid < p_threshold
-                        mascara_vortices = ndimage.binary_opening(mascara_vortices, structure=np.ones((3,3)))
-                        
-                        labels, num_features = ndimage.label(mascara_vortices)
-                        vortices = []
-
-                        # Referencia de presión libre (P_∞)
+                        # 1. Definir núcleos (mínimos locales) en lugar de un umbral global
                         p_libre = float(np.nanmax(V_grid))       # Presion máxima = flujo no perturbado
                         p_minimo_global = float(np.nanmin(V_grid))
                         rango_total = p_libre - p_minimo_global  # rango completo del campo
 
-                        for i in range(1, num_features + 1):
-                            mask_zona = (labels == i)
-                            if np.sum(mask_zona) < 10: continue
+                        # Usar filtro de mínimo local para encontrar los núcleos de los vórtices
+                        # Un tamaño de 15x15 en una grilla de 150x150 representa un 10% del dominio
+                        local_min = ndimage.minimum_filter(V_grid, size=15) == V_grid
+                        
+                        # Filtrar mínimos espurios (deben tener una caída significativa, ej. > 10% del rango total)
+                        mascara_vortices = local_min & (V_grid < (p_libre - rango_total * 0.10))
+                        
+                        # Obtener las coordenadas de los núcleos
+                        min_coords = np.argwhere(mascara_vortices)
+                        vortices = []
 
-                            zona_values = np.where(mask_zona, V_grid, np.nan)
-                            min_idx = np.nanargmin(zona_values)
-                            row, col = np.unravel_index(min_idx, V_grid.shape)
+                        for row, col in min_coords:
                             p_core = V_grid[row, col]
                             y_core, z_core = y_grid_vals[col], z_grid_vals[row]
+                            
+                            # Evitar duplicados si el núcleo es plano (múltiples píxeles adyacentes)
+                            is_duplicate = False
+                            for v in vortices:
+                                dist = np.sqrt((y_core - v['y'])**2 + (z_core - v['z'])**2)
+                                if dist < ((y_grid_vals[-1] - y_grid_vals[0]) / 20.0): # 5% del dominio
+                                    is_duplicate = True
+                                    break
+                            if is_duplicate:
+                                continue
 
                             # --- CRITERIO DE VÓRTICE REAL: la isobanda debe escalar desde
                             # el núcleo hasta cerca de P_libre (flujo no perturbado).
