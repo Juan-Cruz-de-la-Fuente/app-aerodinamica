@@ -5,15 +5,15 @@ import numpy as np
 def calcular_variable_atmosferica(df, variable):
     import pandas as pd
     res = df.get('Presion', pd.Series([0]*len(df)))
-    if variable == 'PresiÃ³n Total [Actual]':
+    if variable == 'Presión Total [Actual]':
         return res
-    elif variable == 'Ï_âˆž':
+    elif variable == '�?_∞':
         return df.get('rho_inf', 1.225).fillna(1.225)
-    elif variable == 'V_âˆž':
+    elif variable == 'V_∞':
         return df.get('V_inf', 0.0).fillna(0.0)
-    elif variable == 'P_âˆž':
+    elif variable == 'P_∞':
         return df.get('P_inf', 101325.0).fillna(101325.0)
-    elif variable == 'T_âˆž':
+    elif variable == 'T_∞':
         return df.get('T_inf', 15.0).fillna(15.0)
     return res
 import matplotlib.pyplot as plt
@@ -77,10 +77,10 @@ def rotate_points(x, y, z, angle_x, angle_y, angle_z):
     
     return rotated_points[0,:], rotated_points[1,:], rotated_points[2,:]
 
-# ConfiguraciÃ³n de la pÃ¡gina
+# Configuración de la página
 st.set_page_config(
-    page_title="Laboratorio de AerodinÃ¡mica y Fluidos - UTN HAEDO",
-    page_icon="ðŸš€",
+    page_title="Laboratorio de Aerodinámica y Fluidos - UTN HAEDO",
+    page_icon="🚀",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
@@ -229,14 +229,14 @@ st.markdown("""
 def rotate_points(x, y, z, angle_x, angle_y, angle_z):
     """
     Rota puntos 3D alrededor de los ejes X, Y, Z.
-    Ãngulos en grados.
+    �?ngulos en grados.
     """
     # Convertir a radianes
     rad_x = np.radians(angle_x)
     rad_y = np.radians(angle_y)
     rad_z = np.radians(angle_z)
     
-    # Matrices de rotaciÃ³n
+    # Matrices de rotación
     Rx = np.array([
         [1, 0, 0],
         [0, np.cos(rad_x), -np.sin(rad_x)],
@@ -255,7 +255,7 @@ def rotate_points(x, y, z, angle_x, angle_y, angle_z):
         [0, 0, 1]
     ])
     
-    # Matriz de rotaciÃ³n combinada R = Rz * Ry * Rx
+    # Matriz de rotación combinada R = Rz * Ry * Rx
     R = Rz @ Ry @ Rx
     
     # Apilar puntos
@@ -276,7 +276,7 @@ def render_navbar():
             
             with c1:
                 t1 = "primary" if st.session_state.seccion_actual == 'inicio' else "secondary"
-                if st.button("ðŸš€ INICIO", use_container_width=True, type=t1):
+                if st.button("🚀 INICIO", use_container_width=True, type=t1):
                     st.session_state.seccion_actual = 'inicio'
                     st.rerun()
             
@@ -352,50 +352,50 @@ def render_navbar():
                     }
                     </style>""", unsafe_allow_html=True)
                 
-                with st.popover("ðŸŒŒ ENSAYO ESTELA", use_container_width=True):
+                with st.popover("🌌 ENSAYO ESTELA", use_container_width=True):
                     st.markdown("<style>div[data-testid='stPopoverBody'] button { font-size: 0.85rem !important; padding: 0.2rem 0.5rem !important; }</style>", unsafe_allow_html=True)
-                    if st.button("ðŸ“ˆ Vis. Estela 1D", use_container_width=True, type="primary" if st.session_state.seccion_actual == 'betz_2d' else "secondary"):
+                    if st.button("📈 Vis. Estela 1D", use_container_width=True, type="primary" if st.session_state.seccion_actual == 'betz_2d' else "secondary"):
                         st.session_state.seccion_actual = 'betz_2d'
                         st.rerun()
-                    if st.button("ðŸ“ˆ Vis. Estela 2D", use_container_width=True, type="primary" if st.session_state.seccion_actual == 'vis_2d_nueva' else "secondary"):
+                    if st.button("📈 Vis. Estela 2D", use_container_width=True, type="primary" if st.session_state.seccion_actual == 'vis_2d_nueva' else "secondary"):
                         st.session_state.seccion_actual = 'vis_2d_nueva'
                         st.rerun()
-                    if st.button("ðŸŒªï¸ Vis. Estela 3D", use_container_width=True, type="primary" if st.session_state.seccion_actual == 'betz_3d' else "secondary"):
+                    if st.button("🌪�? Vis. Estela 3D", use_container_width=True, type="primary" if st.session_state.seccion_actual == 'betz_3d' else "secondary"):
                         st.session_state.seccion_actual = 'betz_3d'
                         st.rerun()
-                    if st.button("ðŸŒŒ Vis. Estela 4D", use_container_width=True, type="primary" if st.session_state.seccion_actual == 'betz_4d' else "secondary"):
+                    if st.button("🌌 Vis. Estela 4D", use_container_width=True, type="primary" if st.session_state.seccion_actual == 'betz_4d' else "secondary"):
                         st.session_state.seccion_actual = 'betz_4d'
                         st.rerun()
-                    if st.button("ðŸŒ€ AnÃ¡lisis de VÃ³rtices", use_container_width=True, type="primary" if st.session_state.seccion_actual == 'analisis_vortices' else "secondary"):
+                    if st.button("🌀 Análisis de Vórtices", use_container_width=True, type="primary" if st.session_state.seccion_actual == 'analisis_vortices' else "secondary"):
                         st.session_state.seccion_actual = 'analisis_vortices'
                         st.rerun()
-                    if st.button("ðŸŽ¬ AnimaciÃ³n 4D", use_container_width=True, type="primary" if st.session_state.seccion_actual == 'animacion_4d' else "secondary"):
+                    if st.button("🎬 Animación 4D", use_container_width=True, type="primary" if st.session_state.seccion_actual == 'animacion_4d' else "secondary"):
                         st.session_state.seccion_actual = 'animacion_4d'
                         st.rerun()
-                    if st.button("ðŸ”§ Herramientas", use_container_width=True, type="primary" if st.session_state.seccion_actual == 'herramientas' else "secondary"):
+                    if st.button("🔧 Herramientas", use_container_width=True, type="primary" if st.session_state.seccion_actual == 'herramientas' else "secondary"):
                         st.session_state.seccion_actual = 'herramientas'
                         st.rerun()
 
             with c3:
                 t3 = "primary" if st.session_state.seccion_actual == 'ensayo_betz' else "secondary"
-                if st.button("ðŸ§ª ENSAYO DE BETZ", use_container_width=True, type=t3):
+                if st.button("🧪 ENSAYO DE BETZ", use_container_width=True, type=t3):
                      st.session_state.seccion_actual = 'ensayo_betz'
                      st.rerun()
 
             with c4:
                 t4 = "primary" if st.session_state.seccion_actual == 'modelos' else "secondary"
-                if st.button("ðŸ“¦ MODELOS", use_container_width=True, type=t4):
+                if st.button("📦 MODELOS", use_container_width=True, type=t4):
                      st.session_state.seccion_actual = 'modelos'
                      st.rerun()
 
             with c5:
                 t5 = "primary" if st.session_state.seccion_actual == 'configuracion' else "secondary"
-                if st.button("âš™ï¸ CONFIG", use_container_width=True, type=t5):
+                if st.button("⚙�? CONFIG", use_container_width=True, type=t5):
                     st.session_state.seccion_actual = 'configuracion'
                     st.rerun()
 
             with c6:
-                if st.button(f"ðŸ‘¤ PERFIL / SALIR", use_container_width=True):
+                if st.button(f"👤 PERFIL / SALIR", use_container_width=True):
                     st.session_state.logged_in = False
                     st.session_state.username = None
                     st.rerun()
@@ -480,21 +480,21 @@ def login_page():
 {carousel_html}
 <div style="position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 800px; padding: 2.5rem; background-color: transparent; border: none; box-shadow: none;">
 <h1 style="font-family: 'Orbitron', sans-serif; font-size: 4.5rem; font-weight: 900; letter-spacing: 2px; margin-bottom: 0.5rem; text-shadow: 0 10px 30px rgba(0,0,0,0.5); color: white; text-align: center;">BETZ APP</h1>
-<p style="font-family: 'Inter', sans-serif; font-size: 1.2rem; letter-spacing: 6px; text-transform: uppercase; color: rgba(255,255,255,0.8); margin-top: 0.5rem; text-shadow: 0 4px 15px rgba(0,0,0,0.8); text-align: center; margin-bottom: 2rem;">Sistema de Procesamiento de Datos de TÃºnel de Viento</p>
+<p style="font-family: 'Inter', sans-serif; font-size: 1.2rem; letter-spacing: 6px; text-transform: uppercase; color: rgba(255,255,255,0.8); margin-top: 0.5rem; text-shadow: 0 4px 15px rgba(0,0,0,0.8); text-align: center; margin-bottom: 2rem;">Sistema de Procesamiento de Datos de Túnel de Viento</p>
 </div>
 </div>
 """, unsafe_allow_html=True)
     
     c1, c2, c3 = st.columns([1, 1.5, 1])
     with c2:
-        st.markdown("### ðŸ” Iniciar SesiÃ³n")
+        st.markdown("### �? Iniciar Sesión")
         username = st.text_input("Usuario", placeholder="admin", key="login_user")
-        password = st.text_input("ContraseÃ±a", type="password", placeholder="â€¢â€¢â€¢â€¢", key="login_pass")
+        password = st.text_input("Contraseña", type="password", placeholder="••••", key="login_pass")
         
         st.markdown("<div style='margin-bottom: 1rem;'></div>", unsafe_allow_html=True)
         
-        if st.button("Iniciar SesiÃ³n", type="primary", use_container_width=True):
-             # VALIDACIÃ“N 100% DESDE LA BASE DE DATOS DRIVE
+        if st.button("Iniciar Sesión", type="primary", use_container_width=True):
+             # VALIDACIÓN 100% DESDE LA BASE DE DATOS DRIVE
             if auth.verify_user(username, password):
                 st.session_state.logged_in = True
                 st.session_state.username = username
@@ -508,13 +508,13 @@ def login_page():
             else:
                 st.error("Credenciales incorrectas")
         
-        st.info("ðŸ’¡ Contacte al administrador para obtener credenciales de acceso.")
+        st.info("💡 Contacte al administrador para obtener credenciales de acceso.")
 
 if not st.session_state.logged_in:
     login_page()
     st.stop()  # Stop execution here if not logged in
 
-# Inicializar estado de la sesiÃ³n (resto de inicializaciones)
+# Inicializar estado de la sesión (resto de inicializaciones)
 if 'seccion_actual' not in st.session_state:
     st.session_state.seccion_actual = 'inicio'
 if 'archivos_cargados' not in st.session_state:
@@ -551,7 +551,7 @@ def extraer_tiempo_y_coordenadas_YZ(nombre_archivo):
     y_traverser = None 
     z_base = None
 
-    # Normalizar nombre sin extensiÃ³n
+    # Normalizar nombre sin extensión
     nombre = os.path.basename(str(nombre_archivo))
     nombre_sin_ext = re.sub(r'\.\w+$', '', nombre)
 
@@ -626,17 +626,17 @@ def normalizar_nombre_sensor(sensor_text):
         sensor_global = int(m2.group(1))
         return f"Presion-Sensor {sensor_global}"
 
-    # Caso donde venga solo un nÃºmero al final
+    # Caso donde venga solo un número al final
     nums = re.findall(r'(\d+)', s)
     if nums:
-        # si hay dos nÃºmeros, considerar que puede ser offset,index
+        # si hay dos números, considerar que puede ser offset,index
         if len(nums) >= 2:
             offset = int(nums[-2])
             idx = int(nums[-1])
             if 0 <= offset <= 9 and 1 <= idx <= 12:
                 sensor_global = offset * 12 + idx
                 return f"Presion-Sensor {sensor_global}"
-        # si hay uno solo, usarlo como nÃºmero de sensor
+        # si hay uno solo, usarlo como número de sensor
         sensor_global = int(nums[-1])
         return f"Presion-Sensor {sensor_global}"
 
@@ -645,14 +645,14 @@ def normalizar_nombre_sensor(sensor_text):
 
 
 def obtener_numero_sensor_desde_columna(col_name):
-    """Devuelve el nÃºmero entero del sensor si el nombre de columna tiene 'Presion-Sensor N' (o similar), sino None."""
+    """Devuelve el número entero del sensor si el nombre de columna tiene 'Presion-Sensor N' (o similar), sino None."""
     if pd.isna(col_name):
         return None
     s = str(col_name)
     m = re.search(r'(?i)presion[-_ ]*sensor[_\-\s]*(\d+)', s)
     if m:
         return int(m.group(1))
-    # si no coincide, intentar extraer Ãºltimo nÃºmero
+    # si no coincide, intentar extraer último número
     nums = re.findall(r'(\d+)', s)
     if nums:
         return int(nums[-1])
@@ -661,14 +661,14 @@ def obtener_numero_sensor_desde_columna(col_name):
 
 def calcular_altura_absoluta_z(sensor_num, z_base_ref, posicion_inicial, distancia_entre_tomas, n_sensores, orden="asc"):
     """
-    Calcula la altura absoluta Z de un sensor dado, basÃ¡ndose en una altura de referencia (Z Base).
+    Calcula la altura absoluta Z de un sensor dado, basándose en una altura de referencia (Z Base).
     """
     if sensor_num is None:
         return None
     
     toma_index = int(sensor_num)  # ahora global: 1..21
 
-    # Nota: la lÃ³gica original sumaba (toma_index - 1) * distancia a la referencia.
+    # Nota: la lógica original sumaba (toma_index - 1) * distancia a la referencia.
     # Asumimos que z_base_ref es la altura del primer sensor (o del 12, segun contexto, pero aqui parece ser base).
     # Sin embargo, el parametro 'posicion_inicial' se llama 'distancia_toma_12' en config.
     # Si z_base_ref es la lectura del 'y_traverser' (que era Z), entonces:
@@ -681,24 +681,24 @@ def calcular_altura_absoluta_z(sensor_num, z_base_ref, posicion_inicial, distanc
     return z_total
 
 def extraer_nombre_base_archivo(nombre_archivo):
-    """Extraer nombre base del archivo (sin extensiÃ³n y sin 'incertidumbre_')"""
+    """Extraer nombre base del archivo (sin extensión y sin 'incertidumbre_')"""
     nombre_base = nombre_archivo.replace('.csv', '').replace('incertidumbre_', '').replace('_', ' ')
     # Capitalizar primera letra de cada palabra
     return ' '.join(word.capitalize() for word in nombre_base.split())
 
 def procesar_promedios(archivo_csv, orden="asc", archivo_infinito=None):
-    """Procesar archivo de incertidumbre y detectar automÃ¡ticamente la cantidad de sensores."""
+    """Procesar archivo de incertidumbre y detectar automáticamente la cantidad de sensores."""
     try:
         df_raw = pd.read_csv(archivo_csv, sep=";", header=None, dtype=str)  # leer como texto para robustez
 
-        # Buscar la palabra "importante" para determinar dÃ³nde terminar
+        # Buscar la palabra "importante" para determinar dónde terminar
         index_final = df_raw[df_raw.apply(lambda row: row.astype(str).str.contains("importante", case=False).any(), axis=1)].index
         if not index_final.empty:
             df_raw = df_raw.iloc[:index_final[0]]
 
         resultados = []
 
-        # Procesar bloques de 10 filas (misma lÃ³gica base)
+        # Procesar bloques de 10 filas (misma lógica base)
         for i in range(0, df_raw.shape[0], 10):
             bloque = df_raw.iloc[i:i+10]
             if bloque.empty or len(bloque) < 3:
@@ -722,7 +722,7 @@ def procesar_promedios(archivo_csv, orden="asc", archivo_infinito=None):
 
             # Lo mismo para valores: si hay una celda con ;, expandir
             valores_lista = []
-            for entry in bloque.iloc[2, 1:].tolist(): # Asumimos que los valores estÃ¡n en la fila 2 (Ã­ndice 2)
+            for entry in bloque.iloc[2, 1:].tolist(): # Asumimos que los valores están en la fila 2 (índice 2)
                 if pd.isna(entry):
                     continue
                 s = str(entry).strip()
@@ -732,7 +732,7 @@ def procesar_promedios(archivo_csv, orden="asc", archivo_infinito=None):
                 else:
                     valores_lista.append(s)
 
-            # Si por alguna razÃ³n no se alinean en longitud, ajustar
+            # Si por alguna razón no se alinean en longitud, ajustar
             n = max(len(sensores_lista), len(valores_lista))
             sensores_lista = (sensores_lista + [None] * n)[:n]
             valores_lista = (valores_lista + [None] * n)[:n]
@@ -843,14 +843,14 @@ def procesar_promedios(archivo_csv, orden="asc", archivo_infinito=None):
             df_resultado["Pos_Y_Traverser"] = None
             df_resultado["Pos_Z_Base"] = None
 
-        # ðŸ”Ž Detectar cantidad de sensores automÃ¡ticamente
+        # 🔎 Detectar cantidad de sensores automáticamente
         sensores_cols = [c for c in df_resultado.columns if re.search(r'Presion[-_ ]*Sensor', str(c), re.IGNORECASE)]
         if sensores_cols:
             n_sensores = max([obtener_numero_sensor_desde_columna(c) for c in sensores_cols if obtener_numero_sensor_desde_columna(c) is not None], default=0)
         else:
             n_sensores = 0
 
-        # Guardar en atributos del DataFrame para usar despuÃ©s
+        # Guardar en atributos del DataFrame para usar después
         df_resultado.attrs["n_sensores"] = n_sensores
 
         return df_resultado
@@ -881,7 +881,7 @@ def crear_archivos_individuales_por_tiempo_y_posicion(df_resultado, nombre_archi
 
             clave_sub_archivo = f"{nombre_original}_X{int(y_valor) if pd.notna(y_valor) else 0}_T{tiempo}s"
             
-            # Contar posiciones Z Ãºnicas
+            # Contar posiciones Z únicas
             num_z = len(df_yt['Pos_Z_Base'].unique()) if 'Pos_Z_Base' in df_yt.columns else 1
 
             sub_archivos[clave_sub_archivo] = {
@@ -898,12 +898,12 @@ def crear_archivos_individuales_por_tiempo_y_posicion(df_resultado, nombre_archi
 
 def calcular_posiciones_sensores(distancia_toma_12, distancia_entre_tomas, n_sensores, orden="asc"):
     """
-    Calcula las posiciones fÃ­sicas de todos los sensores en funciÃ³n de:
-    - distancia_toma_12: posiciÃ³n de la toma fÃ­sica nÃºmero 12 (en mm)
-    - distancia_entre_tomas: separaciÃ³n entre sensores consecutivos (en mm)
+    Calcula las posiciones físicas de todos los sensores en función de:
+    - distancia_toma_12: posición de la toma física número 12 (en mm)
+    - distancia_entre_tomas: separación entre sensores consecutivos (en mm)
     - n_sensores: cantidad total de sensores detectados en el archivo
-    - orden: "asc" o "des" (segÃºn cÃ³mo estÃ¡n montados los sensores)
-    Devuelve un diccionario con la posiciÃ³n y nÃºmero fÃ­sico de cada sensor.
+    - orden: "asc" o "des" (según cómo están montados los sensores)
+    Devuelve un diccionario con la posición y número físico de cada sensor.
     """
     posiciones = {}
     for sensor_num in range(1, n_sensores + 1):
@@ -966,8 +966,8 @@ def crear_grafico_betz_concatenado(sub_archivos_seleccionados, posiciones_sensor
 
 
 def extraer_datos_para_grafico(sub_archivo, configuracion, variable='Presion Total'):
-    """Extraer datos de presiÃ³n y altura de un sub-archivo para grÃ¡ficos (mÃºltiples posiciones).
-       Ahora soporta sensores numerados dinÃ¡micamente y mapeo de variables atmosfÃ©ricas.
+    """Extraer datos de presión y altura de un sub-archivo para gráficos (múltiples posiciones).
+       Ahora soporta sensores numerados dinámicamente y mapeo de variables atmosféricas.
     """
     datos_tiempo = sub_archivo['datos']
     distancia_entre_tomas = configuracion['distancia_entre_tomas']
@@ -980,7 +980,7 @@ def extraer_datos_para_grafico(sub_archivo, configuracion, variable='Presion Tot
     n_sensores = max([obtener_numero_sensor_desde_columna(c) for c in sensor_cols], default=0)
 
     for _, fila in datos_tiempo.iterrows():
-        # Antes X_coord era Y. Ahora Pos_Y_Traverser es Y explÃ­cito.
+        # Antes X_coord era Y. Ahora Pos_Y_Traverser es Y explícito.
         y_traverser = fila.get('Pos_Y_Traverser', 0)
         z_base_ref = fila.get('Pos_Z_Base', 0)
 
@@ -1017,12 +1017,12 @@ def extraer_datos_para_grafico(sub_archivo, configuracion, variable='Presion Tot
         z_ordenado, presion_ordenada = zip(*datos_ordenados)
         return list(z_ordenado), list(presion_ordenada)
 
-    # ðŸ”‘ SIEMPRE devolver dos listas
+    # 🔑 SIEMPRE devolver dos listas
     return [], []
 
 
 def calcular_area_bajo_curva(z_datos, presion_datos):
-    """Calcular Ã¡rea bajo la curva usando regla del trapecio"""
+    """Calcular área bajo la curva usando regla del trapecio"""
     if len(z_datos) < 2 or len(presion_datos) < 2:
         return 0
     
@@ -1100,11 +1100,11 @@ def crear_superficie_diferencia_delaunay_3d(datos_a, datos_b, nombre_a, nombre_b
             k=tri.simplices[:, 2],
             intensity=puntos_z_diff,
             colorscale='Turbo',
-            colorbar_title='Î” PresiÃ³n [Pa]',
+            colorbar_title='Δ Presión [Pa]',
             name=f"Diferencia {nombre_a} - {nombre_b}",
             lighting=dict(ambient=0.5, diffuse=0.8, specular=0.5, roughness=0.5, fresnel=0.2),
             lightposition=dict(x=100, y=200, z=100),
-            hovertemplate='<b>Î” PresiÃ³n</b>: %{intensity:.3f} Pa<br>Pos Y: %{x:.1f} mm<br>Altura Z: %{y:.1f} mm<extra></extra>'
+            hovertemplate='<b>Δ Presión</b>: %{intensity:.3f} Pa<br>Pos Y: %{x:.1f} mm<br>Altura Z: %{y:.1f} mm<extra></extra>'
         ))
 
         # Wireframe
@@ -1138,15 +1138,15 @@ def crear_superficie_diferencia_delaunay_3d(datos_a, datos_b, nombre_a, nombre_b
                 mode='markers',
                 marker=dict(size=3, color='red'),
                 name='Puntos medidos',
-                hovertemplate='<b>Punto medido</b><br>Î” PresiÃ³n: %{z:.3f} Pa<br>Pos Y: %{x:.1f} mm<br>Altura Z: %{y:.1f} mm<extra></extra>'
+                hovertemplate='<b>Punto medido</b><br>Δ Presión: %{z:.3f} Pa<br>Pos Y: %{x:.1f} mm<br>Altura Z: %{y:.1f} mm<extra></extra>'
             ))
 
         fig.update_layout(
             title=f"Diferencia de Superficies 3D Mejorada - {nombre_a} - {nombre_b}",
             scene=dict(
-                xaxis_title="PosiciÃ³n Y Traverser [mm]",
-                yaxis_title="Altura FÃ­sica Z [mm]",
-                zaxis_title="Î” PresiÃ³n [Pa]",
+                xaxis_title="Posición Y Traverser [mm]",
+                yaxis_title="Altura Física Z [mm]",
+                zaxis_title="Δ Presión [Pa]",
                 aspectmode='data',
                 aspectratio=dict(x=1, y=1, z=0.3),
                 camera=dict(eye=dict(x=1.6, y=1.6, z=0.9))
@@ -1167,7 +1167,7 @@ def crear_superficie_diferencia_delaunay_3d(datos_a, datos_b, nombre_a, nombre_b
 
 def crear_superficie_diferencia(datos_a, datos_b, nombre_a, nombre_b):
     """
-    Resta dos superficies 3D: para cada (X,Y) comÃºn calcula la media de
+    Resta dos superficies 3D: para cada (X,Y) común calcula la media de
     todas las columnas 'Presion-Sensor N' presentes en esa fila y resta.
     """
     coords_a = set(tuple(row) for row in datos_a[['Pos_Y_Traverser', 'Pos_Z_Base']].dropna().to_numpy())
@@ -1237,16 +1237,16 @@ def crear_superficie_diferencia(datos_a, datos_b, nombre_a, nombre_b):
     fig.add_trace(go.Surface(
         x=X_mesh, y=Y_mesh, z=Z_matrix,
         colorscale='RdBu_r',
-        colorbar=dict(title="Diferencia de PresiÃ³n [Pa]"),
-        hovertemplate='<b>Diferencia de PresiÃ³n</b><br>X: %{x:.1f} mm, Y: %{y:.1f} mm<br>Diferencia: %{z:.3f} Pa<extra></extra>'
+        colorbar=dict(title="Diferencia de Presión [Pa]"),
+        hovertemplate='<b>Diferencia de Presión</b><br>X: %{x:.1f} mm, Y: %{y:.1f} mm<br>Diferencia: %{z:.3f} Pa<extra></extra>'
     ))
 
     fig.update_layout(
         title=f"Diferencia de Superficies: {nombre_a} vs {nombre_b}",
         scene=dict(
-            xaxis_title="PosiciÃ³n X [mm]",
-            yaxis_title="PosiciÃ³n Y [mm]",
-            zaxis_title="Diferencia de PresiÃ³n [Pa]"
+            xaxis_title="Posición X [mm]",
+            yaxis_title="Posición Y [mm]",
+            zaxis_title="Diferencia de Presión [Pa]"
         ),
         font=dict(color="black")
     )
@@ -1255,7 +1255,7 @@ def crear_superficie_diferencia(datos_a, datos_b, nombre_a, nombre_b):
 
     
 def crear_grafico_diferencia_areas(sub_archivo_a, sub_archivo_b, configuracion):
-    """Crear grÃ¡fico mostrando la diferencia como UNA sola Ã¡rea"""
+    """Crear gráfico mostrando la diferencia como UNA sola área"""
     
     # Extraer datos de ambos sub-archivos
     z_a, presion_a = extraer_datos_para_grafico(sub_archivo_a, configuracion)
@@ -1264,10 +1264,10 @@ def crear_grafico_diferencia_areas(sub_archivo_a, sub_archivo_b, configuracion):
     if not z_a or not z_b or not presion_a or not presion_b:
         return None, 0
     
-    # Crear grÃ¡fico
+    # Crear gráfico
     fig = go.Figure()
     
-    # Agregar lÃ­neas de referencia (mÃ¡s tenues)
+    # Agregar líneas de referencia (más tenues)
     fig.add_trace(go.Scatter(
         x=presion_a, y=z_a,
         mode='lines',
@@ -1275,7 +1275,7 @@ def crear_grafico_diferencia_areas(sub_archivo_a, sub_archivo_b, configuracion):
         line=dict(color='#08596C', width=2, dash='dot'),
         opacity=0.6,
         hovertemplate='<b>%{fullData.name}</b><br>' +
-                    'PresiÃ³n: %{x:.3f} Pa<br>' +
+                    'Presión: %{x:.3f} Pa<br>' +
                     'Altura: %{y:.1f} mm<br>' +
                     '<extra></extra>'
     ))
@@ -1287,13 +1287,13 @@ def crear_grafico_diferencia_areas(sub_archivo_a, sub_archivo_b, configuracion):
         line=dict(color='#E74C3C', width=2, dash='dot'),
         opacity=0.6,
         hovertemplate='<b>%{fullData.name}</b><br>' +
-                    'PresiÃ³n: %{x:.3f} Pa<br>' +
+                    'Presión: %{x:.3f} Pa<br>' +
                     'Altura: %{y:.1f} mm<br>' +
                     '<extra></extra>'
     ))
     
     # Calcular diferencia punto a punto (interpolando si es necesario)
-    # Usar el rango de alturas comÃºn
+    # Usar el rango de alturas común
     z_min = max(min(z_a), min(z_b))
     z_max = min(max(z_a), max(z_b))
     
@@ -1307,12 +1307,12 @@ def crear_grafico_diferencia_areas(sub_archivo_a, sub_archivo_b, configuracion):
     # Calcular diferencia
     diferencia_presion = presion_a_interp - presion_b_interp
     
-    # Crear Ã¡rea de diferencia ÃšNICA
+    # Crear área de diferencia ÚNICA
     # Determinar color basado en si la diferencia es mayormente positiva o negativa
     diferencia_promedio = np.mean(diferencia_presion)
     color_diferencia = '#27AE60' if diferencia_promedio >= 0 else '#E67E22'  # Verde si A>B, naranja si B>A
     
-    # Crear Ã¡rea desde cero hasta la diferencia
+    # Crear área desde cero hasta la diferencia
     x_area = [0] + list(diferencia_presion) + [0]
     y_area = [z_interp[0]] + list(z_interp) + [z_interp[-1]]
     
@@ -1328,15 +1328,15 @@ def crear_grafico_diferencia_areas(sub_archivo_a, sub_archivo_b, configuracion):
                     '<extra></extra>'
     ))
     
-    # Calcular Ã¡rea total de diferencia
+    # Calcular área total de diferencia
     area_diferencia = np.trapz(np.abs(diferencia_presion), z_interp)
     
     # Layout CON LEYENDA MEJORADA
     fig.update_layout(
         title=f"Diferencia de Perfiles: {sub_archivo_a['archivo_fuente']} - {sub_archivo_b['archivo_fuente']}",
-        xaxis_title="PresiÃ³n / Diferencia de PresiÃ³n [Pa]",
+        xaxis_title="Presión / Diferencia de Presión [Pa]",
         yaxis_title="Altura z [mm]",
-        height=700, width=1000,  # MÃ¡s ancho para leyenda
+        height=700, width=1000,  # Más ancho para leyenda
         showlegend=True,  # FORZAR LEYENDA VISIBLE
         plot_bgcolor='white',
         paper_bgcolor='white',
@@ -1348,8 +1348,8 @@ def crear_grafico_diferencia_areas(sub_archivo_a, sub_archivo_b, configuracion):
             zeroline=True,
             zerolinecolor='white',
             zerolinewidth=2,
-            scaleanchor="y",      # AGREGADO: ConfiguraciÃ³n solicitada
-            scaleratio=4          # AGREGADO: ConfiguraciÃ³n solicitada
+            scaleanchor="y",      # AGREGADO: Configuración solicitada
+            scaleratio=4          # AGREGADO: Configuración solicitada
         ),
         yaxis=dict(
             showgrid=True,
@@ -1371,7 +1371,7 @@ def crear_grafico_diferencia_areas(sub_archivo_a, sub_archivo_b, configuracion):
     plot_bgcolor='rgba(0,0,0,0)',   # Fondo transparente
     paper_bgcolor='rgba(0,0,0,0)',  # Fondo transparente
     font=dict(color='white'),       # Texto en blanco
-    xaxis_title="PresiÃ³n Total [Pa]",
+    xaxis_title="Presión Total [Pa]",
     yaxis_title="Altura Z [mm]",
     height=900,
     width=1600
@@ -1379,8 +1379,8 @@ def crear_grafico_diferencia_areas(sub_archivo_a, sub_archivo_b, configuracion):
     return fig, area_diferencia
 
 def mostrar_configuracion_sensores(section_key):
-    """Muestra los widgets de configuraciÃ³n de sensores y guarda el estado."""
-    st.markdown("### ðŸ“ ConfiguraciÃ³n de Sensores y GeometrÃ­a")
+    """Muestra los widgets de configuración de sensores y guarda el estado."""
+    st.markdown("### �? Configuración de Sensores y Geometría")
 
     config_key = f'configuracion_{section_key}'
     if config_key not in st.session_state:
@@ -1390,19 +1390,19 @@ def mostrar_configuracion_sensores(section_key):
     orden_sensores = st.selectbox(
         "Orden de lectura de sensores:", ["asc", "des"],
         format_func=lambda x: "Ascendente (sensor 1 abajo, 12 arriba)" if x == "asc" else "Descendente (sensor 12 abajo, 1 arriba)",
-        help="Define cÃ³mo se leen los datos de los sensores en relaciÃ³n a su posiciÃ³n fÃ­sica.",
+        help="Define cómo se leen los datos de los sensores en relación a su posición física.",
         key=f'orden_sensores_{section_key}'
     )
     
-    st.info("ðŸ” **Pregunta:** Â¿QuÃ© sensor corresponde a la toma nÃºmero 12 (la que se encuentra cerca del piso)?")
+    st.info("�? **Pregunta:** ¿Qué sensor corresponde a la toma número 12 (la que se encuentra cerca del piso)?")
     sensor_referencia = st.selectbox(
         "Sensor de referencia (toma 12):", [f"Sensor {i}" for i in range(1, 13)],
-        index=11, help="Seleccione el sensor que corresponde a la toma fÃ­sica nÃºmero 12.",
+        index=11, help="Seleccione el sensor que corresponde a la toma física número 12.",
         key=f'sensor_ref_{section_key}'
     )
     
     distancia_toma_12 = st.number_input(
-        "Distancia de la toma 12 a la posiciÃ³n X=0, Y=0 del traverser [mm]:",
+        "Distancia de la toma 12 a la posición X=0, Y=0 del traverser [mm]:",
         value=-120.0, step=1.0, format="%.1f",
         help="Distancia en mm desde el punto de referencia del traverser.",
         key=f'dist_toma_{section_key}'
@@ -1410,18 +1410,18 @@ def mostrar_configuracion_sensores(section_key):
     
     distancia_entre_tomas = st.number_input(
         "Distancia entre tomas [mm]:", value=10.0, step=0.01, format="%.2f",
-        help="Distancia fÃ­sica entre tomas consecutivas segÃºn el plano tÃ©cnico.",
+        help="Distancia física entre tomas consecutivas según el plano técnico.",
         key=f'dist_entre_{section_key}'
     )
     
-    if st.button(f"ðŸ’¾ Guardar ConfiguraciÃ³n", type="primary", key=f'save_config_{section_key}'):
+    if st.button(f"💾 Guardar Configuración", type="primary", key=f'save_config_{section_key}'):
         st.session_state[config_key] = {
             'orden': orden_sensores,
             'sensor_referencia': sensor_referencia,
             'distancia_toma_12': distancia_toma_12,
             'distancia_entre_tomas': distancia_entre_tomas
         }
-        st.success(f"âœ… ConfiguraciÃ³n para la secciÃ³n {section_key.upper()} guardada.")
+        st.success(f"✅ Configuración para la sección {section_key.upper()} guardada.")
         st.rerun()
 
     return st.session_state.get(config_key, {})
@@ -1429,7 +1429,7 @@ def mostrar_configuracion_sensores(section_key):
 def crear_superficie_delaunay_3d(datos_completos, configuracion_3d, nombre_archivo, mostrar_puntos=True, variable='Presion Total'):
     """
     Crea una superficie 3D continua con Delaunay y mejoras visuales.
-    Ahora permite activar/desactivar la visualizaciÃ³n de puntos medidos y seleccionar vector a plotear.
+    Ahora permite activar/desactivar la visualización de puntos medidos y seleccionar vector a plotear.
     """
     try:
         posicion_inicial = configuracion_3d['distancia_toma_12']
@@ -1479,10 +1479,10 @@ def crear_superficie_delaunay_3d(datos_completos, configuracion_3d, nombre_archi
                     continue
 
         if len(puntos_y) < 4:
-            st.error("No hay suficientes datos vÃ¡lidos para generar una superficie.")
+            st.error("No hay suficientes datos válidos para generar una superficie.")
             return None
 
-        # TriangulaciÃ³n Delaunay
+        # Triangulación Delaunay
         puntos_2d = np.vstack([puntos_y, puntos_z_altura]).T
         tri = Delaunay(puntos_2d)
 
@@ -1490,19 +1490,19 @@ def crear_superficie_delaunay_3d(datos_completos, configuracion_3d, nombre_archi
 
         # Superficie principal
         fig.add_trace(go.Mesh3d(
-            x=puntos_y,  # Ahora Y en eje X del grÃ¡fico
-            y=puntos_z_altura,  # Ahora Z en eje Y del grÃ¡fico
+            x=puntos_y,  # Ahora Y en eje X del gráfico
+            y=puntos_z_altura,  # Ahora Z en eje Y del gráfico
             z=presiones_z,
             i=tri.simplices[:, 0],
             j=tri.simplices[:, 1],
             k=tri.simplices[:, 2],
             intensity=presiones_z,
             colorscale='Turbo',
-            colorbar_title='PresiÃ³n [Pa]',
-            name='Superficie de presiÃ³n',
+            colorbar_title='Presión [Pa]',
+            name='Superficie de presión',
             lighting=dict(ambient=0.5, diffuse=0.8, specular=0.5, roughness=0.5, fresnel=0.2),
             lightposition=dict(x=100, y=200, z=100),
-            hovertemplate='<b>PresiÃ³n</b>: %{intensity:.3f} Pa<br>Pos Y: %{x:.1f} mm<br>Altura Z: %{y:.1f} mm<extra></extra>'
+            hovertemplate='<b>Presión</b>: %{intensity:.3f} Pa<br>Pos Y: %{x:.1f} mm<br>Altura Z: %{y:.1f} mm<extra></extra>'
         ))
 
         # Wireframe
@@ -1536,17 +1536,17 @@ def crear_superficie_delaunay_3d(datos_completos, configuracion_3d, nombre_archi
                 mode='markers',
                 marker=dict(size=3, color='red'),
                 name='Puntos medidos',
-                hovertemplate='<b>Punto medido</b><br>PresiÃ³n: %{z:.3f} Pa<br>Pos Y: %{x:.1f} mm<br>Altura Z: %{y:.1f} mm<extra></extra>'
+                hovertemplate='<b>Punto medido</b><br>Presión: %{z:.3f} Pa<br>Pos Y: %{x:.1f} mm<br>Altura Z: %{y:.1f} mm<extra></extra>'
             ))
 
         fig.update_layout(
-            title=f"Superficie de PresiÃ³n 3D Mejorada - {nombre_archivo}",
+            title=f"Superficie de Presión 3D Mejorada - {nombre_archivo}",
             scene=dict(
-                xaxis_title="PosiciÃ³n Y Traverser [mm]",  # Cambio de etiquetas
-                yaxis_title="Altura FÃ­sica Z [mm]",  # Cambio de etiquetas
-                zaxis_title="PresiÃ³n [Pa]",
-                aspectmode='data',  # ConfiguraciÃ³n manual para escala 1:1
-                aspectratio=dict(x=1, y=1, z=1),  # RelaciÃ³n 1:1 entre Y y Z
+                xaxis_title="Posición Y Traverser [mm]",  # Cambio de etiquetas
+                yaxis_title="Altura Física Z [mm]",  # Cambio de etiquetas
+                zaxis_title="Presión [Pa]",
+                aspectmode='data',  # Configuración manual para escala 1:1
+                aspectratio=dict(x=1, y=1, z=1),  # Relación 1:1 entre Y y Z
             ),
             width=1600,
             height=900,
@@ -1560,7 +1560,7 @@ def crear_superficie_delaunay_3d(datos_completos, configuracion_3d, nombre_archi
         return None
 
 def unir_archivos_incertidumbre(archivos_lista, nombre_salida):
-    """Une mÃºltiples archivos de incertidumbre en uno solo"""
+    """Une múltiples archivos de incertidumbre en uno solo"""
     try:
         contenido_unido = []
         puntos_sobrepuestos = []
@@ -1570,7 +1570,7 @@ def unir_archivos_incertidumbre(archivos_lista, nombre_salida):
             # Leer archivo CSV
             df_raw = pd.read_csv(archivo, sep=";", header=None, dtype=str)
             
-            # Buscar la palabra "importante" para determinar dÃ³nde terminar
+            # Buscar la palabra "importante" para determinar dónde terminar
             index_final = df_raw[df_raw.apply(lambda row: row.astype(str).str.contains("importante", case=False).any(), axis=1)].index
             if not index_final.empty:
                 df_raw = df_raw.iloc[:index_final[0]]
@@ -1610,7 +1610,7 @@ def extraer_matriz_presiones_completa(archivo_incertidumbre, configuracion, arch
     """
     Devuelve un DataFrame con columnas Y, Z, Presion
     listo para exportar como VTK estructurado.
-    Unificada y corregida para usar lÃ³gica Y-Z.
+    Unificada y corregida para usar lógica Y-Z.
     """
     try:
         # Procesar archivo CSV
@@ -1679,10 +1679,10 @@ def crear_archivo_vtk_superficie_delaunay(df_matriz, nombre_archivo_vtk):
         presiones = presiones[mask]
 
         if len(puntos_y) < 4:
-            print("Error: No hay suficientes puntos vÃ¡lidos para generar una superficie triangulada.")
+            print("Error: No hay suficientes puntos válidos para generar una superficie triangulada.")
             return None
 
-        # TriangulaciÃ³n en el plano (Y,Z)
+        # Triangulación en el plano (Y,Z)
         puntos_2d = np.column_stack([puntos_y, puntos_z])
         tri = Delaunay(puntos_2d)
 
@@ -1696,7 +1696,7 @@ def crear_archivo_vtk_superficie_delaunay(df_matriz, nombre_archivo_vtk):
         vtk_content += "DATASET UNSTRUCTURED_GRID\n"
         vtk_content += f"POINTS {n_points} float\n"
 
-        # CORRECCIÃ“N: Usar coordenadas Y, Z y presiÃ³n como altura Z
+        # CORRECCIÓN: Usar coordenadas Y, Z y presión como altura Z
         for i in range(n_points):
             vtk_content += f"{puntos_y[i]:.6f} {puntos_z[i]:.6f} {presiones[i]:.6f}\n"
 
@@ -1732,20 +1732,20 @@ def crear_archivo_vtk_superficie_delaunay(df_matriz, nombre_archivo_vtk):
         with open(nombre_archivo_vtk, "w", encoding="ascii", errors="replace") as f:
             f.write(vtk_content)
 
-        print(f"âœ… Archivo VTK creado exitosamente: {nombre_archivo_vtk}")
-        print(f"Superficie con {n_points} puntos y {n_triangles} triÃ¡ngulos")
+        print(f"✅ Archivo VTK creado exitosamente: {nombre_archivo_vtk}")
+        print(f"Superficie con {n_points} puntos y {n_triangles} triángulos")
         
         return nombre_archivo_vtk
 
     except Exception as e:
-        print(f"âŒ Error al crear archivo VTK de superficie Delaunay: {str(e)}")
+        print(f"�?� Error al crear archivo VTK de superficie Delaunay: {str(e)}")
         return None
 
 def crear_sub_archivos_3d_por_tiempo_y_posicion(df_datos, nombre_archivo):
-    """Crear sub-archivos 3D por tiempo y posiciÃ³n (similar a 2D)"""
+    """Crear sub-archivos 3D por tiempo y posición (similar a 2D)"""
     sub_archivos = {}
     
-    # Obtener tiempos Ãºnicos
+    # Obtener tiempos únicos
     tiempos_unicos = df_datos["Tiempo_s"].dropna().unique()
     
     for tiempo in tiempos_unicos:
@@ -1766,7 +1766,7 @@ def crear_sub_archivos_3d_por_tiempo_y_posicion(df_datos, nombre_archivo):
 
 def mostrar_resumen_archivos_tabla(sub_archivos_por_fuente):
     """Mostrar resumen de archivos en formato tabla organizada"""
-    st.markdown("### ðŸ“Š Resumen de Sub-archivos Generados")
+    st.markdown("### 📊 Resumen de Sub-archivos Generados")
     
     # Crear datos para la tabla
     datos_tabla = []
@@ -1777,14 +1777,14 @@ def mostrar_resumen_archivos_tabla(sub_archivos_por_fuente):
                 datos_tabla.append({
                     'Archivo_Fuente': archivo_fuente,
                     'Tiempo_s': f"T{tiempo}s", 
-                    'PosiciÃ³n_X': sub_archivo['x_traverser'],
+                    'Posición_X': sub_archivo['x_traverser'],
                     'Registros': len(sub_archivo['datos']),
                     'Nombre_Archivo': sub_archivo['nombre_archivo'],
                     'Clave': clave
                 })
     
     # Crear DataFrame y mostrar como tabla
-    df_resumen = pd.DataFrame(datos_tabla).sort_values(['Archivo_Fuente', 'PosiciÃ³n_X', 'Tiempo_s'])
+    df_resumen = pd.DataFrame(datos_tabla).sort_values(['Archivo_Fuente', 'Posición_X', 'Tiempo_s'])
     
     # NUEVO: Mostrar tabla con separadores correctos para CSV
     st.dataframe(
@@ -1793,7 +1793,7 @@ def mostrar_resumen_archivos_tabla(sub_archivos_por_fuente):
         hide_index=True
     )
     
-    # NUEVO: BotÃ³n para descargar tabla como CSV bien formateado
+    # NUEVO: Botón para descargar tabla como CSV bien formateado
     csv_tabla = df_resumen[['Archivo_Fuente', 'Tiempo_s', 'Registros', 'Nombre_Archivo']].to_csv(
         index=False, 
         sep=';',  # CAMBIAR a punto y coma para Excel
@@ -1802,13 +1802,13 @@ def mostrar_resumen_archivos_tabla(sub_archivos_por_fuente):
     )
     
     st.download_button(
-        label="ðŸ“¥ Descargar Tabla Resumen (CSV)",
+        label="📥 Descargar Tabla Resumen (CSV)",
         data=csv_tabla,
         file_name=f"resumen_subarchivos_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
         mime="text/csv"
     )
     
-    # EstadÃ­sticas adicionales
+    # Estadísticas adicionales
     col1, col2, col3 = st.columns(3)
     with col1:
         st.metric("Total Sub-archivos", len(datos_tabla))
@@ -1844,16 +1844,16 @@ def cargar_matriz_para_vtk():
 
 def crear_archivo_vtk_interpolado(df_matriz, nombre_base, resolucion_factor=2, metadata=None, posicion_x=0.0):
     """
-    Genera un archivo VTK ESTRUCTURADA con interpolaciÃ³n CÃºbica (Spline).
-    Permite aumentar la resoluciÃ³n de la grilla para suavizar la visualizaciÃ³n.
-    NOTA: Se removiÃ³ la metadata para evitar errores de compatibilidad.
+    Genera un archivo VTK ESTRUCTURADA con interpolación Cúbica (Spline).
+    Permite aumentar la resolución de la grilla para suavizar la visualización.
+    NOTA: Se removió la metadata para evitar errores de compatibilidad.
     """
     try:
         if df_matriz.empty or not {"Y", "Z", "Presion"}.issubset(df_matriz.columns):
-            st.error("El DataFrame para VTK estÃ¡ vacÃ­o o no tiene las columnas requeridas (Y, Z, Presion).")
+            st.error("El DataFrame para VTK está vacío o no tiene las columnas requeridas (Y, Z, Presion).")
             return None
 
-        # Obtener valores Ãºnicos
+        # Obtener valores únicos
         y_vals = sorted(df_matriz['Y'].unique())
         z_vals = sorted(df_matriz['Z'].unique())
         
@@ -1864,14 +1864,14 @@ def crear_archivo_vtk_interpolado(df_matriz, nombre_base, resolucion_factor=2, m
         puntos_conocidos = df_matriz[['Y', 'Z']].values
         valores_conocidos = df_matriz['Presion'].values
 
-        # Crear nueva grilla de mayor resoluciÃ³n
+        # Crear nueva grilla de mayor resolución
         y_new = np.linspace(min(y_vals), max(y_vals), len(y_vals) * resolucion_factor)
         z_new = np.linspace(min(z_vals), max(z_vals), len(z_vals) * resolucion_factor)
         ny, nz = len(y_new), len(z_new)
         
         Y_grid_new, Z_grid_new = np.meshgrid(y_new, z_new, indexing='ij')
         
-        # InterpolaciÃ³n CÃºbica
+        # Interpolación Cúbica
         P_grid_new = griddata(
             puntos_conocidos, 
             valores_conocidos, 
@@ -1919,11 +1919,11 @@ def crear_archivo_vtk_interpolado(df_matriz, nombre_base, resolucion_factor=2, m
         with open(nombre_archivo, "w", encoding="ascii") as f:
             f.write("\n".join(lines))
 
-        st.success(f"âœ… Archivo VTK Avanzado creado: {nombre_archivo}")
+        st.success(f"✅ Archivo VTK Avanzado creado: {nombre_archivo}")
         return nombre_archivo
 
     except Exception as e:
-        st.error(f"âŒ Error al crear el archivo VTK interpolado: {str(e)}")
+        st.error(f"�?� Error al crear el archivo VTK interpolado: {str(e)}")
         return None
 
 
@@ -1931,13 +1931,13 @@ def crear_archivo_vtk_interpolado(df_matriz, nombre_base, resolucion_factor=2, m
 def crear_vtk_superficie_3d_delaunay(df_matriz, nombre_base, posicion_x=0.0):
     """
     Genera un archivo VTK con una superficie 3D (malla no estructurada)
-    usando triangulaciÃ³n de Delaunay.
-    La base de la superficie estÃ¡ en el plano YZ y la presiÃ³n se representa
+    usando triangulación de Delaunay.
+    La base de la superficie está en el plano YZ y la presión se representa
     como la coordenada en el eje X.
     """
     try:
         if df_matriz.empty or not {"Y", "Z", "Presion"}.issubset(df_matriz.columns):
-            st.error("El DataFrame para VTK 3D estÃ¡ vacÃ­o o no tiene las columnas requeridas.")
+            st.error("El DataFrame para VTK 3D está vacío o no tiene las columnas requeridas.")
             return None
 
         # Extraer y limpiar los datos
@@ -1949,10 +1949,10 @@ def crear_vtk_superficie_3d_delaunay(df_matriz, nombre_base, posicion_x=0.0):
         puntos_y, puntos_z, presiones = puntos_y[mask], puntos_z[mask], presiones[mask]
 
         if len(puntos_y) < 3:
-            st.error("Se necesitan al menos 3 puntos vÃ¡lidos para la triangulaciÃ³n.")
+            st.error("Se necesitan al menos 3 puntos válidos para la triangulación.")
             return None
 
-        # La triangulaciÃ³n se sigue haciendo en el plano YZ
+        # La triangulación se sigue haciendo en el plano YZ
         puntos_2d_plano = np.column_stack([puntos_y, puntos_z])
         tri = Delaunay(puntos_2d_plano)
 
@@ -1969,13 +1969,13 @@ def crear_vtk_superficie_3d_delaunay(df_matriz, nombre_base, posicion_x=0.0):
 
         for i in range(n_points):
             # ---------------------------------------------------------------- #
-            # Â¡CAMBIO CLAVE! AHORA SE AÃ‘ADE LA POSICIÃ“N X A LA PRESIÃ“N (Estilo 4D)
+            # ¡CAMBIO CLAVE! AHORA SE AÑADE LA POSICIÓN X A LA PRESIÓN (Estilo 4D)
             # Formato (X, Y, Z) -> (posicion_x + Presion_valor, Y_coord, Z_coord)
             x_def = posicion_x + presiones[i]
             vtk_content += f"{x_def:.6f} {puntos_y[i]:.6f} {puntos_z[i]:.6f}\n"
             # ---------------------------------------------------------------- #
 
-        # El resto de la funciÃ³n (celdas y datos) permanece igual
+        # El resto de la función (celdas y datos) permanece igual
         vtk_content += f"\nCELLS {n_triangles} {4 * n_triangles}\n"
         for simplex in tri.simplices:
             vtk_content += f"3 {simplex[0]} {simplex[1]} {simplex[2]}\n"
@@ -1992,35 +1992,35 @@ def crear_vtk_superficie_3d_delaunay(df_matriz, nombre_base, posicion_x=0.0):
         with open(nombre_archivo_vtk, "w", encoding="ascii") as f:
             f.write(vtk_content)
             
-        st.success(f"âœ… Archivo VTK 3D (PresiÃ³n en Eje X) creado: {nombre_archivo_vtk}")
+        st.success(f"✅ Archivo VTK 3D (Presión en Eje X) creado: {nombre_archivo_vtk}")
         return nombre_archivo_vtk
 
     except Exception as e:
-        st.error(f"âŒ Error al crear el archivo VTK de superficie 3D: {str(e)}")
+        st.error(f"�?� Error al crear el archivo VTK de superficie 3D: {str(e)}")
         return None
 
 # ---------------------------------------------------------------------------
-# FUNCIÃ“N: VTK PLANO DE PRESIÃ“N 2D
-# Genera un archivo VTK ESTRUCTURADA plano (sin deformaciÃ³n en X).
-# La presiÃ³n se guarda SOLO como dato escalar (color), no como geometrÃ­a.
+# FUNCIÓN: VTK PLANO DE PRESIÓN 2D
+# Genera un archivo VTK ESTRUCTURADA plano (sin deformación en X).
+# La presión se guarda SOLO como dato escalar (color), no como geometría.
 # ---------------------------------------------------------------------------
 def crear_vtk_plano_presion_2d(df_matriz, nombre_base, posicion_x=0.0):
     """
     Genera un VTK 'STRUCTURED_GRID' plano en el plano YZ (X fijo = posicion_x).
-    La presiÃ³n se codifica ÃšNICAMENTE como escalar de color (POINT_DATA),
-    sin ninguna deformaciÃ³n geomÃ©trica. Ideal para visualizar contornos de
-    presiÃ³n en ParaView con colormaps.
+    La presión se codifica ÚNICAMENTE como escalar de color (POINT_DATA),
+    sin ninguna deformación geométrica. Ideal para visualizar contornos de
+    presión en ParaView con colormaps.
     """
     try:
         if df_matriz.empty or not {"Y", "Z", "Presion"}.issubset(df_matriz.columns):
-            st.error("El DataFrame para VTK Plano estÃ¡ vacÃ­o o le faltan columnas (Y, Z, Presion).")
+            st.error("El DataFrame para VTK Plano está vacío o le faltan columnas (Y, Z, Presion).")
             return None
 
         y_vals = sorted(df_matriz['Y'].unique())
         z_vals = sorted(df_matriz['Z'].unique())
         ny, nz = len(y_vals), len(z_vals)
 
-        # Mapa rÃ¡pido (Y, Z) â†’ Presion
+        # Mapa rápido (Y, Z) → Presion
         presion_map = {(float(row['Y']), float(row['Z'])): float(row['Presion'])
                        for _, row in df_matriz.iterrows()
                        if not (pd.isna(row['Y']) or pd.isna(row['Z']) or pd.isna(row['Presion']))}
@@ -2037,7 +2037,7 @@ def crear_vtk_plano_presion_2d(df_matriz, nombre_base, posicion_x=0.0):
         for z in z_vals:
             for y in y_vals:
                 lines.append(f"{posicion_x:.6f} {y:.6f} {z:.6f}")
-                # PresiÃ³n para este punto (0.0 si no encontrado)
+                # Presión para este punto (0.0 si no encontrado)
                 presiones_ordenadas.append(presion_map.get((float(y), float(z)), 0.0))
 
         lines.append(f"\nPOINT_DATA {ny * nz}")
@@ -2052,19 +2052,19 @@ def crear_vtk_plano_presion_2d(df_matriz, nombre_base, posicion_x=0.0):
         with open(nombre_archivo, "w", encoding="ascii") as f:
             f.write(vtk_str)
 
-        st.success(f"âœ… VTK Plano 2D creado: {nombre_archivo}")
+        st.success(f"✅ VTK Plano 2D creado: {nombre_archivo}")
         return nombre_archivo, vtk_str.encode('ascii')
 
     except Exception as e:
-        st.error(f"âŒ Error al crear VTK Plano 2D: {str(e)}")
+        st.error(f"�?� Error al crear VTK Plano 2D: {str(e)}")
         return None
 
 
 # Sidebar (Legacy removed)
 
-# Contenido principal segÃºn la secciÃ³n
+# Contenido principal según la sección
 if st.session_state.seccion_actual == 'inicio':
-    # --- LECTURA DE IMÃGENES CAROUSEL ---
+    # --- LECTURA DE IM�?GENES CAROUSEL ---
     folder_portada = "Imagenes de portada"
     img_b64_list = []
     if os.path.exists(folder_portada):
@@ -2079,7 +2079,7 @@ if st.session_state.seccion_actual == 'inicio':
             except:
                 pass
     
-    # Si no hay imÃ¡genes, poner una predeterminada
+    # Si no hay imágenes, poner una predeterminada
     if not img_b64_list:
         fallback_url = 'https://images.unsplash.com/photo-1517976487492-5750f3195933?q=80&w=2070&auto=format&fit=crop'
         carousel_css = f".hero-bg-0 {{ background-image: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,1)), url('{fallback_url}'); opacity: 1; }}"
@@ -2134,7 +2134,7 @@ if st.session_state.seccion_actual == 'inicio':
             position: relative;
             width: 100%;
             padding: 4rem 1rem;
-            min-height: 80vh; /* DimensiÃ³n aumentada para mayor inmersiÃ³n */
+            min-height: 80vh; /* Dimensión aumentada para mayor inmersión */
             border-radius: 0px;
             display: flex;
             flex-direction: column;
@@ -2204,9 +2204,9 @@ if st.session_state.seccion_actual == 'inicio':
         {carousel_html}
         <div class="hero-content">
             <h1 class="hero-title">LABORATORIO</h1>
-            <p class="hero-subtitle">AerodinÃ¡mica Experimental</p>
+            <p class="hero-subtitle">Aerodinámica Experimental</p>
             <div class="scroll-indicator">
-                â–¼ DESLIZA PARA NAVEGAR
+                ▼ DESLIZA PARA NAVEGAR
             </div>
         </div>
     </div>
@@ -2215,29 +2215,29 @@ if st.session_state.seccion_actual == 'inicio':
     # --- RENDER NAVBAR AFTER HERO ---
     render_navbar()
     
-    # --- ðŸ“– SECCIÃ“N 1: MANUAL DE USUARIO (SCROLLING) ---
+    # --- 📖 SECCIÓN 1: MANUAL DE USUARIO (SCROLLING) ---
     st.markdown("""
 <div class="section-card">
-<h2 style="border-bottom: 2px solid #4ade80; padding-bottom: 15px; margin-bottom: 20px;">ðŸ“– MANUAL DE USUARIO</h2>
+<h2 style="border-bottom: 2px solid #4ade80; padding-bottom: 15px; margin-bottom: 20px;">📖 MANUAL DE USUARIO</h2>
 <div class="manual-text">
-<h4 class="manual-header">1. INTRODUCCIÃ“N</h4>
-<p>Bienvenido al Sistema de Procesamiento de Datos del TÃºnel de Viento (App BETZ). Esta aplicaciÃ³n ha sido diseÃ±ada para automatizar el anÃ¡lisis de perfiles de presiÃ³n, visualizaciÃ³n de estelas y generaciÃ³n de superficies 4D.</p>
+<h4 class="manual-header">1. INTRODUCCIÓN</h4>
+<p>Bienvenido al Sistema de Procesamiento de Datos del Túnel de Viento (App BETZ). Esta aplicación ha sido diseñada para automatizar el análisis de perfiles de presión, visualización de estelas y generación de superficies 4D.</p>
 
-<h4 class="manual-header">2. VISUALIZACIÃ“N DE ESTELA 1D</h4>
-<p>Este mÃ³dulo permite analizar perfiles de presiÃ³n en un corte unidimensional. El usuario debe cargar los archivos CSV de incertidumbre. El sistema detectarÃ¡ automÃ¡ticamente el tiempo de mediciÃ³n y la posiciÃ³n del traverser.</p>
-<p><strong>ConfiguraciÃ³n:</strong> Antes de cargar datos, asegÃºrese de configurar la referencia geomÃ©trica (distancia de toma 12, separaciÃ³n entre tomas) en el 'Paso 1'.</p>
+<h4 class="manual-header">2. VISUALIZACIÓN DE ESTELA 1D</h4>
+<p>Este módulo permite analizar perfiles de presión en un corte unidimensional. El usuario debe cargar los archivos CSV de incertidumbre. El sistema detectará automáticamente el tiempo de medición y la posición del traverser.</p>
+<p><strong>Configuración:</strong> Antes de cargar datos, asegúrese de configurar la referencia geométrica (distancia de toma 12, separación entre tomas) en el 'Paso 1'.</p>
 
-<h4 class="manual-header">3. VISUALIZACIÃ“N DE ESTELA 2D</h4>
-<p>PrÃ³ximamente disponible.</p>
+<h4 class="manual-header">3. VISUALIZACIÓN DE ESTELA 2D</h4>
+<p>Próximamente disponible.</p>
 
-<h4 class="manual-header">4. VISUALIZACIÃ“N DE ESTELA 3D</h4>
-<p>Permite la reconstrucciÃ³n de volÃºmenes de presiÃ³n a partir de mÃºltiples barridos. Cargue mÃºltiples archivos CSV correspondientes a diferentes estaciones o tiempos. El visualizador 3D generarÃ¡ una superficie interactiva.</p>
+<h4 class="manual-header">4. VISUALIZACIÓN DE ESTELA 3D</h4>
+<p>Permite la reconstrucción de volúmenes de presión a partir de múltiples barridos. Cargue múltiples archivos CSV correspondientes a diferentes estaciones o tiempos. El visualizador 3D generará una superficie interactiva.</p>
 
-<h4 class="manual-header">5. VISUALIZACIÃ“N DE ESTELA 4D</h4>
+<h4 class="manual-header">5. VISUALIZACIÓN DE ESTELA 4D</h4>
 <p>Genera progresiones espaciales y temporales interactuando con las superficies tridimensionales.</p>
 
 <h4 class="manual-header">6. HERRAMIENTAS ADICIONALES</h4>
-<p>En la secciÃ³n inferior encontrarÃ¡ utilidades para unir archivos fraccionados, extraer matrices puras y convertir formatos para software CFD externo (ParaView, Salome).</p>
+<p>En la sección inferior encontrará utilidades para unir archivos fraccionados, extraer matrices puras y convertir formatos para software CFD externo (ParaView, Salome).</p>
 
 <br>
 <p style="font-style: italic; color: #888;">(Este es un texto de ejemplo. Por favor, reemplace este contenido con el texto completo de su archivo Word 'Manual de Usuario.docx').</p>
@@ -2245,32 +2245,32 @@ if st.session_state.seccion_actual == 'inicio':
 </div>
 """, unsafe_allow_html=True)
     
-    # --- ðŸ› ï¸ SECCIÃ“N 2: ACCESO A SECCIONES (GRID) ---
+    # --- 🛠�? SECCIÓN 2: ACCESO A SECCIONES (GRID) ---
     st.markdown("<h2 style='margin-top: 4rem; margin-bottom: 2rem; text-align: center;'>NUESTRO TABLERO DE TRABAJO</h2>", unsafe_allow_html=True)
     
     # === GRUPO 1: ESTELAS ===
-    st.markdown("<h3 style='margin-top: 1rem; color: #aaa; border-bottom: 1px solid #333; padding-bottom: 10px;'>ðŸŒŒ ENSAYOS DE ESTELA</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='margin-top: 1rem; color: #aaa; border-bottom: 1px solid #333; padding-bottom: 10px;'>🌌 ENSAYOS DE ESTELA</h3>", unsafe_allow_html=True)
     
     r1c1, r1c2 = st.columns(2)
     with r1c1:
         st.markdown("""
         <div class="section-card" style="border-left: 5px solid #3b82f6; height: 160px; margin-bottom: 10px;">
-            <h3 style="color: #3b82f6; margin-top: 0; margin-bottom: 10px;">ðŸ“Š VIS. ESTELA 1D</h3>
-            <p style="color: #bbb; font-size: 0.95rem; margin-bottom: 0;">Procesa archivos CSV de incertidumbre, calcula integrales de presiÃ³n y permite exportar tabulados bidimensionales.</p>
+            <h3 style="color: #3b82f6; margin-top: 0; margin-bottom: 10px;">📊 VIS. ESTELA 1D</h3>
+            <p style="color: #bbb; font-size: 0.95rem; margin-bottom: 0;">Procesa archivos CSV de incertidumbre, calcula integrales de presión y permite exportar tabulados bidimensionales.</p>
         </div>
         """, unsafe_allow_html=True)
-        if st.button("ACCEDER AL MÃ“DULO 1D", key="btn_row_1d", use_container_width=True):
+        if st.button("ACCEDER AL MÓDULO 1D", key="btn_row_1d", use_container_width=True):
              st.session_state.seccion_actual = 'betz_2d'
              st.rerun()
 
     with r1c2:
         st.markdown("""
         <div class="section-card" style="border-left: 5px solid #06b6d4; height: 160px; margin-bottom: 10px;">
-            <h3 style="color: #06b6d4; margin-top: 0; margin-bottom: 10px;">ðŸ“ˆ VIS. ESTELA 2D</h3>
-            <p style="color: #bbb; font-size: 0.95rem; margin-bottom: 0;">SecciÃ³n en pleno desarrollo para procesamiento mejorado con distribuciones 2D.</p>
+            <h3 style="color: #06b6d4; margin-top: 0; margin-bottom: 10px;">📈 VIS. ESTELA 2D</h3>
+            <p style="color: #bbb; font-size: 0.95rem; margin-bottom: 0;">Sección en pleno desarrollo para procesamiento mejorado con distribuciones 2D.</p>
         </div>
         """, unsafe_allow_html=True)
-        if st.button("ACCEDER AL MÃ“DULO 2D", key="btn_row_2d_nueva", use_container_width=True):
+        if st.button("ACCEDER AL MÓDULO 2D", key="btn_row_2d_nueva", use_container_width=True):
              st.session_state.seccion_actual = 'vis_2d_nueva'
              st.rerun()
 
@@ -2280,22 +2280,22 @@ if st.session_state.seccion_actual == 'inicio':
     with r2c1:
         st.markdown("""
         <div class="section-card" style="border-left: 5px solid #8b5cf6; height: 160px; margin-bottom: 10px;">
-            <h3 style="color: #8b5cf6; margin-top: 0; margin-bottom: 10px;">ðŸŒªï¸ VIS. ESTELA 3D</h3>
-            <p style="color: #bbb; font-size: 0.95rem; margin-bottom: 0;">ReconstrucciÃ³n 3D volumÃ©trica a partir de cortes. Genera mallas VTK para exportaciÃ³n a CFD.</p>
+            <h3 style="color: #8b5cf6; margin-top: 0; margin-bottom: 10px;">🌪�? VIS. ESTELA 3D</h3>
+            <p style="color: #bbb; font-size: 0.95rem; margin-bottom: 0;">Reconstrucción 3D volumétrica a partir de cortes. Genera mallas VTK para exportación a CFD.</p>
         </div>
         """, unsafe_allow_html=True)
-        if st.button("ACCEDER AL MÃ“DULO 3D", key="btn_row_3d", use_container_width=True):
+        if st.button("ACCEDER AL MÓDULO 3D", key="btn_row_3d", use_container_width=True):
              st.session_state.seccion_actual = 'betz_3d'
              st.rerun()
 
     with r2c2:
         st.markdown("""
         <div class="section-card" style="border-left: 5px solid #ec4899; height: 160px; margin-bottom: 10px;">
-            <h3 style="color: #ec4899; margin-top: 0; margin-bottom: 10px;">ðŸŒŒ VIS. ESTELA 4D</h3>
-            <p style="color: #bbb; font-size: 0.95rem; margin-bottom: 0;">CÃ¡lculo de progresiones espaciales y temporales interactuando con las superficies 3D.</p>
+            <h3 style="color: #ec4899; margin-top: 0; margin-bottom: 10px;">🌌 VIS. ESTELA 4D</h3>
+            <p style="color: #bbb; font-size: 0.95rem; margin-bottom: 0;">Cálculo de progresiones espaciales y temporales interactuando con las superficies 3D.</p>
         </div>
         """, unsafe_allow_html=True)
-        if st.button("ACCEDER AL MÃ“DULO 4D", key="btn_row_4d", use_container_width=True):
+        if st.button("ACCEDER AL MÓDULO 4D", key="btn_row_4d", use_container_width=True):
              st.session_state.seccion_actual = 'betz_4d'
              st.rerun()
 
@@ -2303,8 +2303,8 @@ if st.session_state.seccion_actual == 'inicio':
     st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
     st.markdown("""
     <div class="section-card" style="border-left: 5px solid #10b981; height: 160px; margin-bottom: 10px;">
-        <h3 style="color: #10b981; margin-top: 0; margin-bottom: 10px;">ðŸ”§ HERRAMIENTAS DE ESTELA</h3>
-        <p style="color: #bbb; font-size: 0.95rem; margin-bottom: 0;">Utilidades para unir archivos fragmentados, extraer matrices de presiÃ³n y generar archivos VTK (2D, 3D y 4D) para ParaView / Salome.</p>
+        <h3 style="color: #10b981; margin-top: 0; margin-bottom: 10px;">🔧 HERRAMIENTAS DE ESTELA</h3>
+        <p style="color: #bbb; font-size: 0.95rem; margin-bottom: 0;">Utilidades para unir archivos fragmentados, extraer matrices de presión y generar archivos VTK (2D, 3D y 4D) para ParaView / Salome.</p>
     </div>
     """, unsafe_allow_html=True)
     if st.button("ACCEDER A HERRAMIENTAS", key="btn_row_herr", use_container_width=True):
@@ -2312,12 +2312,12 @@ if st.session_state.seccion_actual == 'inicio':
          st.rerun()
 
     # === GRUPO 2: BETZ ===
-    st.markdown("<h3 style='margin-top: 3rem; color: #aaa; border-bottom: 1px solid #333; padding-bottom: 10px;'>ðŸ§ª ENSAYOS DE BETZ</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='margin-top: 3rem; color: #aaa; border-bottom: 1px solid #333; padding-bottom: 10px;'>🧪 ENSAYOS DE BETZ</h3>", unsafe_allow_html=True)
     
     st.markdown("""
     <div class="section-card" style="border-left: 5px solid #f59e0b; height: 150px; margin-bottom: 10px;">
-        <h3 style="color: #f59e0b; margin-top: 0; margin-bottom: 10px;">ðŸ§ª ENSAYO DE ALAS (BETZ)</h3>
-        <p style="color: #bbb; font-size: 0.95rem; margin-bottom: 0;">SecciÃ³n para el estudio y predicciÃ³n de estela de perfiles de ala. Actualmente en diseÃ±o tÃ©cnico y de algoritmos.</p>
+        <h3 style="color: #f59e0b; margin-top: 0; margin-bottom: 10px;">🧪 ENSAYO DE ALAS (BETZ)</h3>
+        <p style="color: #bbb; font-size: 0.95rem; margin-bottom: 0;">Sección para el estudio y predicción de estela de perfiles de ala. Actualmente en diseño técnico y de algoritmos.</p>
     </div>
     """, unsafe_allow_html=True)
     if st.button("ACCEDER A ENSAYOS", key="btn_row_ensayo", use_container_width=True):
@@ -2325,14 +2325,14 @@ if st.session_state.seccion_actual == 'inicio':
          st.rerun()
 
     st.markdown("---")
-    st.markdown("<div style='text-align:center; color:#444; font-size: 0.8rem;'>UTN HAEDO // DEPARTAMENTO DE INGENIERÃA AERONÃUTICA</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:center; color:#444; font-size: 0.8rem;'>UTN HAEDO // DEPARTAMENTO DE INGENIER�?A AERON�?UTICA</div>", unsafe_allow_html=True)
 
 
 
 elif st.session_state.seccion_actual == 'betz_2d':
     if st.session_state.configuracion_inicial:
-        st.markdown("# ðŸ“Š VISUALIZACIÃ“N DE ESTELA 1D - AnÃ¡lisis Unidimensional")
-        st.markdown("AnÃ¡lisis de perfiles de presiÃ³n concatenados con extracciÃ³n automÃ¡tica de tiempo y coordenadas")
+        st.markdown("# 📊 VISUALIZACIÓN DE ESTELA 1D - Análisis Unidimensional")
+        st.markdown("Análisis de perfiles de presión concatenados con extracción automática de tiempo y coordenadas")
     # --- Inicializar variables persistentes ---
     if "datos_procesados_betz2d" not in st.session_state:
         st.session_state.datos_procesados_betz2d = {}
@@ -2341,13 +2341,13 @@ elif st.session_state.seccion_actual == 'betz_2d':
     if "uploaded_files_betz2d" not in st.session_state:
         st.session_state.uploaded_files_betz2d = []
 
-    # Paso 1: ConfiguraciÃ³n inicial
-    with st.expander("ðŸ’¾ PASO 1: ConfiguraciÃ³n de GeometrÃ­a y Sensores", expanded=True):
+    # Paso 1: Configuración inicial
+    with st.expander("💾 PASO 1: Configuración de Geometría y Sensores", expanded=True):
         st.markdown("""
         <div class="section-card" style="margin-bottom: 12px;">
-            <h3 style="margin-top:0; color:white;">ðŸ’¾ PASO 1: CONFIGURACIÃ“N INICIAL</h3>
+            <h3 style="margin-top:0; color:white;">💾 PASO 1: CONFIGURACIÓN INICIAL</h3>
             <p style="color:#bbb; margin-bottom:0;">
-                Defina los parÃ¡metros fÃ­sicos del peine de sensores y el sistema de adquisiciÃ³n para el entorno 1D.
+                Defina los parámetros físicos del peine de sensores y el sistema de adquisición para el entorno 1D.
             </p>
         </div>
         """, unsafe_allow_html=True)
@@ -2359,7 +2359,7 @@ elif st.session_state.seccion_actual == 'betz_2d':
             orden_sensores = st.selectbox(
                 "Orden de lectura de sensores",
                 ["asc", "des"],
-                format_func=lambda x: "Ascendente (Sensor 1 â†’ 12)" if x == "asc" else "Descendente (Sensor 12 â†’ 1)",
+                format_func=lambda x: "Ascendente (Sensor 1 → 12)" if x == "asc" else "Descendente (Sensor 12 → 1)",
                 help="Ascendente: Sensor 1 abajo, 12 arriba. Descendente: Sensor 12 abajo, 1 arriba.",
                 key="orden_1d_std"
             )
@@ -2368,7 +2368,7 @@ elif st.session_state.seccion_actual == 'betz_2d':
                 "Sensor de referencia (Toma 12)",
                 [f"Sensor {i}" for i in range(1, 37)],
                 index=11,
-                help="Sensor fÃ­sico conectado a la toma nÃºmero 12.",
+                help="Sensor físico conectado a la toma número 12.",
                 key="sensor_ref_1d_std"
             )
 
@@ -2377,30 +2377,30 @@ elif st.session_state.seccion_actual == 'betz_2d':
                 distancia_toma_12 = st.number_input(
                     "Distancia Toma 12 [mm]",
                     value=-120.0, step=1.0, format="%.1f",
-                    help="PosiciÃ³n relativa al cero del traverser.",
+                    help="Posición relativa al cero del traverser.",
                     key="dist_12_1d_std"
                 )
             with c2:
                 distancia_entre_tomas = st.number_input(
                     "Sep. entre tomas [mm]",
                     value=10.91, step=0.01, format="%.2f",
-                    help="Distancia fÃ­sica entre centros de tomas.",
+                    help="Distancia física entre centros de tomas.",
                     key="dist_entre_1d_std"
                 )
 
-            if st.button("ðŸ’¾ CONFIRMAR CONFIGURACIÃ“N", type="primary", use_container_width=True, key="btn_conf_1d_std"):
+            if st.button("💾 CONFIRMAR CONFIGURACIÓN", type="primary", use_container_width=True, key="btn_conf_1d_std"):
                 st.session_state.configuracion_inicial = {
                     'orden': orden_sensores,
                     'sensor_referencia': sensor_referencia,
                     'distancia_toma_12': distancia_toma_12,
                     'distancia_entre_tomas': distancia_entre_tomas
                 }
-                st.success("âœ… ConfiguraciÃ³n 1D guardada.")
+                st.success("✅ Configuración 1D guardada.")
                 st.rerun()
             st.markdown("</div>", unsafe_allow_html=True)
         st.markdown("""
         <div style="background: #111; border: 1px dashed #444; border-radius: 8px; padding: 1rem; text-align: center; height: 100%;">
-            <p style="color: #888; font-size: 0.8rem; margin-bottom: 10px;">REFERENCIA TÃ‰CNICA</p>
+            <p style="color: #888; font-size: 0.8rem; margin-bottom: 10px;">REFERENCIA TÉCNICA</p>
             <img src="https://raw.githubusercontent.com/Juan-Cruz-de-la-Fuente/Laboratorio/main/Peine.jpg" 
                  style="max-width: 100%; border-radius: 4px; opacity: 0.8;">
         </div>
@@ -2412,13 +2412,13 @@ elif st.session_state.seccion_actual == 'betz_2d':
         st.markdown("---")
         st.markdown("""
         <div class="section-card" style="margin-bottom: 20px;">
-            <h3 style="margin-top: 0; color: white;">ðŸ“ PASO 2: IMPORTACIÃ“N DE ARCHIVOS CRUDOS</h3>
-            <p style="color: #bbb; margin-bottom: 20px;">Cargue los archivos CSV de incertidumbre generados por el sistema de adquisiciÃ³n.</p>
+            <h3 style="margin-top: 0; color: white;">�? PASO 2: IMPORTACIÓN DE ARCHIVOS CRUDOS</h3>
+            <p style="color: #bbb; margin-bottom: 20px;">Cargue los archivos CSV de incertidumbre generados por el sistema de adquisición.</p>
         </div>
         """, unsafe_allow_html=True)
 
         uploaded_files = st.file_uploader(
-            "Arrastre sus archivos CSV aquÃ­",
+            "Arrastre sus archivos CSV aquí",
             type=['csv'],
             accept_multiple_files=True,
             key="uploader_betz2d"
@@ -2429,16 +2429,16 @@ elif st.session_state.seccion_actual == 'betz_2d':
         else:
             uploaded_files = st.session_state.uploaded_files_betz2d
 
-        # Procesamiento y GeneraciÃ³n de Salidas
+        # Procesamiento y Generación de Salidas
         if uploaded_files:
-            st.success(f"âœ… {len(uploaded_files)} archivos cargados en memoria.")
+            st.success(f"✅ {len(uploaded_files)} archivos cargados en memoria.")
             
             # Contenedor de procesados
             st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
             
             for archivo in uploaded_files:
                 if archivo.name not in st.session_state.datos_procesados_betz2d:
-                    with st.spinner(f"ðŸ”¨ Procesando {archivo.name}..."):
+                    with st.spinner(f"🔨 Procesando {archivo.name}..."):
                         datos = procesar_promedios(archivo, st.session_state.configuracion_inicial['orden'])
                         if datos is not None:
                             st.session_state.datos_procesados_betz2d[archivo.name] = datos
@@ -2449,12 +2449,12 @@ elif st.session_state.seccion_actual == 'betz_2d':
                                 st.session_state.sub_archivos_generados = {}
                             st.session_state.sub_archivos_generados.update(sub_archivos)
                 
-                # Mostrar tarjeta de archivo procesado con descargas rÃ¡pidas
+                # Mostrar tarjeta de archivo procesado con descargas rápidas
                 if archivo.name in st.session_state.datos_procesados_betz2d:
                     datos = st.session_state.datos_procesados_betz2d[archivo.name]
                     nombre_base = extraer_nombre_base_archivo(archivo.name)
                     
-                    with st.expander(f"âœ… {archivo.name} (Procesado)", expanded=False):
+                    with st.expander(f"✅ {archivo.name} (Procesado)", expanded=False):
                         c_d1, c_d2, c_d3 = st.columns(3)
                         
                         # Preparar datos
@@ -2464,20 +2464,20 @@ elif st.session_state.seccion_actual == 'betz_2d':
                         
                         with c_d1:
                              csv_pk = datos_ordenados_nombre.to_csv(sep=';', index=False, decimal=',').encode('utf-8-sig')
-                             st.download_button("ðŸ“¥ Ord. por Nombre", csv_pk, f"{nombre_base}_nombre.csv", "text/csv", key=f"dn_{nombre_base}")
+                             st.download_button("📥 Ord. por Nombre", csv_pk, f"{nombre_base}_nombre.csv", "text/csv", key=f"dn_{nombre_base}")
                         with c_d2:
                              csv_x = datos_ordenados_x.to_csv(sep=';', index=False, decimal=',').encode('utf-8-sig')
-                             st.download_button("ðŸ“¥ Ord. por PosiciÃ³n X", csv_x, f"{nombre_base}_x.csv", "text/csv", key=f"dx_{nombre_base}")
+                             st.download_button("📥 Ord. por Posición X", csv_x, f"{nombre_base}_x.csv", "text/csv", key=f"dx_{nombre_base}")
                         with c_d3:
                              csv_t = datos_ordenados_tiempo.to_csv(sep=';', index=False, decimal=',').encode('utf-8-sig')
-                             st.download_button("ðŸ“¥ Ord. por Tiempo", csv_t, f"{nombre_base}_time.csv", "text/csv", key=f"dt_{nombre_base}")
+                             st.download_button("📥 Ord. por Tiempo", csv_t, f"{nombre_base}_time.csv", "text/csv", key=f"dt_{nombre_base}")
     else:
-        st.info("âš ï¸ Configure la geometrÃ­a en el Paso 1 para habilitar la carga de archivos.")
+        st.info("⚠�? Configure la geometría en el Paso 1 para habilitar la carga de archivos.")
 
 
     # Mostrar datos procesados
     if st.session_state.datos_procesados:
-        st.markdown("## ðŸ“‹ Datos Procesados")
+        st.markdown("## 📋 Datos Procesados")
         for nombre_archivo, datos in st.session_state.datos_procesados.items():
             with st.expander(f"Ver datos de {nombre_archivo}"):
                 st.dataframe(datos, use_container_width=True)
@@ -2491,13 +2491,13 @@ elif st.session_state.seccion_actual == 'betz_2d':
                     st.dataframe(coordenadas_unicas, use_container_width=True)
 
 
-    # --- PASO 3: ANÃLISIS DETALLADO ---
+    # --- PASO 3: AN�?LISIS DETALLADO ---
     if st.session_state.sub_archivos_generados:
         st.markdown("---")
         st.markdown("""
         <div class="section-card" style="margin-bottom: 20px;">
-            <h3 style="margin-top: 0; color: white;">ðŸ“Š PASO 3: RESUMEN DE SUB-ARCHIVOS</h3>
-            <p style="color: #bbb; margin-bottom: 10px;">GestiÃ³n de todos los archivos individualizados generados (separados por tiempo y posiciÃ³n).</p>
+            <h3 style="margin-top: 0; color: white;">📊 PASO 3: RESUMEN DE SUB-ARCHIVOS</h3>
+            <p style="color: #bbb; margin-bottom: 10px;">Gestión de todos los archivos individualizados generados (separados por tiempo y posición).</p>
         </div>
         """, unsafe_allow_html=True)
         
@@ -2515,7 +2515,7 @@ elif st.session_state.seccion_actual == 'betz_2d':
         
         df_resumen = pd.DataFrame(filas_resumen)
         
-        # MÃ©tricas
+        # Métricas
         col_m1, col_m2, col_m3 = st.columns(3)
         with col_m1:
             st.markdown(f"<div style='text-align:center; padding:10px; background:#111; border-radius:8px; border:1px solid #333;'><h2 style='margin:0; color:#3b82f6;'>{len(df_resumen)}</h2><p style='margin:0; color:#888;'>Sub-archivos Generados</p></div>", unsafe_allow_html=True)
@@ -2543,9 +2543,9 @@ elif st.session_state.seccion_actual == 'betz_2d':
         # Mostrar 1 expander por archivo origen
         for archivo_origen, tiempos_dict in grouped.items():
             num_tiempos = len(tiempos_dict)
-            with st.expander(f"ðŸ“ {archivo_origen} - {num_tiempos} tiempos", expanded=False):
+            with st.expander(f"�? {archivo_origen} - {num_tiempos} tiempos", expanded=False):
                 # Generar ZIP con todos los sub-archivos de este origen (para descargar de una)
-                # Crearlo aquÃ­ en memoria y mostrar botÃ³n
+                # Crearlo aquí en memoria y mostrar botón
                 buffer = io.BytesIO()
                 with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
                     for tiempo, items in tiempos_dict.items():
@@ -2556,7 +2556,7 @@ elif st.session_state.seccion_actual == 'betz_2d':
                             zf.writestr(it['Nombre Salida'], csv_bytes)
                 zip_bytes = buffer.getvalue()
                 st.download_button(
-                    label=f"ðŸ“¦ Descargar TODOS los sub-archivos ({archivo_origen}) .zip",
+                    label=f"📦 Descargar TODOS los sub-archivos ({archivo_origen}) .zip",
                     data=zip_bytes,
                     file_name=f"{archivo_origen}_subarchivos_{datetime.now().strftime('%Y%m%d')}.zip",
                     mime="application/zip",
@@ -2565,9 +2565,9 @@ elif st.session_state.seccion_actual == 'betz_2d':
 
                 st.markdown("")
 
-                # Para cada tiempo, listar sub-archivos (X) y dar botÃ³n CSV por cada uno
+                # Para cada tiempo, listar sub-archivos (X) y dar botón CSV por cada uno
                 for tiempo, items in sorted(tiempos_dict.items()):
-                    st.markdown(f"#### â±ï¸ {tiempo}")
+                    st.markdown(f"#### �?��? {tiempo}")
                     for it in sorted(items, key=lambda r: (r['Pos X'] if pd.notna(r['Pos X']) else 1e9)):
                         clave = it['Clave']
                         nombre = it['Nombre Salida']
@@ -2575,17 +2575,17 @@ elif st.session_state.seccion_actual == 'betz_2d':
                         pos_x = it['Pos X']
 
                         col_a, col_b, col_c = st.columns([4, 1, 2])
-                        col_a.markdown(f"**X{pos_x}** â€” `{nombre}`")
+                        col_a.markdown(f"**X{pos_x}** — `{nombre}`")
                         col_b.markdown(f"Registros: {registros}")
 
-                        # generar bytes CSV para el botÃ³n
+                        # generar bytes CSV para el botón
                         df_sub = st.session_state.sub_archivos_generados[clave]['datos']
                         csv_bytes = df_sub.to_csv(sep=';', index=False, decimal=',').encode('utf-8-sig')
 
-                        # key Ãºnica por descarga (clave ya deberÃ­a ser Ãºnica)
+                        # key única por descarga (clave ya debería ser única)
                         dl_key = f"dl_{clave}_{datetime.now().timestamp()}"
                         col_c.download_button(
-                            label="ðŸ“¥ Descargar CSV",
+                            label="📥 Descargar CSV",
                             data=csv_bytes,
                             file_name=nombre,
                             mime="text/csv",
@@ -2595,7 +2595,7 @@ elif st.session_state.seccion_actual == 'betz_2d':
 
                     st.markdown("---")
     else:
-        st.info("No hay sub-archivos generados aÃºn. SubÃ­ y procesÃ¡ archivos en Paso 2.")
+        st.info("No hay sub-archivos generados aún. Subí y procesá archivos en Paso 2.")
 
     # --- PASO 5: GUARDAR EN DRIVE (1D) ---
     if st.session_state.sub_archivos_generados:
@@ -2623,12 +2623,12 @@ elif st.session_state.seccion_actual == 'betz_2d':
             with col_1d_drive:
                 if st.button("&#x2601;&#xFE0F; Guardar en Drive (1D)", key="save_1d_drive", use_container_width=True):
                     if auth.save_csv_1d(st.session_state.username, nombre_sub_sel, csv_bytes_1d):
-                        st.success(f"âœ… Subido a Drive â†’ ENSAYO DE ESTELA/1D/{nombre_sub_sel}")
+                        st.success(f"✅ Subido a Drive → ENSAYO DE ESTELA/1D/{nombre_sub_sel}")
                     else:
                         st.error("Error al subir a Drive")
 
-    # Paso 4: SecciÃ³n de GrÃ¡ficos
-    st.markdown("## ðŸ“ˆ Paso 4: SecciÃ³n de GrÃ¡ficos")
+    # Paso 4: Sección de Gráficos
+    st.markdown("## 📈 Paso 4: Sección de Gráficos")
 
     if st.session_state.datos_procesados:
         # Tomar el primer DataFrame procesado para obtener n_sensores
@@ -2647,19 +2647,19 @@ elif st.session_state.seccion_actual == 'betz_2d':
             pos_df = pd.DataFrame([
                 {
                     'Sensor': sensor,
-                    'PosiciÃ³n Y [mm]': pos['y'],
-                    'Sensor FÃ­sico': pos['sensor_fisico']
+                    'Posición Y [mm]': pos['y'],
+                    'Sensor Físico': pos['sensor_fisico']
                 }
                 for sensor, pos in posiciones_sensores.items()
             ])
             st.dataframe(pos_df, use_container_width=True)
     else:
-        st.warning("âš ï¸ No hay datos procesados aÃºn. Suba archivos en el Paso 2.")
+        st.warning("⚠�? No hay datos procesados aún. Suba archivos en el Paso 2.")
 
 
-    # Contenedor para los filtros de visualizaciÃ³n
+    # Contenedor para los filtros de visualización
     with st.container(border=True):
-        st.markdown("#### ðŸ” Filtros de VisualizaciÃ³n")
+        st.markdown("#### �? Filtros de Visualización")
         
         sub_archivos = st.session_state.sub_archivos_generados.values()
         archivos_opciones = sorted(list(set(sa['archivo_fuente'] for sa in sub_archivos)))
@@ -2674,7 +2674,7 @@ elif st.session_state.seccion_actual == 'betz_2d':
             key="filtro_archivos_origen"
         )
         x_seleccionados = col2.multiselect(
-            "Filtrar por PosiciÃ³n X:",
+            "Filtrar por Posición X:",
             options=x_opciones,
             default=x_opciones,
             key="filtro_posicion_x"
@@ -2686,7 +2686,7 @@ elif st.session_state.seccion_actual == 'betz_2d':
             key="filtro_tiempo_s"
         )
 
-    # Filtrar sub-archivos segÃºn filtros seleccionados
+    # Filtrar sub-archivos según filtros seleccionados
     sub_archivos_filtrados = {
         clave: sub_archivo for clave, sub_archivo in st.session_state.sub_archivos_generados.items()
         if sub_archivo['archivo_fuente'] in archivos_seleccionados
@@ -2694,16 +2694,16 @@ elif st.session_state.seccion_actual == 'betz_2d':
         and sub_archivo['tiempo'] in tiempos_seleccionados
     }
 
-    # SelecciÃ³n de sub-archivos para grÃ¡fico concatenado
-    st.markdown("### ðŸŽ¯ SelecciÃ³n de Sub-archivos para GrÃ¡fico Concatenado")
+    # Selección de sub-archivos para gráfico concatenado
+    st.markdown("### 🎯 Selección de Sub-archivos para Gráfico Concatenado")
 
     if not sub_archivos_filtrados:
         st.warning("No hay datos que coincidan con los filtros seleccionados.")
     else:
         sub_archivos_seleccionados = {}
 
-        # Generar color Ãºnico aleatorio para cada sub-archivo
-            # Inicializar colores persistentes en la sesiÃ³n
+        # Generar color único aleatorio para cada sub-archivo
+            # Inicializar colores persistentes en la sesión
         if "colores_por_subarchivo" not in st.session_state:
             st.session_state.colores_por_subarchivo = {}
 
@@ -2714,7 +2714,7 @@ elif st.session_state.seccion_actual == 'betz_2d':
 
         colores_por_subarchivo = st.session_state.colores_por_subarchivo
 
-        # Mostrar lista de selecciÃ³n con colores
+        # Mostrar lista de selección con colores
         for i, (clave, sub_archivo) in enumerate(sorted(sub_archivos_filtrados.items())):
             col1, col2 = st.columns([3, 1])
             label = f"{sub_archivo['archivo_fuente']} - T{sub_archivo['tiempo']}s - X{sub_archivo['x_traverser']} - {len(sub_archivo['datos'])} registros"
@@ -2729,9 +2729,9 @@ elif st.session_state.seccion_actual == 'betz_2d':
                     unsafe_allow_html=True
                 )
 
-        # Generar grÃ¡fico concatenado si hay selecciones
+        # Generar gráfico concatenado si hay selecciones
         if sub_archivos_seleccionados:
-            st.markdown("### ðŸ“Š GrÃ¡fico Concatenado Vertical Modo Betz")
+            st.markdown("### 📊 Gráfico Concatenado Vertical Modo Betz")
 
             fig = go.Figure()
             for clave, sub_archivo in sub_archivos_seleccionados.items():
@@ -2749,10 +2749,10 @@ elif st.session_state.seccion_actual == 'betz_2d':
                     ))
 
             fig.update_layout(
-                title="Perfil de PresiÃ³n Concatenado",
-                xaxis_title="PresiÃ³n Total [Pa]",
+                title="Perfil de Presión Concatenado",
+                xaxis_title="Presión Total [Pa]",
                 yaxis_title="Altura Z [mm]",
-                plot_bgcolor='rgba(0,0,0,0)',   # transparente en Ã¡rea del grÃ¡fico
+                plot_bgcolor='rgba(0,0,0,0)',   # transparente en área del gráfico
                 paper_bgcolor='rgba(0,0,0,0)',  # transparente en todo el lienzo
                 font=dict(color='white'),       # texto en blanco para que se lea bien
                 height=900,
@@ -2761,16 +2761,16 @@ elif st.session_state.seccion_actual == 'betz_2d':
             st.plotly_chart(fig, use_container_width=False)
 
             total_puntos = len(sub_archivos_seleccionados) * 12
-            st.success(f"âœ… GrÃ¡fico vertical generado con {total_puntos} puntos de datos concatenados")
+            st.success(f"✅ Gráfico vertical generado con {total_puntos} puntos de datos concatenados")
 
             # Exportaciones
-            st.markdown("### ðŸ“¤ ExportaciÃ³n")
+            st.markdown("### 📤 Exportación")
             col1, col2, col3 = st.columns(3)
             
             with col1:
                 html_string = fig.to_html()
                 st.download_button(
-                    label="ðŸ“Š Descargar GrÃ¡fico (HTML)",
+                    label="📊 Descargar Gráfico (HTML)",
                     data=html_string,
                     file_name=f"grafico_betz_vertical_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html",
                     mime="text/html"
@@ -2788,7 +2788,7 @@ elif st.session_state.seccion_actual == 'betz_2d':
                     index=False, sep=';', encoding='utf-8-sig', decimal=','
                 )
                 st.download_button(
-                    label="ðŸ“‹ Descargar Datos (CSV)",
+                    label="📋 Descargar Datos (CSV)",
                     data=csv_data,
                     file_name=f"datos_betz_vertical_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                     mime="text/csv"
@@ -2797,15 +2797,15 @@ elif st.session_state.seccion_actual == 'betz_2d':
             with col3:
                 st.metric("Total de puntos", total_puntos)
         else:
-            st.error("âŒ No se pudo generar el grÃ¡fico. Verifique los datos seleccionados.")
+            st.error("�?� No se pudo generar el gráfico. Verifique los datos seleccionados.")
 
     
-        # NUEVA SECCIÃ“N: RESTA DE ÃREAS
-        # NUEVA SECCIÃ“N: RESTA DE ÃREAS
+        # NUEVA SECCIÓN: RESTA DE �?REAS
+        # NUEVA SECCIÓN: RESTA DE �?REAS
         if st.session_state.sub_archivos_generados:
             st.markdown("---")
-            st.markdown("## âž– AnÃ¡lisis de Diferencias de Ãreas")
-            st.markdown("Selecciona dos sub-archivos para calcular la diferencia de Ã¡reas entre sus perfiles de presiÃ³n")
+            st.markdown("## ➖ Análisis de Diferencias de �?reas")
+            st.markdown("Selecciona dos sub-archivos para calcular la diferencia de áreas entre sus perfiles de presión")
             
             # Crear lista de opciones para los selectores
             opciones_subarchivos = sorted(list(st.session_state.sub_archivos_generados.keys()))
@@ -2814,37 +2814,37 @@ elif st.session_state.seccion_actual == 'betz_2d':
             
             with col1:
                 archivo_a = st.selectbox(
-                    "ðŸ“Š Archivo A (minuendo):",
+                    "📊 Archivo A (minuendo):",
                     opciones_subarchivos,
                     key="archivo_a_resta",
-                    help="Seleccione el primer sub-archivo (del cual se restarÃ¡ el segundo)"
+                    help="Seleccione el primer sub-archivo (del cual se restará el segundo)"
                 )
             
             with col2:
-                st.markdown("<div style='text-align: center; font-size: 2rem; margin-top: 2rem;'>âž–</div>", unsafe_allow_html=True)
+                st.markdown("<div style='text-align: center; font-size: 2rem; margin-top: 2rem;'>➖</div>", unsafe_allow_html=True)
             
             with col3:
                 archivo_b = st.selectbox(
-                    "ðŸ“Š Archivo B (sustraendo):",
+                    "📊 Archivo B (sustraendo):",
                     opciones_subarchivos,
                     index=1 if len(opciones_subarchivos) > 1 else 0,
                     key="archivo_b_resta",
-                    help="Seleccione el segundo sub-archivo (que serÃ¡ restado del primero)"
+                    help="Seleccione el segundo sub-archivo (que será restado del primero)"
                 )
             
             # --- INICIO DE LA ESTRUCTURA CORREGIDA ---
 
-            # PARTE 1: BotÃ³n para CALCULAR. Su Ãºnica misiÃ³n es generar el grÃ¡fico y ponerlo en una "bandeja" temporal.
-            if st.button("ðŸ”„ Calcular Diferencia de Ãreas", type="primary", use_container_width=True):
+            # PARTE 1: Botón para CALCULAR. Su única misión es generar el gráfico y ponerlo en una "bandeja" temporal.
+            if st.button("🔄 Calcular Diferencia de �?reas", type="primary", use_container_width=True):
                 if archivo_a and archivo_b and archivo_a != archivo_b:
-                    with st.spinner("Calculando diferencia de Ã¡reas..."):
+                    with st.spinner("Calculando diferencia de áreas..."):
                         fig_diferencia, diferencia_area = crear_grafico_diferencia_areas(
                             st.session_state.sub_archivos_generados[archivo_a],
                             st.session_state.sub_archivos_generados[archivo_b],
                             st.session_state.configuracion_inicial
                         )
                         if fig_diferencia:
-                            # Guardamos TODO lo necesario en la sesiÃ³n para mostrarlo despuÃ©s del reinicio de la pÃ¡gina.
+                            # Guardamos TODO lo necesario en la sesión para mostrarlo después del reinicio de la página.
                             st.session_state.figura_diferencia_temporal = {
                                 "fig": fig_diferencia,
                                 "nombre": f"Dif. 2D: {archivo_a.split('_')[0]} vs {archivo_b.split('_')[0]}",
@@ -2853,16 +2853,16 @@ elif st.session_state.seccion_actual == 'betz_2d':
                                 "archivo_b": archivo_b
                             }
                         else:
-                            st.error("âŒ No se pudo calcular la diferencia.")
+                            st.error("�?� No se pudo calcular la diferencia.")
                             if 'figura_diferencia_temporal' in st.session_state:
                                 del st.session_state.figura_diferencia_temporal
                 else:
-                    st.warning("âš ï¸ Seleccione dos sub-archivos diferentes para calcular la diferencia.")
+                    st.warning("⚠�? Seleccione dos sub-archivos diferentes para calcular la diferencia.")
 
-            # PARTE 2: Este bloque estÃ¡ AFUERA del anterior. Revisa si hay algo en la "bandeja" temporal.
-            # Si hay algo, lo muestra junto con TODOS sus botones (Guardar, mÃ©tricas, descarga).
+            # PARTE 2: Este bloque está AFUERA del anterior. Revisa si hay algo en la "bandeja" temporal.
+            # Si hay algo, lo muestra junto con TODOS sus botones (Guardar, métricas, descarga).
             if 'figura_diferencia_temporal' in st.session_state:
-                # Recuperamos los datos de la sesiÃ³n que guardamos en la PARTE 1
+                # Recuperamos los datos de la sesión que guardamos en la PARTE 1
                 temp_data = st.session_state.figura_diferencia_temporal
                 fig_diferencia = temp_data["fig"]
                 nombre_guardado = temp_data["nombre"]
@@ -2870,20 +2870,20 @@ elif st.session_state.seccion_actual == 'betz_2d':
                 archivo_a_calc = temp_data["archivo_a"]
                 archivo_b_calc = temp_data["archivo_b"]
                 
-                # 1. Mostramos el grÃ¡fico
+                # 1. Mostramos el gráfico
                 st.plotly_chart(fig_diferencia, use_container_width=False)
                 
-                # 2. Mostramos el botÃ³n de "Guardar". Ahora sÃ­ funcionarÃ¡.
-                if st.button("ðŸ’¾ Guardar Diferencia para Visualizar", key="save_diff_2d_for_viz_final"):
+                # 2. Mostramos el botón de "Guardar". Ahora sí funcionará.
+                if st.button("💾 Guardar Diferencia para Visualizar", key="save_diff_2d_for_viz_final"):
                     if 'diferencias_guardadas' not in st.session_state:
                         st.session_state.diferencias_guardadas = {}
                     st.session_state.diferencias_guardadas[nombre_guardado] = fig_diferencia
-                    st.success(f"âœ… GrÃ¡fico '{nombre_guardado}' guardado permanentemente.")
-                    # Borramos la figura temporal despuÃ©s de guardarla para limpiar la "bandeja"
+                    st.success(f"✅ Gráfico '{nombre_guardado}' guardado permanentemente.")
+                    # Borramos la figura temporal después de guardarla para limpiar la "bandeja"
                     del st.session_state.figura_diferencia_temporal
                     st.rerun()
 
-                # 3. Mostramos las mÃ©tricas y el resto de tu cÃ³digo (sin cambios)
+                # 3. Mostramos las métricas y el resto de tu código (sin cambios)
                 col_m1, col_m2, col_m3 = st.columns(3)
                 z_a, p_a = extraer_datos_para_grafico(st.session_state.sub_archivos_generados[archivo_a_calc], st.session_state.configuracion_inicial)
                 z_b, p_b = extraer_datos_para_grafico(st.session_state.sub_archivos_generados[archivo_b_calc], st.session_state.configuracion_inicial)
@@ -2891,22 +2891,22 @@ elif st.session_state.seccion_actual == 'betz_2d':
                 area_b = calcular_area_bajo_curva(z_b, p_b)
                 
                 with col_m1:
-                    st.metric(f"Ãrea {st.session_state.sub_archivos_generados[archivo_a_calc]['archivo_fuente']}", f"{area_a:.2f} PaÂ·mm")
+                    st.metric(f"�?rea {st.session_state.sub_archivos_generados[archivo_a_calc]['archivo_fuente']}", f"{area_a:.2f} Pa·mm")
                 with col_m2:
-                    st.metric(f"Ãrea {st.session_state.sub_archivos_generados[archivo_b_calc]['archivo_fuente']}", f"{area_b:.2f} PaÂ·mm")
+                    st.metric(f"�?rea {st.session_state.sub_archivos_generados[archivo_b_calc]['archivo_fuente']}", f"{area_b:.2f} Pa·mm")
                 with col_m3:
-                    st.metric("Diferencia de Ãreas", f"{diferencia_area:.2f} PaÂ·mm", delta=f"{diferencia_area:.2f}", delta_color="normal" if diferencia_area >= 0 else "inverse")
+                    st.metric("Diferencia de �?reas", f"{diferencia_area:.2f} Pa·mm", delta=f"{diferencia_area:.2f}", delta_color="normal" if diferencia_area >= 0 else "inverse")
                 
                 if diferencia_area > 0:
-                    st.success(f"âœ… El Ã¡rea de **{st.session_state.sub_archivos_generados[archivo_a_calc]['archivo_fuente']}** es **{diferencia_area:.2f} PaÂ·mm** mayor que la de **{st.session_state.sub_archivos_generados[archivo_b_calc]['archivo_fuente']}**")
+                    st.success(f"✅ El área de **{st.session_state.sub_archivos_generados[archivo_a_calc]['archivo_fuente']}** es **{diferencia_area:.2f} Pa·mm** mayor que la de **{st.session_state.sub_archivos_generados[archivo_b_calc]['archivo_fuente']}**")
                 elif diferencia_area < 0:
-                    st.info(f"â„¹ï¸ El Ã¡rea de **{st.session_state.sub_archivos_generados[archivo_b_calc]['archivo_fuente']}** es **{abs(diferencia_area):.2f} PaÂ·mm** mayor que la de **{st.session_state.sub_archivos_generados[archivo_a_calc]['archivo_fuente']}**")
+                    st.info(f"ℹ�? El área de **{st.session_state.sub_archivos_generados[archivo_b_calc]['archivo_fuente']}** es **{abs(diferencia_area):.2f} Pa·mm** mayor que la de **{st.session_state.sub_archivos_generados[archivo_a_calc]['archivo_fuente']}**")
                 else:
-                    st.info("â„¹ï¸ Las Ã¡reas son prÃ¡cticamente iguales")
+                    st.info("ℹ�? Las áreas son prácticamente iguales")
                 
                 html_diferencia = fig_diferencia.to_html()
                 st.download_button(
-                    label="ðŸ“Š Descargar GrÃ¡fico de Diferencia (HTML)",
+                    label="📊 Descargar Gráfico de Diferencia (HTML)",
                     data=html_diferencia,
                     file_name=f"diferencia_areas_{archivo_a_calc}_vs_{archivo_b_calc}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html",
                     mime="text/html"
@@ -2924,21 +2924,21 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
     st.markdown("""
         <div class="header-container">
             <h1 style="font-size: 3rem; margin-bottom: 1rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
-            ðŸ“ˆ VISUALIZACIÃ“N DE ESTELA 2D
+            📈 VISUALIZACIÓN DE ESTELA 2D
             </h1>
             <h2 style="font-size: 1.8rem; margin-bottom: 0; opacity: 0.9;">
-            Mapeo de Campos de PresiÃ³n Interactivo
+            Mapeo de Campos de Presión Interactivo
             </h2>
         </div>
     """, unsafe_allow_html=True)
 
-    # --- PASO 1: CONFIGURACIÃ“N INICIAL ---
-    with st.expander("ðŸ’¾ PASO 1: ConfiguraciÃ³n de GeometrÃ­a y Sensores", expanded=True):
+    # --- PASO 1: CONFIGURACIÓN INICIAL ---
+    with st.expander("💾 PASO 1: Configuración de Geometría y Sensores", expanded=True):
         st.markdown("""
         <div class="section-card" style="margin-bottom: 12px;">
-            <h3 style="margin-top:0; color:white;">ðŸ’¾ PASO 1: CONFIGURACIÃ“N INICIAL</h3>
+            <h3 style="margin-top:0; color:white;">💾 PASO 1: CONFIGURACIÓN INICIAL</h3>
             <p style="color:#bbb; margin-bottom:0;">
-                Defina los parÃ¡metros fÃ­sicos del peine de sensores y el sistema de adquisiciÃ³n para el entorno 2D.
+                Defina los parámetros físicos del peine de sensores y el sistema de adquisición para el entorno 2D.
             </p>
         </div>
         """, unsafe_allow_html=True)
@@ -2950,7 +2950,7 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
             orden_sensores = st.selectbox(
                 "Orden de lectura de sensores",
                 ["asc", "des"],
-                format_func=lambda x: "Ascendente (Sensor 1 â†’ 12)" if x == "asc" else "Descendente (Sensor 12 â†’ 1)",
+                format_func=lambda x: "Ascendente (Sensor 1 → 12)" if x == "asc" else "Descendente (Sensor 12 → 1)",
                 key="orden_2d"
             )
 
@@ -2966,52 +2966,52 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
             with c2:
                 distancia_entre_tomas = st.number_input("Sep. entre tomas [mm]", value=10.00, step=0.01, format="%.2f", key="dist_entre_2d")
 
-            if st.button("ðŸ’¾ CONFIRMAR CONFIGURACIÃ“N", type="primary", use_container_width=True, key="btn_conf_2d"):
+            if st.button("💾 CONFIRMAR CONFIGURACIÓN", type="primary", use_container_width=True, key="btn_conf_2d"):
                 st.session_state.configuracion_2d = {
                     'orden': orden_sensores,
                     'sensor_referencia': sensor_referencia,
                     'distancia_toma_12': distancia_toma_12,
                     'distancia_entre_tomas': distancia_entre_tomas
                 }
-                st.success("âœ… ConfiguraciÃ³n 2D guardada.")
+                st.success("✅ Configuración 2D guardada.")
                 st.rerun()
             st.markdown("</div>", unsafe_allow_html=True)
 
     with col_ref:
         st.markdown("""
         <div style="background: #111; border: 1px dashed #444; border-radius: 8px; padding: 1rem; text-align: center; height: 100%;">
-            <p style="color: #888; font-size: 0.8rem; margin-bottom: 10px;">REFERENCIA TÃ‰CNICA</p>
+            <p style="color: #888; font-size: 0.8rem; margin-bottom: 10px;">REFERENCIA TÉCNICA</p>
             <img src="https://raw.githubusercontent.com/Juan-Cruz-de-la-Fuente/Laboratorio/main/Peine.jpg" 
                  style="max-width: 100%; border-radius: 4px; opacity: 0.8;">
         </div>
         """, unsafe_allow_html=True)
 
 
-    # --- PASO 2: IMPORTACIÃ“N DE ARCHIVOS ---
+    # --- PASO 2: IMPORTACIÓN DE ARCHIVOS ---
     st.markdown("---")
     st.markdown("""
     <div class="section-card" style="margin-bottom: 20px;">
-        <h3 style="margin-top: 0; color: white;">ðŸ“ PASO 2: IMPORTACIÃ“N DE ARCHIVOS CRUDOS</h3>
-        <p style="color: #bbb; margin-bottom: 20px;">Cargue uno o mÃºltiples archivos CSV crudos de ensayo para generar los planos espaciales en 2D.</p>
+        <h3 style="margin-top: 0; color: white;">�? PASO 2: IMPORTACIÓN DE ARCHIVOS CRUDOS</h3>
+        <p style="color: #bbb; margin-bottom: 20px;">Cargue uno o múltiples archivos CSV crudos de ensayo para generar los planos espaciales en 2D.</p>
     </div>
     """, unsafe_allow_html=True)
 
     if 'archivos_2d_cargados' not in st.session_state:
         st.session_state.archivos_2d_cargados = {}
 
-    uploaded_files_2d = st.file_uploader("Arrastre sus archivos CSV de Incertidumbre aquÃ­", type=['csv'], accept_multiple_files=True, key="uploader_2d")
-    uploaded_infinito_2d = st.file_uploader("ðŸ”— 'Valores en el infinito.txt' (Opcional - datos atmosfÃ©ricos)", type=['txt', 'csv'], accept_multiple_files=False, key="upl_inf_2d")
+    uploaded_files_2d = st.file_uploader("Arrastre sus archivos CSV de Incertidumbre aquí", type=['csv'], accept_multiple_files=True, key="uploader_2d")
+    uploaded_infinito_2d = st.file_uploader("🔗 'Valores en el infinito.txt' (Opcional - datos atmosféricos)", type=['txt', 'csv'], accept_multiple_files=False, key="upl_inf_2d")
 
     if uploaded_files_2d:
         st.markdown("<br>", unsafe_allow_html=True)
         for file_2d in uploaded_files_2d:
             nombre_archivo = file_2d.name.replace('.csv', '').replace('incertidumbre_', '')
             if nombre_archivo not in st.session_state.archivos_2d_cargados:
-                with st.spinner(f"ðŸ”¨ Procesando archivo {nombre_archivo}..."):
+                with st.spinner(f"🔨 Procesando archivo {nombre_archivo}..."):
                     datos_procesados = procesar_promedios(file_2d, st.session_state.configuracion_2d['orden'], uploaded_infinito_2d)
                     if datos_procesados is not None:
                         st.session_state.archivos_2d_cargados[nombre_archivo] = datos_procesados
-                        st.success(f"âœ… Archivo extraÃ­do correctamente: {nombre_archivo}")
+                        st.success(f"✅ Archivo extraído correctamente: {nombre_archivo}")
                         
     _archivos_mem_2d = st.session_state.archivos_2d_cargados
     try:
@@ -3021,13 +3021,13 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
 
     # Mostrar resumen interactivo de archivos con Progress list (como en 3D)
     if _archivos_mem_2d:
-        st.markdown("### ðŸ“‹ Archivos en Memoria")
+        st.markdown("### 📋 Archivos en Memoria")
         cols = st.columns(3)
         for idx, (nombre, datos) in enumerate(_archivos_mem_2d.items()):
             with cols[idx % 3]:
                 with st.container(border=True):
-                    st.markdown(f"**ðŸ“¦ {nombre}**")
-                    st.caption(f"{len(datos)} Puntos medidos â€¢ {len(datos['Tiempo_s'].unique())} Tiempos discretos")
+                    st.markdown(f"**📦 {nombre}**")
+                    st.caption(f"{len(datos)} Puntos medidos • {len(datos['Tiempo_s'].unique())} Tiempos discretos")
                     st.progress(100)
 
     if _archivos_mem_2d or _archivos_drv_2d:
@@ -3035,23 +3035,23 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
         st.markdown("---")
         st.markdown("""
         <div class="section-card" style="margin-bottom: 20px;">
-            <h3 style="margin-top: 0; color: white;">ðŸ“ˆ PASO 3: VISUALIZADOR 2D INTERACTIVO</h3>
+            <h3 style="margin-top: 0; color: white;">📈 PASO 3: VISUALIZADOR 2D INTERACTIVO</h3>
             <p style="color: #bbb; margin-bottom: 20px;">Explore el plano de presiones seleccionando archivo y escala, interactuando nativamente con las herramientas del trazado (regla configurable).</p>
         </div>
         """, unsafe_allow_html=True)
         
         c_cfg, c_plot = st.columns([1, 2.5])
         with c_cfg:
-            st.markdown("### 1. ParÃ¡metros de Escala")
+            st.markdown("### 1. Parámetros de Escala")
             cuerda_mm = st.number_input("Cuerda Referencia [mm]", value=300.0, step=1.0)
             
-            st.markdown("### 2. SelecciÃ³n de Plano")
+            st.markdown("### 2. Selección de Plano")
             fuente_plot_2d = st.radio("Fuente de matriz:", ["Archivos Crudos (Memoria)", "Matriz Guardada (Drive)"])
             
             ejecutar_viz_2d = False
             if fuente_plot_2d == "Archivos Crudos (Memoria)":
                 if not _archivos_mem_2d:
-                    st.warning("âš ï¸ No hay archivos procesados en memoria.")
+                    st.warning("⚠�? No hay archivos procesados en memoria.")
                 else:
                     archivo_sel = st.selectbox("Seleccionar Archivo (X):", list(_archivos_mem_2d.keys()))
                     df_selected = _archivos_mem_2d[archivo_sel]
@@ -3060,28 +3060,28 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
                     ejecutar_viz_2d = True
             else:
                 if not _archivos_drv_2d:
-                    st.warning("âš ï¸ No hay matrices 2D en tu Drive.")
+                    st.warning("⚠�? No hay matrices 2D en tu Drive.")
                 else:
                     dict_drv_2d = {f"{a[1]} [{a[2][:10] if a[2] else ''}]": a for a in _archivos_drv_2d}
                     archivo_drv_sel = st.selectbox("Seleccionar Matriz Drive:", list(dict_drv_2d.keys()))
                     ejecutar_viz_2d = True
 
-            st.markdown("### 3. VisualizaciÃ³n")
-            opciones_var_2d = ["PresiÃ³n Total [Actual]", "Ï_âˆž", "V_âˆž", "P_âˆž"]
-            var_2d_sel = st.selectbox("ðŸ“Š Variable a visualizar:", opciones_var_2d, key="var_2d_sel_ui")
+            st.markdown("### 3. Visualización")
+            opciones_var_2d = ["Presión Total [Actual]", "�?_∞", "V_∞", "P_∞"]
+            var_2d_sel = st.selectbox("📊 Variable a visualizar:", opciones_var_2d, key="var_2d_sel_ui")
             
             plot_type = st.selectbox("Render de Pixeles:", ["Contour Suavizado", "Mapa de Calor (Celdas)"])
 
             st.markdown("---")
-            st.markdown("### ðŸ“ MediciÃ³n de Trazos")
-            st.info("La Regla â†˜ï¸ del grÃ¡fico mide nativamente en [mm]. Ingresa aquÃ­ el trazo medido para convertir a [c]:")
-            long_leida = st.number_input("Longitud LeÃ­da [mm]:", value=0.0, step=1.0)
+            st.markdown("### �? Medición de Trazos")
+            st.info("La Regla ↘�? del gráfico mide nativamente en [mm]. Ingresa aquí el trazo medido para convertir a [c]:")
+            long_leida = st.number_input("Longitud Leída [mm]:", value=0.0, step=1.0)
             if long_leida > 0:
                 st.success(f"**Longitud Equiv:** {(long_leida / cuerda_mm):.3f} c")
 
         with c_plot:
             if ejecutar_viz_2d:
-                with st.spinner("Ensamblando proyecciÃ³n de contornos 2D..."):
+                with st.spinner("Ensamblando proyección de contornos 2D..."):
                     if fuente_plot_2d == "Archivos Crudos (Memoria)":
                         df_run = df_selected[df_selected['Tiempo_s'] == tiempo_sel].copy()
                         
@@ -3125,21 +3125,21 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
                     df_matriz['Presion'] = calcular_variable_atmosferica(df_matriz, var_2d_sel)
                 
                 if df_matriz.empty:
-                    st.error("âŒ No se pudieron extraer datos espaciales (Y, Z, P). Comprueba tu archivo fÃ­sico.")
+                    st.error("�?� No se pudieron extraer datos espaciales (Y, Z, P). Comprueba tu archivo físico.")
                 else:
                     y_plot = df_matriz['Y'].values
                     z_plot = df_matriz['Z'].values
                     val_plot = df_matriz['Presion'].values
                     eje_label = "mm"
                     z_title = "P [Pa]"
-                    if var_2d_sel == "Ï_âˆž":
-                        z_title = "Densidad [kg/mÂ³]"
-                        hover_text = "Densidad: %{z:.2f} kg/mÂ³"
-                    elif var_2d_sel == "V_âˆž":
+                    if var_2d_sel == "�?_∞":
+                        z_title = "Densidad [kg/m³]"
+                        hover_text = "Densidad: %{z:.2f} kg/m³"
+                    elif var_2d_sel == "V_∞":
                         z_title = "V [m/s]"
                         hover_text = "Velocidad: %{z:.2f} m/s"
                     else:
-                        hover_text = "PresiÃ³n: %{z:.2f} Pa"
+                        hover_text = "Presión: %{z:.2f} Pa"
                         
                     cs_name = "Jet"
 
@@ -3154,11 +3154,11 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
                         
                         if plot_type == "Contour Suavizado":
                             dtick_val = None
-                            if "P_âˆž" in var_2d_sel: 
+                            if "P_∞" in var_2d_sel: 
                                 dtick_val = 1
-                            elif "V_âˆž" in var_2d_sel:
+                            elif "V_∞" in var_2d_sel:
                                 dtick_val = 0.1
-                            elif "Ï_âˆž" in var_2d_sel:
+                            elif "�?_∞" in var_2d_sel:
                                 dtick_val = 0.05
                             
                             c_args = dict(showlines=False)
@@ -3181,7 +3181,7 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
                             ))
 
                         fig.update_layout(
-                            title=dict(text=f"ProyecciÃ³n Espacial 2D: PresiÃ³n [Pa]", font=dict(size=20, color="white")),
+                            title=dict(text=f"Proyección Espacial 2D: Presión [Pa]", font=dict(size=20, color="white")),
                             xaxis_title=dict(text=f"Envergadura (Y) [{eje_label}]", font=dict(color="white")),
                             yaxis_title=dict(text=f"Altura (Z) [{eje_label}]", font=dict(color="white")),
                             paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
@@ -3191,7 +3191,7 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
                             margin=dict(l=60, r=60, t=60, b=60),
                             height=800
                         )
-                        # Ancla fÃ­sica de ejes. Garantiza que la matriz mida proporcionalmente 1:1 en la pantalla
+                        # Ancla física de ejes. Garantiza que la matriz mida proporcionalmente 1:1 en la pantalla
                         fig.update_xaxes(scaleanchor="y", scaleratio=1, showgrid=True, gridcolor="rgba(255,255,255,0.1)")
                         fig.update_yaxes(showgrid=True, gridcolor="rgba(255,255,255,0.1)")
 
@@ -3202,26 +3202,26 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
                         }, key=plot_key)
                         col_info, col_btn = st.columns([0.8, 0.2])
                         with col_info:
-                            st.info("ðŸ’¡ **GrÃ¡fico FÃ­sico Proporcional:** Para borrar un dibujo puedes usar el botÃ³n la Goma (Erase active shape) en el menÃº del grÃ¡fico.")
+                            st.info("💡 **Gráfico Físico Proporcional:** Para borrar un dibujo puedes usar el botón la Goma (Erase active shape) en el menú del gráfico.")
                         with col_btn:
-                            if st.button("ðŸ§¹ Limpiar Dibujos", key="btn_clear_trazos", use_container_width=True):
+                            if st.button("🧹 Limpiar Dibujos", key="btn_clear_trazos", use_container_width=True):
                                 st.session_state.plot_2d_key = st.session_state.get('plot_2d_key', 0) + 1
                                 st.rerun()
                     except Exception as e:
-                        st.error(f"Error trazando proyecciones cÃºbicas: {e}")
+                        st.error(f"Error trazando proyecciones cúbicas: {e}")
 
         # --- GUARDAR MATRIZ 2D EN DRIVE ---
         st.markdown("---")
         st.markdown("""
         <div class="section-card" style="margin-bottom: 20px;">
-            <h3 style="margin-top: 0; color: white;">â˜ï¸ PASO 4: GUARDAR MATRIZ EN DRIVE (2D)</h3>
+            <h3 style="margin-top: 0; color: white;">�?�? PASO 4: GUARDAR MATRIZ EN DRIVE (2D)</h3>
             <p style="color: #bbb; margin-bottom: 0;">Guarda la matriz de presiones del plano seleccionado en <b>ENSAYO DE ESTELA / 2D</b>.</p>
         </div>
         """, unsafe_allow_html=True)
         if not df_matriz.empty:
             c_2d_a, c_2d_b = st.columns(2)
-            aoa_2d = c_2d_a.number_input("Ãngulo de Ataque [Â°]:", value=0.0, step=0.5, format="%.1f", key="aoa_2d_paso4")
-            x_2d = c_2d_b.number_input("ðŸ“ PosiciÃ³n X (EstaciÃ³n) [mm]:", value=0.0, step=10.0, key="x_2d_paso4")
+            aoa_2d = c_2d_a.number_input("�?ngulo de Ataque [°]:", value=0.0, step=0.5, format="%.1f", key="aoa_2d_paso4")
+            x_2d = c_2d_b.number_input("�? Posición X (Estación) [mm]:", value=0.0, step=10.0, key="x_2d_paso4")
 
             _aoa_str_2d = str(int(aoa_2d)) if aoa_2d == int(aoa_2d) else f"{aoa_2d:.1f}"
             _aoa_str_2d = _aoa_str_2d.replace("-", "neg")
@@ -3240,21 +3240,21 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
             csv_bytes_2d = df_matriz.to_csv(sep=';', index=False, decimal=',').encode('utf-8-sig')
             col_2d_dl, col_2d_drive = st.columns(2)
             with col_2d_dl:
-                st.download_button("ðŸ“¥ Descargar Matriz 2D", csv_bytes_2d,
+                st.download_button("📥 Descargar Matriz 2D", csv_bytes_2d,
                                    file_name=nombre_csv_2d, mime="text/csv", key="dl_2d_matriz")
             with col_2d_drive:
-                if st.button("â˜ï¸ Guardar en Drive (2D)", key="save_2d_drive", use_container_width=True):
+                if st.button("�?�? Guardar en Drive (2D)", key="save_2d_drive", use_container_width=True):
                     if auth.save_csv_2d(st.session_state.username, nombre_csv_2d, csv_bytes_2d):
-                        st.success(f"âœ… Subido a Drive â†’ ENSAYO DE ESTELA/2D/{nombre_csv_2d}")
+                        st.success(f"✅ Subido a Drive → ENSAYO DE ESTELA/2D/{nombre_csv_2d}")
                     else:
                         st.error("Error al subir a Drive")
 
-    # --- PASO 5: ANÃLISIS DE PARÃMETROS ATMOSFÃ‰RICOS (INFINITO) ---
+    # --- PASO 5: AN�?LISIS DE PAR�?METROS ATMOSFÉRICOS (INFINITO) ---
     if _archivos_mem_2d:
         st.markdown("---")
         st.markdown("""
         <div class="section-card" style="margin-bottom: 20px;">
-            <h3 style="margin-top: 0; color: white;">ðŸ“Š PASO 5: ANÃLISIS DE PARÃMETROS ATMOSFÃ‰RICOS (INFINITO)</h3>
+            <h3 style="margin-top: 0; color: white;">📊 PASO 5: AN�?LISIS DE PAR�?METROS ATMOSFÉRICOS (INFINITO)</h3>
             <p style="color: #bbb; margin-bottom: 0;">Analice la estabilidad de las variables en el infinito durante todo el ensayo.</p>
         </div>
         """, unsafe_allow_html=True)
@@ -3271,7 +3271,7 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
                 inf_data_list.append(tmp_df)
         
         if not inf_data_list:
-            st.warning("âš ï¸ No se detectaron metadatos temporales en los archivos actuales. Por favor, selecciona los archivos y vuelve a cargarlos para activar este anÃ¡lisis.")
+            st.warning("⚠�? No se detectaron metadatos temporales en los archivos actuales. Por favor, selecciona los archivos y vuelve a cargarlos para activar este análisis.")
         else:
             df_inf_global = pd.concat(inf_data_list).drop_duplicates()
             # Formato real del timestamp: DDMMYYHHMMSS (ej: 260424144919 = 26/04/2024 14:49:19)
@@ -3291,30 +3291,30 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
             
             c_inf_1, c_inf_2 = st.columns([1, 2])
             with c_inf_1:
-                options_inf = ["Ï_âˆž", "V_âˆž", "P_âˆž", "T_âˆž"]
+                options_inf = ["�?_∞", "V_∞", "P_∞", "T_∞"]
                 # Filtrar opciones si el archivo es viejo y no tiene T_inf
                 if 'T_inf' not in df_inf_global.columns:
                     st.caption("Nota: Temperatura no disponible en estos datos.")
-                    options_inf.remove("T_âˆž")
+                    options_inf.remove("T_∞")
                 
-                var_inf_plot = st.selectbox("Variable AtmosfÃ©rica:", options_inf, key="var_inf_plot")
-                tipo_inf_plot = st.radio("Tipo de AnÃ¡lisis:", ["EvoluciÃ³n Temporal", "DistribuciÃ³n Normal"], key="tipo_inf_plot")
+                var_inf_plot = st.selectbox("Variable Atmosférica:", options_inf, key="var_inf_plot")
+                tipo_inf_plot = st.radio("Tipo de Análisis:", ["Evolución Temporal", "Distribución Normal"], key="tipo_inf_plot")
                 
                 # Map variable name
-                inf_col_map = {"Ï_âˆž": "rho_inf", "V_âˆž": "V_inf", "P_âˆž": "P_inf", "T_âˆž": "T_inf"}
+                inf_col_map = {"�?_∞": "rho_inf", "V_∞": "V_inf", "P_∞": "P_inf", "T_∞": "T_inf"}
                 col_plot = inf_col_map[var_inf_plot]
-                unit_plot = {"Ï_âˆž": "[kg/mÂ³]", "V_âˆž": "[m/s]", "P_âˆž": "[Pa]", "T_âˆž": "[Â°C]"}[var_inf_plot]
+                unit_plot = {"�?_∞": "[kg/m³]", "V_∞": "[m/s]", "P_∞": "[Pa]", "T_∞": "[°C]"}[var_inf_plot]
 
             with c_inf_2:
-                if tipo_inf_plot == "EvoluciÃ³n Temporal":
+                if tipo_inf_plot == "Evolución Temporal":
                     fig_inf = px.line(df_inf_global, x='Tiempo_Relativo_s', y=col_plot, 
-                                     title=f"EvoluciÃ³n de {var_inf_plot} vs Tiempo",
+                                     title=f"Evolución de {var_inf_plot} vs Tiempo",
                                      labels={'Tiempo_Relativo_s': 'Tiempo [s]', col_plot: f"{var_inf_plot} {unit_plot}"},
                                      markers=True)
                     fig_inf.update_traces(line_color='#00d1ff')
                 else:
                     fig_inf = px.histogram(df_inf_global, x=col_plot, 
-                                          title=f"DistribuciÃ³n de {var_inf_plot}",
+                                          title=f"Distribución de {var_inf_plot}",
                                           labels={col_plot: f"{var_inf_plot} {unit_plot}"},
                                           marginal="box",
                                           opacity=0.7)
@@ -3326,17 +3326,17 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
 
 elif st.session_state.seccion_actual == 'analisis_vortices':
 
-    # â”€â”€ MOTOR DE DETECCIÃ“N AUTOMÃTICA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── MOTOR DE DETECCIÓN AUTOM�?TICA ────────────────────────────────────────
     def _detectar_vortices(y_data, z_data, p_data):
         """
-        DetecciÃ³n automÃ¡tica de vÃ³rtices basada en fÃ­sica.
+        Detección automática de vórtices basada en física.
         Discriminadores clave:
-          1. Circularidad radial  â†’ vÃ³rtice = mÃ­nimo rodeado en TODAS las dir.
-          2. Aspecto compacto     â†’ vÃ³rtice â‰  banda elongada (estela/soporte)
-          3. Profundidad mÃ­nima   â†’ evita ruido
-          4. TamaÃ±o razonable     â†’ evita ruido pequeÃ±o y la estela completa
-          5. SimetrÃ­a en Y        â†’ los vÃ³rtices de punta de ala son simÃ©tricos
-        Sin parÃ¡metros de usuario.
+          1. Circularidad radial  → vórtice = mínimo rodeado en TODAS las dir.
+          2. Aspecto compacto     → vórtice ≠ banda elongada (estela/soporte)
+          3. Profundidad mínima   → evita ruido
+          4. Tamaño razonable     → evita ruido pequeño y la estela completa
+          5. Simetría en Y        → los vórtices de punta de ala son simétricos
+        Sin parámetros de usuario.
         """
         from scipy.interpolate import griddata as _gd
         from scipy.ndimage import gaussian_filter, minimum_filter
@@ -3374,7 +3374,7 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
 
         N_ANG   = 24
         MAX_R   = int(GRID * 0.28)
-        REC_THR = 0.65          # recuperaciÃ³n del 65 % de la profundidad
+        REC_THR = 0.65          # recuperación del 65 % de la profundidad
         angles  = np.linspace(0, 2 * np.pi, N_ANG, endpoint=False)
         sins    = np.sin(angles)
         coss    = np.cos(angles)
@@ -3402,10 +3402,10 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                 if found is not None:
                     radii.append(found)
 
-            # si muchas direcciones tocan el borde â†’ no es aislado
+            # si muchas direcciones tocan el borde → no es aislado
             if n_boundary > N_ANG // 3:
                 continue
-            # si menos del 55 % de las direcciones recuperan â†’ estela / soporte
+            # si menos del 55 % de las direcciones recuperan → estela / soporte
             if len(radii) < N_ANG * 0.55:
                 continue
 
@@ -3415,7 +3415,7 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
             cov    = r_std / (r_mean + 1e-6)
             compactness = max(0.0, 1.0 - cov * 2.2)
 
-            # muy elongado (CoV alto) â†’ estela
+            # muy elongado (CoV alto) → estela
             if compactness < 0.20:
                 continue
 
@@ -3427,7 +3427,7 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
 
             score = compactness * 0.55 + min(depth / p_range * 2, 1.0) * 0.45
 
-            # semi-ejes estimados por proyecciÃ³n de los radios muestreados
+            # semi-ejes estimados por proyección de los radios muestreados
             ang_used = angles[:len(radii)]
             semi_y = float(np.mean(r_arr * np.abs(np.cos(ang_used)))) * dy
             semi_z = float(np.mean(r_arr * np.abs(np.sin(ang_used)))) * dz
@@ -3446,7 +3446,7 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
         if not scored:
             return [], Pg, y_lin, z_lin
 
-        # NMS â€“ eliminar duplicados cercanos
+        # NMS – eliminar duplicados cercanos
         scored.sort(key=lambda x: -x['score'])
         min_sep = GRID * 0.07
         selected = []
@@ -3455,7 +3455,7 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                 selected.append(c)
         selected = selected[:8]
 
-        # Emparejamiento simÃ©trico (bonus de puntuaciÃ³n)
+        # Emparejamiento simétrico (bonus de puntuación)
         sym_tol_y = (y_lin[-1] - y_lin[0]) * 0.09
         sym_tol_z = (z_lin[-1] - z_lin[0]) * 0.09
         paired = set()
@@ -3472,7 +3472,7 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                     selected[j]['has_pair'] = True
                     break
 
-        # Construir polÃ­gonos elÃ­pticos para visualizaciÃ³n
+        # Construir polígonos elípticos para visualización
         vortices = []
         for v in selected:
             th = np.linspace(0, 2 * np.pi, 120)
@@ -3495,15 +3495,15 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
             })
 
         return vortices, Pg, y_lin, z_lin
-    # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ─────────────────────────────────────────────────────────────────────────
 
     st.markdown("""
         <div class="header-container">
             <h1 style="font-size: 3rem; margin-bottom: 1rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
-            ðŸŒ€ ANÃLISIS DE VÃ“RTICES
+            🌀 AN�?LISIS DE VÓRTICES
             </h1>
             <h2 style="font-size: 1.8rem; margin-bottom: 0; opacity: 0.9;">
-            DetecciÃ³n AutomÃ¡tica Basada en FÃ­sica Â· Sin ConfiguraciÃ³n
+            Detección Automática Basada en Física · Sin Configuración
             </h2>
         </div>
     """, unsafe_allow_html=True)
@@ -3511,20 +3511,20 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
     st.markdown("""
     <div style="background:#0d1f35;border:1px solid #1e4060;border-radius:8px;padding:12px;margin-bottom:16px;">
     <p style="color:#93c5fd;margin:0;font-size:0.88rem;">
-    ðŸ§  <b>Motor automÃ¡tico:</b> detecta vÃ³rtices por su forma circular, aislamiento radial y simetrÃ­a.
-    Rechaza automÃ¡ticamente la estela (elongada), el soporte (central) y el ruido (demasiado pequeÃ±o/grande).
+    🧠 <b>Motor automático:</b> detecta vórtices por su forma circular, aislamiento radial y simetría.
+    Rechaza automáticamente la estela (elongada), el soporte (central) y el ruido (demasiado pequeño/grande).
     </p></div>
     """, unsafe_allow_html=True)
 
     fuente_vortices = st.radio(
         "Fuente de datos:",
-        ["ðŸ“ Subir CSV (Y, Z, Presion)", "ðŸ§  Desde Archivos 2D en Memoria", "â˜ï¸ Cargar desde Drive"],
+        ["�? Subir CSV (Y, Z, Presion)", "🧠 Desde Archivos 2D en Memoria", "�?�? Cargar desde Drive"],
         horizontal=True, key="fuente_vortices_v2"
     )
 
     df_matriz = pd.DataFrame()
 
-    if fuente_vortices == "ðŸ“ Subir CSV (Y, Z, Presion)":
+    if fuente_vortices == "�? Subir CSV (Y, Z, Presion)":
         up_csv = st.file_uploader("CSV con columnas Y, Z, Presion (sep=; dec=,)", type=['csv'], key="up_csv_vortex")
         if up_csv:
             try:
@@ -3532,16 +3532,16 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                 if not {'Y','Z','Presion'}.issubset(df_matriz.columns):
                     df_matriz = pd.read_csv(up_csv, sep=',', decimal='.')
                 if not {'Y','Z','Presion'}.issubset(df_matriz.columns):
-                    st.error("âŒ El CSV debe tener columnas: Y, Z, Presion")
+                    st.error("�?� El CSV debe tener columnas: Y, Z, Presion")
                     df_matriz = pd.DataFrame()
                 else:
-                    st.success(f"âœ… {len(df_matriz)} puntos cargados")
+                    st.success(f"✅ {len(df_matriz)} puntos cargados")
             except Exception as _e:
                 st.error(f"Error leyendo CSV: {_e}")
 
-    elif fuente_vortices == "ðŸ§  Desde Archivos 2D en Memoria":
+    elif fuente_vortices == "🧠 Desde Archivos 2D en Memoria":
         if 'archivos_2d_cargados' not in st.session_state or not st.session_state.archivos_2d_cargados:
-            st.warning("âš ï¸ No hay matrices en memoria. CargÃ¡ primero desde Vis. Estela 2D.")
+            st.warning("⚠�? No hay matrices en memoria. Cargá primero desde Vis. Estela 2D.")
         else:
             archivo_sel = st.selectbox("Archivo:", list(st.session_state.archivos_2d_cargados.keys()), key="sel_arch_vort")
             df_selected = st.session_state.archivos_2d_cargados[archivo_sel]
@@ -3566,7 +3566,7 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                         results_2d.append({'Y': y_trav, 'Z': z_real, 'Presion': val_p})
             df_matriz = pd.DataFrame(results_2d)
             if not df_matriz.empty:
-                st.success(f"âœ… {len(df_matriz)} puntos ensamblados")
+                st.success(f"✅ {len(df_matriz)} puntos ensamblados")
 
     else:  # Drive
         try:
@@ -3586,19 +3586,19 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                     if not {'Y','Z','Presion'}.issubset(df_matriz.columns):
                         df_matriz = pd.read_csv(_io.BytesIO(raw), sep=',', decimal='.')
                     if {'Y','Z','Presion'}.issubset(df_matriz.columns):
-                        st.success(f"âœ… {len(df_matriz)} puntos desde Drive")
+                        st.success(f"✅ {len(df_matriz)} puntos desde Drive")
                     else:
-                        st.error("âŒ Columnas Y, Z, Presion no encontradas")
+                        st.error("�?� Columnas Y, Z, Presion no encontradas")
                         df_matriz = pd.DataFrame()
 
-    # â”€â”€ EJECUCIÃ“N AUTOMÃTICA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── EJECUCIÓN AUTOM�?TICA ────────────────────────────────────────────────
     if not df_matriz.empty and {'Y','Z','Presion'}.issubset(df_matriz.columns):
 
         df_clean = df_matriz[['Y','Z','Presion']].dropna()
         if len(df_clean) < 10:
-            st.error("Insuficientes puntos vÃ¡lidos para la detecciÃ³n.")
+            st.error("Insuficientes puntos válidos para la detección.")
         else:
-            with st.spinner("ðŸ” Detectando vÃ³rtices automÃ¡ticamente..."):
+            with st.spinner("�? Detectando vórtices automáticamente..."):
                 try:
                     vortices, P_grid, y_lin, z_lin = _detectar_vortices(
                         df_clean['Y'].values,
@@ -3606,27 +3606,27 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                         df_clean['Presion'].values
                     )
                 except Exception as _ex:
-                    st.error(f"Error en detecciÃ³n: {_ex}")
+                    st.error(f"Error en detección: {_ex}")
                     vortices, P_grid, y_lin, z_lin = [], None, None, None
 
             if P_grid is None:
-                st.warning("No se pudo interpolar el campo de presiÃ³n.")
+                st.warning("No se pudo interpolar el campo de presión.")
             else:
                 p_bg = float(np.nanpercentile(P_grid, 97))
                 y_plot_raw = df_clean['Y'].values
                 y_mid_sym  = (y_plot_raw.min() + y_plot_raw.max()) / 2.0
 
-                # â”€â”€ GRÃFICO PRINCIPAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                # ── GR�?FICO PRINCIPAL ───────────────────────────────────────
                 n_det = len(vortices)
                 if n_det == 0:
-                    st.warning("âš ï¸ No se detectaron vÃ³rtices. El campo de presiÃ³n no presenta mÃ­nimos circulares aislados.")
+                    st.warning("⚠�? No se detectaron vórtices. El campo de presión no presenta mínimos circulares aislados.")
                 else:
-                    st.success(f"âœ… {n_det} vÃ³rtice{'s' if n_det>1 else ''} detectado{'s' if n_det>1 else ''}")
+                    st.success(f"✅ {n_det} vórtice{'s' if n_det>1 else ''} detectado{'s' if n_det>1 else ''}")
 
-                st.markdown("### ðŸ“Š Campo de PresiÃ³n y VÃ³rtices Detectados")
+                st.markdown("### 📊 Campo de Presión y Vórtices Detectados")
                 fig = go.Figure()
 
-                # Fondo: campo de presiÃ³n
+                # Fondo: campo de presión
                 fig.add_trace(go.Contour(
                     x=y_lin, y=z_lin, z=P_grid,
                     colorscale='Jet',
@@ -3638,7 +3638,7 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                 colors = ['#ffffff','#ffff00','#00ff88','#ff6600','#ff00ff','#00cfff','#ff4444','#44ff44']
                 for k, v in enumerate(vortices):
                     col = colors[k % len(colors)]
-                    label_extra = " ðŸ”—par" if v['has_pair'] else ""
+                    label_extra = " 🔗par" if v['has_pair'] else ""
                     fig.add_trace(go.Scatter(
                         x=v['poly_y'], y=v['poly_z'],
                         mode='lines', fill='toself',
@@ -3648,7 +3648,7 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                         hovertemplate=(
                             f"<b>{v['id']}</b><br>"
                             f"Centro: ({v['y']:.1f}, {v['z']:.1f}) mm<br>"
-                            f"Î”P: {v['depth']:.2f} Pa<br>"
+                            f"ΔP: {v['depth']:.2f} Pa<br>"
                             f"Circularidad: {v['compactness']:.2f}<extra></extra>"
                         )
                     ))
@@ -3659,10 +3659,10 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                         text=[v['id']], textposition='top center',
                         textfont=dict(color=col, size=13, family='Orbitron'),
                         showlegend=False,
-                        hovertemplate=f"NÃºcleo {v['id']}<br>P={v['p_min']:.2f} Pa<extra></extra>"
+                        hovertemplate=f"Núcleo {v['id']}<br>P={v['p_min']:.2f} Pa<extra></extra>"
                     ))
 
-                # LÃ­nea de simetrÃ­a
+                # Línea de simetría
                 fig.add_vline(
                     x=y_mid_sym, line=dict(color='cyan', width=1.5, dash='dash'),
                     annotation_text=f"Eje Y={y_mid_sym:.0f}mm", annotation_font_color='cyan'
@@ -3677,26 +3677,26 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                 fig.update_xaxes(scaleanchor="y", scaleratio=1)
                 st.plotly_chart(fig, use_container_width=True)
 
-                # â”€â”€ TABLA DE RESULTADOS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                # ── TABLA DE RESULTADOS ─────────────────────────────────────
                 if vortices:
-                    st.markdown("### ðŸ“‹ VÃ³rtices Detectados")
+                    st.markdown("### 📋 Vórtices Detectados")
                     df_v = pd.DataFrame([{
                         "ID"              : v['id'],
                         "Centro Y [mm]"   : round(v['y'], 2),
                         "Centro Z [mm]"   : round(v['z'], 2),
-                        "P nÃºcleo [Pa]"   : round(v['p_min'], 2),
-                        "Î”P â†’ Pâˆž [Pa]"   : round(v['depth'], 2),
+                        "P núcleo [Pa]"   : round(v['p_min'], 2),
+                        "ΔP → P∞ [Pa]"   : round(v['depth'], 2),
                         "Semi-eje Y [mm]" : v['semi_y'],
                         "Semi-eje Z [mm]" : v['semi_z'],
-                        "Ãrea [mmÂ²]"      : round(v['area'], 2),
+                        "�?rea [mm²]"      : round(v['area'], 2),
                         "R equiv. [mm]"   : round(np.sqrt(v['area'] / np.pi), 2),
                         "Circularidad"    : v['compactness'],
-                        "Par simÃ©trico"   : "âœ…" if v['has_pair'] else "â€”",
+                        "Par simétrico"   : "✅" if v['has_pair'] else "—",
                     } for v in vortices])
                     st.dataframe(df_v, use_container_width=True, hide_index=True)
 
-                    # â”€â”€ CIRCULACIÃ“N â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-                    st.markdown("### ðŸŒ€ EstimaciÃ³n de CirculaciÃ³n (Î“)")
+                    # ── CIRCULACIÓN ─────────────────────────────────────────
+                    st.markdown("### 🌀 Estimación de Circulación (Γ)")
                     rho_v = 1.225
                     V_v   = 30.0
                     if 'df_inf_global' in dir() or 'df_inf_global' in locals():
@@ -3705,41 +3705,41 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                             V_v   = float(df_inf_global['V_inf'].mean())
                         except Exception:
                             pass
-                    st.caption(f"Ïâˆž = {rho_v:.3f} kg/mÂ³  |  Vâˆž = {V_v:.2f} m/s")
+                    st.caption(f"�?∞ = {rho_v:.3f} kg/m³  |  V∞ = {V_v:.2f} m/s")
                     df_gamma = pd.DataFrame([{
                         "ID"     : v['id'],
-                        "Î“ [mÂ²/s]": round(
+                        "Γ [m²/s]": round(
                             np.sqrt(2 * abs(v['depth']) / (rho_v + 1e-9))
                             * (np.sqrt(v['area'] / np.pi) / 1000), 4)
                     } for v in vortices])
                     st.table(df_gamma)
 
-                    # â”€â”€ GEOMETRÃA INTER-CENTROS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                    # ── GEOMETR�?A INTER-CENTROS ─────────────────────────────
                     if len(vortices) > 1:
-                        st.markdown("#### ðŸ“ Distancias entre NÃºcleos")
+                        st.markdown("#### �? Distancias entre Núcleos")
                         pairs_dist = []
                         for i in range(len(vortices)):
                             for j in range(i+1, len(vortices)):
                                 dy_ = vortices[i]['y'] - vortices[j]['y']
                                 dz_ = vortices[i]['z'] - vortices[j]['z']
                                 pairs_dist.append({
-                                    "Enlace": f"{vortices[i]['id']} â†” {vortices[j]['id']}",
-                                    "Î”Y [mm]": round(abs(dy_), 2),
-                                    "Î”Z [mm]": round(abs(dz_), 2),
+                                    "Enlace": f"{vortices[i]['id']} ↔ {vortices[j]['id']}",
+                                    "ΔY [mm]": round(abs(dy_), 2),
+                                    "ΔZ [mm]": round(abs(dz_), 2),
                                     "Dist. [mm]": round(np.hypot(dy_, dz_), 2)
                                 })
                         st.table(pd.DataFrame(pairs_dist))
 
-                    # â”€â”€ SIMETRÃA Y GUIÃ‘ADA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                    # ── SIMETR�?A Y GUIÑADA ──────────────────────────────────
                     st.markdown("---")
-                    st.markdown("### âš–ï¸ AnÃ¡lisis de SimetrÃ­a â€” EstimaciÃ³n de GuiÃ±ada (Î²)")
+                    st.markdown("### ⚖�? Análisis de Simetría — Estimación de Guiñada (β)")
                     y_min_d, y_max_d = y_plot_raw.min(), y_plot_raw.max()
                     st.markdown(f"""
                     <div style="background:#0d1f35;border:1px solid #1e4060;border-radius:8px;padding:12px;margin-bottom:12px;">
                     <p style="color:#93c5fd;font-size:0.85rem;margin:0;line-height:1.8;">
-                    <b>Eje de simetrÃ­a Y:</b> {y_mid_sym:.1f} mm
-                    (rango [{y_min_d:.1f} â†’ {y_max_d:.1f}] mm)<br>
-                    Si Ãrea izquierda â‰  Ãrea derecha â†’ posible guiÃ±ada Î² â‰  0.
+                    <b>Eje de simetría Y:</b> {y_mid_sym:.1f} mm
+                    (rango [{y_min_d:.1f} → {y_max_d:.1f}] mm)<br>
+                    Si �?rea izquierda ≠ �?rea derecha → posible guiñada β ≠ 0.
                     </p></div>
                     """, unsafe_allow_html=True)
 
@@ -3747,11 +3747,11 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                     area_der = sum(v['area'] for v in vortices if v['y'] >= y_mid_sym)
 
                     area_desg = [{
-                        "VÃ³rtice"       : v['id'],
+                        "Vórtice"       : v['id'],
                         "Centro Y [mm]" : round(v['y'], 2),
                         "Centro Z [mm]" : round(v['z'], 2),
-                        "Ãrea [mmÂ²]"    : round(v['area'], 2),
-                        "Semiplano"     : "Izquierda (Y<mid)" if v['y'] < y_mid_sym else "Derecha (Yâ‰¥mid)"
+                        "�?rea [mm²]"    : round(v['area'], 2),
+                        "Semiplano"     : "Izquierda (Y<mid)" if v['y'] < y_mid_sym else "Derecha (Y≥mid)"
                     } for v in vortices]
                     st.dataframe(pd.DataFrame(area_desg), use_container_width=True, hide_index=True)
 
@@ -3760,33 +3760,33 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                         asim     = (area_der - area_izq) / total_area
                         beta_est = asim * 15.0
                         col_iz, col_der, col_asim, col_beta = st.columns(4)
-                        col_iz.metric("Ãrea Izquierda [mmÂ²]", f"{area_izq:.1f}")
-                        col_der.metric("Ãrea Derecha [mmÂ²]",  f"{area_der:.1f}")
-                        col_asim.metric("AsimetrÃ­a (Â±1)", f"{asim:+.3f}")
-                        col_beta.metric("Î² estimado [Â°]",  f"{beta_est:+.2f}Â°")
+                        col_iz.metric("�?rea Izquierda [mm²]", f"{area_izq:.1f}")
+                        col_der.metric("�?rea Derecha [mm²]",  f"{area_der:.1f}")
+                        col_asim.metric("Asimetría (±1)", f"{asim:+.3f}")
+                        col_beta.metric("β estimado [°]",  f"{beta_est:+.2f}°")
                         st.markdown(f"""
                         <div style="background:#111;border-radius:8px;padding:12px;margin-top:8px;">
-                        <p style="color:#aaa;margin:0 0 6px 0;font-size:0.8rem;">DistribuciÃ³n â† Izquierda | Derecha â†’</p>
+                        <p style="color:#aaa;margin:0 0 6px 0;font-size:0.8rem;">Distribución �? Izquierda | Derecha →</p>
                         <div style="display:flex;height:20px;border-radius:4px;overflow:hidden;">
                         <div style="background:#ef4444;width:{50*(1+asim):.1f}%;"></div>
                         <div style="background:#3b82f6;width:{50*(1-asim):.1f}%;"></div>
                         </div>
                         <div style="display:flex;justify-content:space-between;margin-top:4px;">
-                        <span style="color:#ef4444;font-size:0.75rem;">Izq {area_izq:.0f} mmÂ²</span>
-                        <span style="color:white;font-size:0.8rem;"><b>Î² â‰ˆ {beta_est:+.1f}Â°</b></span>
-                        <span style="color:#3b82f6;font-size:0.75rem;">{area_der:.0f} mmÂ² Der</span>
+                        <span style="color:#ef4444;font-size:0.75rem;">Izq {area_izq:.0f} mm²</span>
+                        <span style="color:white;font-size:0.8rem;"><b>β ≈ {beta_est:+.1f}°</b></span>
+                        <span style="color:#3b82f6;font-size:0.75rem;">{area_der:.0f} mm² Der</span>
                         </div></div>
                         """, unsafe_allow_html=True)
 
                         if abs(asim) < 0.05:
-                            st.success("âœ… DistribuciÃ³n simÃ©trica â€” sin guiÃ±ada detectada (Î² â‰ˆ 0Â°)")
+                            st.success("✅ Distribución simétrica — sin guiñada detectada (β ≈ 0°)")
                         elif abs(asim) < 0.15:
-                            st.warning(f"âš ï¸ Ligera asimetrÃ­a. Posible guiÃ±ada: Î² â‰ˆ {beta_est:+.1f}Â°")
+                            st.warning(f"⚠�? Ligera asimetría. Posible guiñada: β ≈ {beta_est:+.1f}°")
                         else:
-                            lado = "derecha (+Y)" if asim > 0 else "izquierda (âˆ’Y)"
-                            st.error(f"âŒ AsimetrÃ­a significativa en {lado}. Î² â‰ˆ {beta_est:+.1f}Â°")
+                            lado = "derecha (+Y)" if asim > 0 else "izquierda (−Y)"
+                            st.error(f"�?� Asimetría significativa en {lado}. β ≈ {beta_est:+.1f}°")
                     else:
-                        st.info("Sin Ã¡rea total detectable para el anÃ¡lisis de simetrÃ­a.")
+                        st.info("Sin área total detectable para el análisis de simetría.")
 
 
 
@@ -3794,23 +3794,23 @@ elif st.session_state.seccion_actual == 'ensayo_betz':
     st.markdown("""
         <div class="header-container">
             <h1 style="font-size: 3rem; margin-bottom: 1rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
-            ðŸ§ª ENSAYO DE BETZ
+            🧪 ENSAYO DE BETZ
             </h1>
             <h2 style="font-size: 1.8rem; margin-bottom: 0; opacity: 0.9;">
-            SecciÃ³n en desarrollo
+            Sección en desarrollo
             </h2>
         </div>
     """, unsafe_allow_html=True)
-    st.info("Esta secciÃ³n se encuentra actualmente en desarrollo y no contiene funcionalidades activas por el momento.")
+    st.info("Esta sección se encuentra actualmente en desarrollo y no contiene funcionalidades activas por el momento.")
 
 elif st.session_state.seccion_actual == 'modelos':
     st.markdown("""
     <div class="header-container">
         <h1 style="font-size: 3rem; margin-bottom: 1rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
-            ðŸ“¦ GESTOR DE MODELOS 3D
+            📦 GESTOR DE MODELOS 3D
         </h1>
         <h2 style="font-size: 1.8rem; margin-bottom: 0; opacity: 0.9;">
-            Importa o carga modelos de referencia para visualizaciÃ³n 4D
+            Importa o carga modelos de referencia para visualización 4D
         </h2>
     </div>
     """, unsafe_allow_html=True)
@@ -3823,16 +3823,16 @@ elif st.session_state.seccion_actual == 'modelos':
     if 'modelo_nombre_bd' not in st.session_state:
         st.session_state.modelo_nombre_bd = None  # None = nuevo, str = actualizar
 
-    # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    # LAYOUT PRINCIPAL: izq = configuraciÃ³n, der = preview
-    # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ─────────────────────────────────────────────────────────────────────────
+    # LAYOUT PRINCIPAL: izq = configuración, der = preview
+    # ─────────────────────────────────────────────────────────────────────────
     c_conf, c_preview = st.columns([1.2, 2])
 
     with c_conf:
 
-        # â”€â”€ SELECTOR DE MODO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        st.markdown("### ðŸ”½ Fuente del Modelo")
-        modo_opts = {"ðŸ—„ï¸ Cargar de Base de Datos": "bd", "ðŸ“‚ Importar Archivo (STL / CSV)": "importar"}
+        # ── SELECTOR DE MODO ──────────────────────────────────────────────
+        st.markdown("### 🔽 Fuente del Modelo")
+        modo_opts = {"🗄�? Cargar de Base de Datos": "bd", "📂 Importar Archivo (STL / CSV)": "importar"}
         modo_sel_label = st.radio(
             "Seleccionar fuente:",
             list(modo_opts.keys()),
@@ -3845,18 +3845,18 @@ elif st.session_state.seccion_actual == 'modelos':
 
         st.markdown("---")
 
-        # â”€â”€ MODO: CARGAR DE BASE DE DATOS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        # ── MODO: CARGAR DE BASE DE DATOS ────────────────────────────────
         if st.session_state.modelo_modo == 'bd':
             try:
                 saved_objs = auth.get_user_objects(st.session_state.username)
             except AttributeError:
-                st.error("Error: FunciÃ³n get_user_objects no encontrada en auth.py.")
+                st.error("Error: Función get_user_objects no encontrada en auth.py.")
                 saved_objs = []
 
             if not saved_objs:
                 st.info("No hay modelos guardados en la base de datos. Importa uno nuevo.")
             else:
-                obj_labels = {f"ðŸ“¦ {name} ({o_type}) â€” {f_date}": (obj_id, name, o_type, d_json, f_date)
+                obj_labels = {f"📦 {name} ({o_type}) — {f_date}": (obj_id, name, o_type, d_json, f_date)
                               for obj_id, name, o_type, d_json, f_date in saved_objs}
                 sel_label = st.selectbox("Seleccionar modelo guardado:", list(obj_labels.keys()), key="sel_modelo_bd")
                 
@@ -3873,7 +3873,7 @@ elif st.session_state.seccion_actual == 'modelos':
                     </div>
                     """, unsafe_allow_html=True)
 
-                    # Restaurar CG si estÃ¡ guardado en el JSON
+                    # Restaurar CG si está guardado en el JSON
                     try:
                         _data_preview = json.loads(d_json)
                         if 'cg' in _data_preview:
@@ -3884,7 +3884,7 @@ elif st.session_state.seccion_actual == 'modelos':
 
                     col_load, col_del = st.columns(2)
                     with col_load:
-                        if st.button("ðŸ“¥ Seleccionar este modelo", use_container_width=True, type="primary", key="btn_select_bd"):
+                        if st.button("📥 Seleccionar este modelo", use_container_width=True, type="primary", key="btn_select_bd"):
                             try:
                                 data_loaded = json.loads(d_json)
                                 data_loaded['x'] = np.array(data_loaded['x'])
@@ -3901,12 +3901,12 @@ elif st.session_state.seccion_actual == 'modelos':
                                 st.session_state.objeto_referencia_4d = data_loaded
                                 st.session_state.objeto_referencia_base = data_loaded.copy()
                                 st.session_state.modelo_nombre_bd = name
-                                st.success(f"âœ… '{name}' cargado.")
+                                st.success(f"✅ '{name}' cargado.")
                                 st.rerun()
                             except Exception as e:
                                 st.error(f"Error al cargar: {e}")
                     with col_del:
-                        if st.button("ðŸ—‘ï¸ Eliminar", use_container_width=True, key="btn_del_bd"):
+                        if st.button("🗑�? Eliminar", use_container_width=True, key="btn_del_bd"):
                             try:
                                 auth.delete_user_object(obj_id)
                                 st.session_state.modelo_nombre_bd = None
@@ -3914,16 +3914,16 @@ elif st.session_state.seccion_actual == 'modelos':
                             except:
                                 st.error("Error al eliminar")
 
-        # â”€â”€ MODO: IMPORTAR ARCHIVO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        # ── MODO: IMPORTAR ARCHIVO ────────────────────────────────────────
         else:
-            st.markdown("##### ðŸ“‚ Cargar Archivo STL o CSV")
-            st.caption("El modelo se importa con los ejes del archivo. Los desplazamientos y rotaciones se configuran desde la secciÃ³n 4D.")
+            st.markdown("##### 📂 Cargar Archivo STL o CSV")
+            st.caption("El modelo se importa con los ejes del archivo. Los desplazamientos y rotaciones se configuran desde la sección 4D.")
 
-            use_auto_center_imp = st.checkbox("ðŸ“ Auto-centrar objeto al importar (centroide â†’ origen)", value=True, key="auto_center_imp")
+            use_auto_center_imp = st.checkbox("�? Auto-centrar objeto al importar (centroide → origen)", value=True, key="auto_center_imp")
 
             file_obj = st.file_uploader("Cargar archivo (STL o CSV):", type=['csv', 'stl'], key="uploader_modelo_imp")
 
-            if file_obj and st.button("ðŸ“¥ Procesar e importar", type="primary", use_container_width=True, key="btn_importar_modelo"):
+            if file_obj and st.button("📥 Procesar e importar", type="primary", use_container_width=True, key="btn_importar_modelo"):
                 file_ext = file_obj.name.split('.')[-1].lower()
                 x_points = y_points = z_points = faces_i = faces_j = faces_k = None
                 obj_type = None
@@ -3971,54 +3971,54 @@ elif st.session_state.seccion_actual == 'modelos':
 
                         st.session_state.objeto_referencia_4d = obj_data
                         st.session_state.objeto_referencia_base = obj_data.copy()
-                        st.session_state.modelo_nombre_bd = None  # es nuevo â†’ botÃ³n GUARDAR
-                        st.success(f"âœ… Importado: {file_obj.name}")
+                        st.session_state.modelo_nombre_bd = None  # es nuevo → botón GUARDAR
+                        st.success(f"✅ Importado: {file_obj.name}")
                         st.rerun()
 
                 except Exception as e:
                     st.error(f"Error procesando archivo: {e}")
 
 
-        # â”€â”€ SISTEMA DE REFERENCIA Y CENTRO DE GRAVEDAD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        # ── SISTEMA DE REFERENCIA Y CENTRO DE GRAVEDAD ───────────────────
         if 'objeto_referencia_4d' in st.session_state:
             st.markdown("---")
             st.markdown("""
             <div style="background:#0a1628; border:1px solid #1e3a5f; border-radius:8px; padding:14px; margin-bottom:14px;">
-                <h4 style="color:#60a5fa; margin:0 0 8px 0;">ðŸ§­ Sistema de Referencia del Modelo</h4>
+                <h4 style="color:#60a5fa; margin:0 0 8px 0;">🧭 Sistema de Referencia del Modelo</h4>
                 <p style="color:#93c5fd; font-size:0.85rem; margin:0; line-height:1.6;">
-                    <b>Origen (Datum):</b> Nariz del aviÃ³n<br>
-                    <b>X+</b> â†’ hacia la cola &nbsp;|&nbsp; <b>Y+</b> â†’ semiala derecha &nbsp;|&nbsp; <b>Z+</b> â†’ techo
+                    <b>Origen (Datum):</b> Nariz del avión<br>
+                    <b>X+</b> → hacia la cola &nbsp;|&nbsp; <b>Y+</b> → semiala derecha &nbsp;|&nbsp; <b>Z+</b> → techo
                 </p>
             </div>
             """, unsafe_allow_html=True)
-            st.markdown("#### ðŸŽ¯ Centro de Gravedad (CG) â€” Punto de RotaciÃ³n")
-            st.caption("El CG define el pivote para el cabeceo (Alpha) y la guiÃ±ada (Beta) en la visualizaciÃ³n 4D.")
+            st.markdown("#### 🎯 Centro de Gravedad (CG) — Punto de Rotación")
+            st.caption("El CG define el pivote para el cabeceo (Alpha) y la guiñada (Beta) en la visualización 4D.")
 
             cg_cols = st.columns(3)
-            st.session_state.modelo_cg['x'] = cg_cols[0].number_input("CG â€” X [mm desde nariz]", value=float(st.session_state.modelo_cg.get('x', 0.0)), step=5.0, format="%.1f", key="cg_x")
-            st.session_state.modelo_cg['y'] = cg_cols[1].number_input("CG â€” Y [mm]", value=float(st.session_state.modelo_cg.get('y', 0.0)), step=5.0, format="%.1f", key="cg_y")
-            st.session_state.modelo_cg['z'] = cg_cols[2].number_input("CG â€” Z [mm]", value=float(st.session_state.modelo_cg.get('z', 0.0)), step=5.0, format="%.1f", key="cg_z")
+            st.session_state.modelo_cg['x'] = cg_cols[0].number_input("CG — X [mm desde nariz]", value=float(st.session_state.modelo_cg.get('x', 0.0)), step=5.0, format="%.1f", key="cg_x")
+            st.session_state.modelo_cg['y'] = cg_cols[1].number_input("CG — Y [mm]", value=float(st.session_state.modelo_cg.get('y', 0.0)), step=5.0, format="%.1f", key="cg_y")
+            st.session_state.modelo_cg['z'] = cg_cols[2].number_input("CG — Z [mm]", value=float(st.session_state.modelo_cg.get('z', 0.0)), step=5.0, format="%.1f", key="cg_z")
 
-            if st.button("ðŸ“ Auto-centrar CG (X=0, Y/Z = centroide del modelo)", use_container_width=True, key="btn_autocg"):
+            if st.button("�? Auto-centrar CG (X=0, Y/Z = centroide del modelo)", use_container_width=True, key="btn_autocg"):
                 obj_actual = st.session_state.objeto_referencia_4d
                 x_arr = np.array(obj_actual['x']); y_arr = np.array(obj_actual['y']); z_arr = np.array(obj_actual['z'])
                 st.session_state.modelo_cg['x'] = 0.0
                 st.session_state.modelo_cg['y'] = float((np.min(y_arr) + np.max(y_arr)) / 2)
                 st.session_state.modelo_cg['z'] = float((np.min(z_arr) + np.max(z_arr)) / 2)
-                st.success(f"âœ… CG auto-calculado: X=0, Y={st.session_state.modelo_cg['y']:.1f}, Z={st.session_state.modelo_cg['z']:.1f} mm")
+                st.success(f"✅ CG auto-calculado: X=0, Y={st.session_state.modelo_cg['y']:.1f}, Z={st.session_state.modelo_cg['z']:.1f} mm")
                 st.rerun()
 
-            # â”€â”€ NOMBRE DEL MODELO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            # ── NOMBRE DEL MODELO ────────────────────────────────────────
             st.markdown("---")
             nombre_actual = st.session_state.objeto_referencia_4d.get('name', 'MiModelo')
-            nombre_modelo = st.text_input("ðŸ“ Nombre del modelo:", value=nombre_actual, key="nombre_modelo_final")
+            nombre_modelo = st.text_input("�? Nombre del modelo:", value=nombre_actual, key="nombre_modelo_final")
 
-            # â”€â”€ BOTONES FINALES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            # ── BOTONES FINALES ──────────────────────────────────────────
             c_btn1, c_btn2 = st.columns(2)
 
             # GUARDAR / ACTUALIZAR
             es_existente = st.session_state.modelo_nombre_bd is not None
-            lbl_save = f"ðŸ”„ ACTUALIZAR '{st.session_state.modelo_nombre_bd}'" if es_existente else "ðŸ’¾ GUARDAR modelo"
+            lbl_save = f"🔄 ACTUALIZAR '{st.session_state.modelo_nombre_bd}'" if es_existente else "💾 GUARDAR modelo"
 
             with c_btn1:
                 if st.button(lbl_save, use_container_width=True, type="primary", key="btn_guardar_modelo"):
@@ -4034,23 +4034,23 @@ elif st.session_state.seccion_actual == 'modelos':
                     try:
                         json_str = json.dumps(obj_to_save, cls=NumpyEncoder)
                         if auth.save_user_object(st.session_state.username, nombre_modelo, obj_to_save['type'], json_str):
-                            st.success(f"âœ… '{nombre_modelo}' guardado en la BD.")
+                            st.success(f"✅ '{nombre_modelo}' guardado en la BD.")
                             st.session_state.modelo_nombre_bd = nombre_modelo
                         else:
                             st.error("Error al guardar en la base de datos.")
                     except Exception as e:
                         st.error(f"Error serializando: {e}")
 
-            # USAR EN LA PÃGINA
+            # USAR EN LA P�?GINA
             with c_btn2:
-                if st.button("âœ… USAR MODELO EN LA PÃGINA", use_container_width=True, key="btn_usar_modelo"):
+                if st.button("✅ USAR MODELO EN LA P�?GINA", use_container_width=True, key="btn_usar_modelo"):
                     st.session_state.objeto_referencia_4d['name'] = nombre_modelo
                     st.session_state.objeto_referencia_4d['cg'] = st.session_state.modelo_cg.copy()
-                    st.success(f"âœ… Modelo '{nombre_modelo}' activado. CG: X={st.session_state.modelo_cg['x']:.1f}, Y={st.session_state.modelo_cg['y']:.1f}, Z={st.session_state.modelo_cg['z']:.1f} mm")
+                    st.success(f"✅ Modelo '{nombre_modelo}' activado. CG: X={st.session_state.modelo_cg['x']:.1f}, Y={st.session_state.modelo_cg['y']:.1f}, Z={st.session_state.modelo_cg['z']:.1f} mm")
 
-    # â”€â”€ PREVIEW 3D â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── PREVIEW 3D ────────────────────────────────────────────────────────
     with c_preview:
-        st.markdown("### ðŸ‘ï¸ Vista Previa 3D")
+        st.markdown("### �?�? Vista Previa 3D")
         if 'objeto_referencia_4d' in st.session_state:
             obj = st.session_state.objeto_referencia_4d
             cg = st.session_state.modelo_cg
@@ -4102,9 +4102,9 @@ elif st.session_state.seccion_actual == 'modelos':
             st.markdown(f"""
             <div style="background:#111; border:1px solid #333; border-radius:8px; padding:12px; margin-top:8px;">
                 <p style="color:#888; margin:0; font-size:0.8rem;">Modelo activo</p>
-                <p style="color:white; font-weight:bold; margin:0 0 6px 0;">{obj.get('name','â€”')}</p>
+                <p style="color:white; font-weight:bold; margin:0 0 6px 0;">{obj.get('name','—')}</p>
                 <p style="color:#aaa; margin:0; font-size:0.8rem;">
-                    Tipo: {obj.get('type','â€”')} | VÃ©rtices: {len(x_arr):,}<br>
+                    Tipo: {obj.get('type','—')} | Vértices: {len(x_arr):,}<br>
                     X: [{np.min(x_arr):.1f}, {np.max(x_arr):.1f}] mm<br>
                     Y: [{np.min(y_arr):.1f}, {np.max(y_arr):.1f}] mm<br>
                     Z: [{np.min(z_arr):.1f}, {np.max(z_arr):.1f}] mm
@@ -4114,55 +4114,55 @@ elif st.session_state.seccion_actual == 'modelos':
         else:
             st.markdown("""
             <div style="background:#0a0a0a; border:2px dashed #333; border-radius:12px; padding:3rem; text-align:center; margin-top:2rem;">
-                <p style="font-size:3rem; margin:0;">ðŸ“¦</p>
-                <p style="color:#666; margin:8px 0 0 0;">NingÃºn modelo cargado aÃºn.<br>Carga uno desde la base de datos o importa un archivo STL/CSV.</p>
+                <p style="font-size:3rem; margin:0;">📦</p>
+                <p style="color:#666; margin:8px 0 0 0;">Ningún modelo cargado aún.<br>Carga uno desde la base de datos o importa un archivo STL/CSV.</p>
             </div>
             """, unsafe_allow_html=True)
 
 
 
 elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual == 'betz_3d':
-    st.markdown("# ðŸŒªï¸ VISUALIZACIÃ“N DE ESTELA 3D - AnÃ¡lisis Tridimensional")
-    st.markdown("AnÃ¡lisis 3D con superficie interactiva de presiones")
+    st.markdown("# 🌪�? VISUALIZACIÓN DE ESTELA 3D - Análisis Tridimensional")
+    st.markdown("Análisis 3D con superficie interactiva de presiones")
     
-    # Paso 1: ConfiguraciÃ³n inicial
-    with st.expander("ðŸ’¾ PASO 1: ConfiguraciÃ³n de GeometrÃ­a y Sensores", expanded=True):
+    # Paso 1: Configuración inicial
+    with st.expander("💾 PASO 1: Configuración de Geometría y Sensores", expanded=True):
         st.markdown("""
         <div class="section-card" style="margin-bottom: 12px;">
-            <h3 style="margin-top:0; color:white;">ðŸ’¾ PASO 1: CONFIGURACIÃ“N INICIAL</h3>
+            <h3 style="margin-top:0; color:white;">💾 PASO 1: CONFIGURACIÓN INICIAL</h3>
             <p style="color:#bbb; margin-bottom:0;">
-                Defina los parÃ¡metros fÃ­sicos del peine de sensores y el sistema de adquisiciÃ³n para el entorno 3D.
+                Defina los parámetros físicos del peine de sensores y el sistema de adquisición para el entorno 3D.
             </p>
         </div>
         """, unsafe_allow_html=True)
         
-        # Reorganizar: datos a la izquierda, imagen mÃ¡s pequeÃ±a a la derecha
+        # Reorganizar: datos a la izquierda, imagen más pequeña a la derecha
         col_datos, col_imagen = st.columns([2, 1])
 
         with col_datos:
-            st.markdown("### ðŸ“ ConfiguraciÃ³n de Sensores y GeometrÃ­a")
+            st.markdown("### �? Configuración de Sensores y Geometría")
             
             # Orden de sensores
             orden_sensores = st.selectbox(
                 "Orden de lectura de sensores:",
                 ["asc", "des"],
-                format_func=lambda x: "Ascendente (sensor 1 mÃ¡s abajo al 12 mÃ¡s arriba)" if x == "asc" else "Descendente (sensor 12 mÃ¡s abajo y sensor 1 mÃ¡s arriba)",
-                help="Define cÃ³mo se leen los datos de los sensores en relaciÃ³n a su posiciÃ³n fÃ­sica",
+                format_func=lambda x: "Ascendente (sensor 1 más abajo al 12 más arriba)" if x == "asc" else "Descendente (sensor 12 más abajo y sensor 1 más arriba)",
+                help="Define cómo se leen los datos de los sensores en relación a su posición física",
                 key="orden_3d"
             )
             
             # Pregunta sobre el sensor de referencia
-            st.info("ðŸ” **Pregunta:** Â¿QuÃ© sensor corresponde a la toma nÃºmero 12 (la que se encuentra cerca del piso)?")
+            st.info("�? **Pregunta:** ¿Qué sensor corresponde a la toma número 12 (la que se encuentra cerca del piso)?")
             sensor_referencia = st.selectbox(
                 "Sensor de referencia (toma 12):",
                 [f"Sensor {i}" for i in range(1, 13)],
                 index=11,  # Por defecto Sensor 12
-                help="Seleccione el sensor que corresponde a la toma fÃ­sica nÃºmero 12",
+                help="Seleccione el sensor que corresponde a la toma física número 12",
                 key="sensor_ref_3d"
             )
             
             distancia_toma_12 = st.number_input(
-                "Distancia de la toma 12 a la posiciÃ³n X=0, Y=0 (coordenadas del traverser) [mm]:",
+                "Distancia de la toma 12 a la posición X=0, Y=0 (coordenadas del traverser) [mm]:",
                 value=-120.0,
                 step=1.0,
                 format="%.1f",
@@ -4175,40 +4175,40 @@ elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual 
                 value=10.0,
                 step=0.01,
                 format="%.2f",
-                help="Distancia fÃ­sica entre tomas consecutivas segÃºn el plano tÃ©cnico",
+                help="Distancia física entre tomas consecutivas según el plano técnico",
                 key="dist_entre_3d"
             )
             
-            # Guardar configuraciÃ³n
-            if st.button("ðŸ’¾ Guardar ConfiguraciÃ³n 3D", type="primary", key="save_3d"):
+            # Guardar configuración
+            if st.button("💾 Guardar Configuración 3D", type="primary", key="save_3d"):
                 st.session_state.configuracion_3d = {
                     'orden': orden_sensores,
                     'sensor_referencia': sensor_referencia,
                     'distancia_toma_12': distancia_toma_12,
                     'distancia_entre_tomas': distancia_entre_tomas
                 }
-                st.success("âœ… ConfiguraciÃ³n 3D guardada correctamente")
+                st.success("✅ Configuración 3D guardada correctamente")
                 st.rerun()
 
     with col_imagen:
-        st.markdown("### ðŸ“ Diagrama de Referencia")
+        st.markdown("### �? Diagrama de Referencia")
         st.markdown("""
         <div style="background: #f8fafc; border: 2px dashed #e5e7eb; border-radius: 12px; padding: 2rem; text-align: center; color: #64748b;">
-            <h4>ðŸ“ Diagrama de Referencia</h4>
-            <p>AquÃ­ irÃ­a el diagrama tÃ©cnico de sensores</p>
-            <p><small>Subir imagen del plano tÃ©cnico</small></p>
+            <h4>�? Diagrama de Referencia</h4>
+            <p>Aquí iría el diagrama técnico de sensores</p>
+            <p><small>Subir imagen del plano técnico</small></p>
         </div>
         """, unsafe_allow_html=True)
     
-    # Mostrar configuraciÃ³n actual
+    # Mostrar configuración actual
     if st.session_state.get('configuracion_3d'):
         st.markdown("---")
-        # Estilo de configuraciÃ³n actual
+        # Estilo de configuración actual
         st.markdown("""
         <div class="section-card" style="margin-bottom: 20px;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h3 style="margin: 0; color: white;">âš™ï¸ CONFIGURACIÃ“N ACTIVA</h3>
-                <span style="color: #666; font-size: 0.8rem;">ParÃ¡metros 3D</span>
+                <h3 style="margin: 0; color: white;">⚙�? CONFIGURACIÓN ACTIVA</h3>
+                <span style="color: #666; font-size: 0.8rem;">Parámetros 3D</span>
             </div>
             <div style="display: flex; gap: 20px; margin-top: 15px;">
                 <div style="background: #111; padding: 10px; border-radius: 6px; border: 1px solid #333; flex: 1;">
@@ -4234,22 +4234,22 @@ elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual 
         # --- PASO 2: CARGA DE ARCHIVOS 3D ---
         st.markdown("""
         <div class="section-card" style="margin-bottom: 20px;">
-            <h3 style="margin-top: 0; color: white;">ðŸ“ PASO 2: IMPORTACIÃ“N DE VOLÃšMENES 3D</h3>
-            <p style="color: #bbb; margin-bottom: 20px;">Cargue mÃºltiples archivos CSV para generar superficies tridimensionales.</p>
+            <h3 style="margin-top: 0; color: white;">�? PASO 2: IMPORTACIÓN DE VOLÚMENES 3D</h3>
+            <p style="color: #bbb; margin-bottom: 20px;">Cargue múltiples archivos CSV para generar superficies tridimensionales.</p>
         </div>
         """, unsafe_allow_html=True)
 
-        # Almacenar mÃºltiples archivos 3D
+        # Almacenar múltiples archivos 3D
         if 'archivos_3d_cargados' not in st.session_state:
             st.session_state.archivos_3d_cargados = {}
 
         uploaded_files_3d = st.file_uploader(
-            "Arrastre sus archivos CSV 3D aquÃ­",
+            "Arrastre sus archivos CSV 3D aquí",
             type=['csv'],
             accept_multiple_files=True,
             key="uploader_betz3d"
         )
-        uploaded_infinito_3d = st.file_uploader("ðŸ”— 'Valores en el infinito.txt' (Opcional - datos atmosfÃ©ricos)", type=['txt', 'csv'], accept_multiple_files=False, key="upl_inf_3d")
+        uploaded_infinito_3d = st.file_uploader("🔗 'Valores en el infinito.txt' (Opcional - datos atmosféricos)", type=['txt', 'csv'], accept_multiple_files=False, key="upl_inf_3d")
         
         if uploaded_files_3d:
             st.markdown("<br>", unsafe_allow_html=True)
@@ -4257,7 +4257,7 @@ elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual 
                 nombre_archivo = uploaded_file_3d.name.replace('.csv', '').replace('incertidumbre_', '')
                 
                 if nombre_archivo not in st.session_state.archivos_3d_cargados:
-                    with st.spinner(f"ðŸŒ Procesando geometrÃ­a 3D para {nombre_archivo}..."):
+                    with st.spinner(f"�? Procesando geometría 3D para {nombre_archivo}..."):
                         datos_3d = procesar_promedios(uploaded_file_3d, st.session_state.configuracion_3d['orden'], uploaded_infinito_3d)
                         
                         if datos_3d is not None:
@@ -4266,47 +4266,47 @@ elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual 
                             sub_archivos_3d = crear_sub_archivos_3d_por_tiempo_y_posicion(datos_3d, nombre_archivo)
                             st.session_state.sub_archivos_3d_generados.update(sub_archivos_3d)
                             
-                            st.success(f"âœ… GeometrÃ­a reconstruida: {nombre_archivo}")
+                            st.success(f"✅ Geometría reconstruida: {nombre_archivo}")
 
         # Mostrar archivos cargados (Resumen)
         if st.session_state.archivos_3d_cargados:
-            st.markdown("### ðŸ“‹ Resumen de Carga")
+            st.markdown("### 📋 Resumen de Carga")
             
             # Grid layout for files
             cols = st.columns(3)
             for idx, (nombre, datos) in enumerate(st.session_state.archivos_3d_cargados.items()):
                 with cols[idx % 3]:
                     with st.container(border=True):
-                        st.markdown(f"**ðŸ“¦ {nombre}**")
-                        st.caption(f"{len(datos)} Puntos â€¢ {len(datos['Tiempo_s'].unique())} Tiempos")
+                        st.markdown(f"**📦 {nombre}**")
+                        st.caption(f"{len(datos)} Puntos • {len(datos['Tiempo_s'].unique())} Tiempos")
                         st.progress(100) # Visual indicator that it is ready
 
             st.markdown("---")
             
-            # --- PASO 3: VISUALIZACIÃ“N ---
+            # --- PASO 3: VISUALIZACIÓN ---
             st.markdown("""
             <div class="section-card" style="margin-bottom: 20px;">
-                <h3 style="margin-top: 0; color: white;">ðŸŒªï¸ PASO 3: INTERACCIÃ“N 3D</h3>
-                <p style="color: #bbb; margin-bottom: 20px;">Explore la superficie generada, ajuste la cÃ¡mara y analice la distribuciÃ³n de presiones.</p>
+                <h3 style="margin-top: 0; color: white;">🌪�? PASO 3: INTERACCIÓN 3D</h3>
+                <p style="color: #bbb; margin-bottom: 20px;">Explore la superficie generada, ajuste la cámara y analice la distribución de presiones.</p>
             </div>
             """, unsafe_allow_html=True)
             
-            st.markdown("#### ðŸŽ›ï¸ Controles Globales de Escena")
-            st.info("VisualizaciÃ³n estÃ¡ndar activa.")
+            st.markdown("#### 🎛�? Controles Globales de Escena")
+            st.info("Visualización estándar activa.")
             # Controls removed as per user request
             mostrar_cuerpo = False # Default disabled
             aspect_ratio = "auto" # Default auto
 
         st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
         
-        opciones_var_3d = ["PresiÃ³n Total [Actual]", "Ï_âˆž", "V_âˆž", "P_âˆž"]
-        var_3d_sel = st.selectbox("ðŸ“Š Variable a visualizar:", opciones_var_3d, key="var_3d_sel_ui")
+        opciones_var_3d = ["Presión Total [Actual]", "�?_∞", "V_∞", "P_∞"]
+        var_3d_sel = st.selectbox("📊 Variable a visualizar:", opciones_var_3d, key="var_3d_sel_ui")
 
-        # ðŸ”˜ Checkbox para activar/desactivar puntos medidos
-        mostrar_puntos_3d = st.checkbox("ðŸ”˜ Mostrar puntos originales (Nube de puntos)", value=False, key="mostrar_puntos_3d")
+        # 🔘 Checkbox para activar/desactivar puntos medidos
+        mostrar_puntos_3d = st.checkbox("🔘 Mostrar puntos originales (Nube de puntos)", value=False, key="mostrar_puntos_3d")
 
         if st.session_state.archivos_3d_cargados:
-            st.markdown("#### ðŸ“‚ SelecciÃ³n de GeometrÃ­a a Visualizar")
+            st.markdown("#### 📂 Selección de Geometría a Visualizar")
             
             # Mostrar archivos como botones seleccionables
             archivos_disponibles = list(st.session_state.archivos_3d_cargados.keys())
@@ -4334,7 +4334,7 @@ elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual 
                                 transition: all 0.3s ease;
                                 cursor: pointer;
                             ">
-                                <h4 style="color: #08596C; margin-bottom: 0.5rem;">ðŸ“Š {nombre_archivo}</h4>
+                                <h4 style="color: #08596C; margin-bottom: 0.5rem;">📊 {nombre_archivo}</h4>
                                 <p style="color: #6b7280; font-size: 0.9rem; margin-bottom: 0.5rem;">
                                     {len(datos_archivo)} registros
                                 </p>
@@ -4346,40 +4346,40 @@ elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual 
                             </div>
                             """, unsafe_allow_html=True)
                             
-                            if st.button(f"ðŸ”ï¸ Ver Superficie Completa", key=f"ver_mesh3d_{nombre_archivo}", use_container_width=True):
+                            if st.button(f"�?��? Ver Superficie Completa", key=f"ver_mesh3d_{nombre_archivo}", use_container_width=True):
                                 with st.spinner(f"Construyendo superficie completa para {nombre_archivo}..."):
-                                    # Llamada a la NUEVA funciÃ³n de graficaciÃ³n con 300 puntos
+                                    # Llamada a la NUEVA función de graficación con 300 puntos
                                     fig_individual = crear_superficie_delaunay_3d(
                                         datos_archivo,
                                         st.session_state.configuracion_3d,
                                         nombre_archivo,
-                                        mostrar_puntos=mostrar_puntos_3d,  # â† AquÃ­
+                                        mostrar_puntos=mostrar_puntos_3d,  # �? Aquí
                                         variable=var_3d_sel
                                     )
                                     
                                     if fig_individual:
                                         st.plotly_chart(fig_individual, use_container_width=False)
                                         
-                                        # InformaciÃ³n del archivo
-                                        st.success(f"âœ… Superficie de malla 3D generada para: **{nombre_archivo}** usando {len(fig_individual.data[0].x)} vÃ©rtices.")
+                                        # Información del archivo
+                                        st.success(f"✅ Superficie de malla 3D generada para: **{nombre_archivo}** usando {len(fig_individual.data[0].x)} vértices.")
                                         
-                                        # BotÃ³n de descarga
+                                        # Botón de descarga
                                         html_individual = fig_individual.to_html()
                                         st.download_button(
-                                            label=f"ðŸ“Š Descargar Malla 3D (HTML)",
+                                            label=f"📊 Descargar Malla 3D (HTML)",
                                             data=html_individual,
                                             file_name=f"mesh_3d_{nombre_archivo}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html",
                                             mime="text/html",
                                             key=f"download_mesh3d_{nombre_archivo}"
                                         )
                                     else:
-                                        st.error(f"âŒ No se pudo generar la superficie de malla 3D para {nombre_archivo}")   
+                                        st.error(f"�?� No se pudo generar la superficie de malla 3D para {nombre_archivo}")   
         
         # --- NUEVO PASO 4: DIFERENCIA ENTRE SUPERFICIES ---
         st.markdown("""
         <div class="section-card" style="margin-bottom: 20px;">
-            <h3 style="margin-top: 0; color: white;">ðŸ“‰ PASO 4: ANÃLISIS DE DIFERENCIAS</h3>
-            <p style="color: #bbb; margin-bottom: 20px;">Calcule y visualice la diferencia aritmÃ©tica entre dos superficies medidas (A - B).</p>
+            <h3 style="margin-top: 0; color: white;">📉 PASO 4: AN�?LISIS DE DIFERENCIAS</h3>
+            <p style="color: #bbb; margin-bottom: 20px;">Calcule y visualice la diferencia aritmética entre dos superficies medidas (A - B).</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -4405,11 +4405,11 @@ elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual 
                     key="diff_3d_b"
                 )
             
-            # ðŸ”˜ Checkbox para activar/desactivar puntos en diferencia
+            # 🔘 Checkbox para activar/desactivar puntos en diferencia
             st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
-            mostrar_puntos_diff = st.checkbox("ðŸ”˜ Incluir puntos de mediciÃ³n en el grÃ¡fico de diferencia", value=True, key="mostrar_puntos_diff")
+            mostrar_puntos_diff = st.checkbox("🔘 Incluir puntos de medición en el gráfico de diferencia", value=True, key="mostrar_puntos_diff")
 
-            # PARTE 1: El botÃ³n "Calcular" solo genera el grÃ¡fico y lo guarda en una "bandeja" temporal.
+            # PARTE 1: El botón "Calcular" solo genera el gráfico y lo guarda en una "bandeja" temporal.
             if st.button("Calcular Diferencia de Superficies", use_container_width=True, type="primary"):
                 if archivo_a == archivo_b:
                     st.error("Por favor, selecciona dos archivos diferentes para comparar.")
@@ -4424,11 +4424,11 @@ elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual 
                             archivo_a,
                             archivo_b,
                             st.session_state.configuracion_3d,
-                            mostrar_puntos=mostrar_puntos_diff  # â† AquÃ­
+                            mostrar_puntos=mostrar_puntos_diff  # �? Aquí
                         )
 
                         if fig_diferencia_3d:
-                            # Guardamos la figura y su nombre en la sesiÃ³n para que sobrevivan al reinicio de la pÃ¡gina.
+                            # Guardamos la figura y su nombre en la sesión para que sobrevivan al reinicio de la página.
                             st.session_state.figura_diferencia_temporal_3d = {
                                 "fig": fig_diferencia_3d,
                                 "nombre": f"Dif. 3D: {archivo_a} vs {archivo_b}"
@@ -4443,18 +4443,18 @@ elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual 
                 fig_diferencia_3d = temp_data_3d["fig"]
                 nombre_guardado_3d = temp_data_3d["nombre"]
 
-                # 1. Mostramos el grÃ¡fico
+                # 1. Mostramos el gráfico
                 st.plotly_chart(fig_diferencia_3d, use_container_width=False)
                 
-                # 2. Mostramos el botÃ³n "Guardar". Ahora sÃ­ funcionarÃ¡.
-                if st.button("ðŸ’¾ Guardar Diferencia para Visualizar", key="save_diff_3d_for_viz_final"):
+                # 2. Mostramos el botón "Guardar". Ahora sí funcionará.
+                if st.button("💾 Guardar Diferencia para Visualizar", key="save_diff_3d_for_viz_final"):
                     if 'diferencias_guardadas' not in st.session_state:
                         st.session_state.diferencias_guardadas = {}
                     
                     st.session_state.diferencias_guardadas[nombre_guardado_3d] = fig_diferencia_3d
-                    st.success(f"âœ… GrÃ¡fico '{nombre_guardado_3d}' guardado permanentemente.")
+                    st.success(f"✅ Gráfico '{nombre_guardado_3d}' guardado permanentemente.")
                     
-                    # Borramos la figura temporal despuÃ©s de guardarla para limpiar la "bandeja"
+                    # Borramos la figura temporal después de guardarla para limpiar la "bandeja"
                     del st.session_state.figura_diferencia_temporal_3d
                     st.rerun()
 
@@ -4463,7 +4463,7 @@ elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual 
 
         def extraer_pos_x_estacion(nombre_archivo):
             """
-            Intenta extraer la posiciÃ³n X (EstaciÃ³n) del nombre del archivo.
+            Intenta extraer la posición X (Estación) del nombre del archivo.
             Patrones buscados: X100, Est100, Station100, _100mm, etc.
             """
             import re
@@ -4488,7 +4488,7 @@ elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual 
 # --- PASO 5: GUARDAR SUPERFICIE EN BASE DE DATOS ---
         st.markdown("""
         <div class="section-card" style="margin-bottom: 20px;">
-            <h3 style="margin-top: 0; color: white;">ðŸ’¾ PASO 5: PERSISTENCIA DE DATOS</h3>
+            <h3 style="margin-top: 0; color: white;">💾 PASO 5: PERSISTENCIA DE DATOS</h3>
             <p style="color: #bbb; margin-bottom: 0;">Almacene la superficie procesada en la base de datos centralizada.</p>
         </div>
         """, unsafe_allow_html=True)
@@ -4502,7 +4502,7 @@ elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual 
             if archivo_guardar:
                 df_guardar = st.session_state.archivos_3d_cargados[archivo_guardar]
                 
-                # Filtrar por tiempo si hay mÃºltiples
+                # Filtrar por tiempo si hay múltiples
                 tiempos_g = df_guardar['Tiempo_s'].dropna().unique()
                 tiempo_original = tiempos_g[0] if len(tiempos_g) > 0 else 5
                 tiempo_g_sel = st.number_input("Ingresar Tiempo:", value=5, step=1, key="tiempo_guardar_bd")
@@ -4518,8 +4518,8 @@ elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual 
                 x_detectado = extraer_pos_x_estacion(archivo_guardar)
 
                 c_nm1, c_nm2 = st.columns(2)
-                aoa_3d = c_nm1.number_input("Ãngulo de Ataque [mm]:", value=0.0, step=0.5, format="%.1f", key="aoa_3d")
-                x_detectado_inp = c_nm2.number_input("ðŸ“ PosiciÃ³n X (EstaciÃ³n) [mm]:", value=x_detectado, step=10.0, key="x_3d_inp")
+                aoa_3d = c_nm1.number_input("�?ngulo de Ataque [mm]:", value=0.0, step=0.5, format="%.1f", key="aoa_3d")
+                x_detectado_inp = c_nm2.number_input("�? Posición X (Estación) [mm]:", value=x_detectado, step=10.0, key="x_3d_inp")
 
                 # Nombre auto-sugerido: 3D-Xpos-OAOgrados-Tts  (editable)
                 _aoa_str = str(int(aoa_3d)) if aoa_3d == int(aoa_3d) else f"{aoa_3d:.1f}"
@@ -4536,7 +4536,7 @@ elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual 
                     nombre_surf = nombre_base_sugerido
                     c_g2.code(nombre_surf)
                 
-                if st.button("ðŸ’¾ Guardar en Base de Datos", key="btn_guardar_bd"):
+                if st.button("💾 Guardar en Base de Datos", key="btn_guardar_bd"):
                     # Convertir a matriz (Y, Z, Presion)
                     results_g = []
                     for _, row in df_filtrado_g.iterrows():
@@ -4560,37 +4560,37 @@ elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual 
                     if not df_final_g.empty:
                         json_str = df_final_g.to_json(orient='records')
                         if auth.save_surface_data(st.session_state.username, nombre_surf, json_str):
-                            st.success(f"âœ… Superficie 3D guardada: **{nombre_surf}**")
+                            st.success(f"✅ Superficie 3D guardada: **{nombre_surf}**")
                         else:
                             st.error("Error al guardar en base de datos.")
                     else:
-                        st.error("No se pudieron extraer datos vÃ¡lidos (Y, Z, Presion).")
+                        st.error("No se pudieron extraer datos válidos (Y, Z, Presion).")
         
         else:
-            st.info("â„¹ï¸ Para guardar una superficie, primero debe procesar al menos un archivo CSV en el **Paso 2**.")
+            st.info("ℹ�? Para guardar una superficie, primero debe procesar al menos un archivo CSV en el **Paso 2**.")
 
 
 elif st.session_state.seccion_actual == 'betz_4d':
     st.markdown("""
     <div class="header-container">
         <h1 style="font-size: 3rem; margin-bottom: 1rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
-            ðŸŒŒ VISUALIZACIÃ“N DE ESTELA 4D
+            🌌 VISUALIZACIÓN DE ESTELA 4D
         </h1>
         <h2 style="font-size: 1.8rem; margin-bottom: 0; opacity: 0.9;">
-            VisualizaciÃ³n Multidimensional y AnimaciÃ³n
+            Visualización Multidimensional y Animación
         </h2>
     </div>
     """, unsafe_allow_html=True)
 
-    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    # �?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?
     # PASO 1: GUARDAR PLANO 4D EN DRIVE
-    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-    with st.expander("ðŸ’¾ PASO 1: Cargar y Guardar Plano 4D en Base de Datos", expanded=True):
+    # �?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?
+    with st.expander("💾 PASO 1: Cargar y Guardar Plano 4D en Base de Datos", expanded=True):
         st.markdown("""
         <div class="section-card" style="margin-bottom: 12px;">
-            <h3 style="margin-top:0; color:white;">ðŸ’¾ PASO 1: GUARDAR PLANO 4D</h3>
+            <h3 style="margin-top:0; color:white;">💾 PASO 1: GUARDAR PLANO 4D</h3>
             <p style="color:#bbb; margin-bottom:0;">
-                Procese un archivo de incertidumbre y guÃ¡rdelo en la carpeta <strong>4D</strong> del Drive con su posiciÃ³n X.
+                Procese un archivo de incertidumbre y guárdelo en la carpeta <strong>4D</strong> del Drive con su posición X.
             </p>
         </div>
         """, unsafe_allow_html=True)
@@ -4600,10 +4600,10 @@ elif st.session_state.seccion_actual == 'betz_4d':
 
         # --- Upload ---
         archivo_4d = st.file_uploader(
-            "ðŸ“‚ Subir archivo CSV de incertidumbre (4D):",
+            "📂 Subir archivo CSV de incertidumbre (4D):",
             type=['csv'], key="upload_4d_paso1"
         )
-        uploaded_infinito_4d = st.file_uploader("ðŸ”— 'Valores en el infinito.txt' (Opcional - datos atmosfÃ©ricos)", type=['txt', 'csv'], accept_multiple_files=False, key="upl_inf_4d")
+        uploaded_infinito_4d = st.file_uploader("🔗 'Valores en el infinito.txt' (Opcional - datos atmosféricos)", type=['txt', 'csv'], accept_multiple_files=False, key="upl_inf_4d")
 
         if archivo_4d and config_4d:
             datos_4d = procesar_promedios(archivo_4d, config_4d.get('orden', 'asc'), uploaded_infinito_4d)
@@ -4619,11 +4619,11 @@ elif st.session_state.seccion_actual == 'betz_4d':
                 df_4d_filtrado['Tiempo_s'] = t4d_sel
 
                 x_pos_4d = st.number_input(
-                    "ðŸ“ PosiciÃ³n X (EstaciÃ³n) [mm]:",
+                    "�? Posición X (Estación) [mm]:",
                     value=0.0, step=10.0, key="x_pos_4d"
                 )
 
-                aoa_4d = st.number_input("Ãngulo de Ataque [mm]:", value=0.0, step=0.5, format="%.1f", key="aoa_4d")
+                aoa_4d = st.number_input("�?ngulo de Ataque [mm]:", value=0.0, step=0.5, format="%.1f", key="aoa_4d")
 
                 # Nombre auto-sugerido: 4D-Xpos-OAOgrados-Tts  (editable)
                 _aoa_str_4d = str(int(aoa_4d)) if aoa_4d == int(aoa_4d) else f"{aoa_4d:.1f}"
@@ -4641,7 +4641,7 @@ elif st.session_state.seccion_actual == 'betz_4d':
                     c_4d2.code(nombre_4d)
                 
 
-                if st.button("ðŸ’¾ Guardar Plano 4D en Drive", key="btn_guardar_4d"):
+                if st.button("💾 Guardar Plano 4D en Drive", key="btn_guardar_4d"):
                     results_4d = []
                     for _, row in df_4d_filtrado.iterrows():
                         y_trav = row.get('Pos_Y_Traverser')
@@ -4664,22 +4664,22 @@ elif st.session_state.seccion_actual == 'betz_4d':
                     if not df_4d_final.empty:
                         json_4d = df_4d_final.to_json(orient='records')
                         if auth.save_surface_data_4d(st.session_state.username, nombre_4d, x_pos_4d, json_4d):
-                            st.success(f"âœ… Plano 4D guardado: **{nombre_4d}** en X={x_pos_4d} mm")
+                            st.success(f"✅ Plano 4D guardado: **{nombre_4d}** en X={x_pos_4d} mm")
                             st.cache_data.clear()
                         else:
-                            st.error("âŒ Error al guardar el plano 4D.")
+                            st.error("�?� Error al guardar el plano 4D.")
                     else:
-                        st.error("No se pudieron extraer datos vÃ¡lidos.")
+                        st.error("No se pudieron extraer datos válidos.")
 
     st.markdown("---")
 
 
     st.markdown("---")
 
-    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-    # PASO 2: VISUALIZACIÃ“N 4D
-    # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-    st.markdown("### ðŸŒŒ Paso 2: VisualizaciÃ³n 4D")
+    # �?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?
+    # PASO 2: VISUALIZACIÓN 4D
+    # �?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?
+    st.markdown("### 🌌 Paso 2: Visualización 4D")
 
     # --- INIT session state para modelo 4D ---
     if 'modelo_4d_alpha' not in st.session_state: st.session_state.modelo_4d_alpha = 0.0
@@ -4688,12 +4688,12 @@ elif st.session_state.seccion_actual == 'betz_4d':
     if 'modelo_4d_dy'    not in st.session_state: st.session_state.modelo_4d_dy    = 0.0
     if 'modelo_4d_dz'    not in st.session_state: st.session_state.modelo_4d_dz    = 0.0
 
-    # Helper local: aplicar alpha/beta + traslaciÃ³n al modelo
+    # Helper local: aplicar alpha/beta + traslación al modelo
     def _aplicar_pose_modelo_4d(obj_base, alpha_deg, beta_deg, dx, dy, dz, cg):
         """Retorna (x, y, z) del modelo rotado en torno al CG y luego trasladado.
-        ConvenciÃ³n:
-          Alpha (+) = cabeceo â†’ nariz sube  â†’ rotaciÃ³n +Y en rotate_points
-          Beta  (+) = guiÃ±ada â†’ nariz hacia ala derecha (+Y) â†’ rotaciÃ³n -Z en rotate_points
+        Convención:
+          Alpha (+) = cabeceo → nariz sube  → rotación +Y en rotate_points
+          Beta  (+) = guiñada → nariz hacia ala derecha (+Y) → rotación -Z en rotate_points
         """
         x = np.array(obj_base['x'], dtype=float) - cg['x']
         y = np.array(obj_base['y'], dtype=float) - cg['y']
@@ -4709,25 +4709,25 @@ elif st.session_state.seccion_actual == 'betz_4d':
     try:
         mis_superficies = auth.get_user_surfaces_4d(st.session_state.username)
     except AttributeError:
-        st.error("Error conectando con base de datos (funciÃ³n get_user_surfaces_4d no encontrada).")
+        st.error("Error conectando con base de datos (función get_user_surfaces_4d no encontrada).")
         mis_superficies = []
 
     if not mis_superficies:
-        st.info("âš ï¸ No tienes planos 4D guardados. UsÃ¡ el Paso 1 para procesar y guardar planos.")
+        st.info("⚠�? No tienes planos 4D guardados. Usá el Paso 1 para procesar y guardar planos.")
     else:
         dict_superficies = {f"{s[1]} (X={s[2]}) [{s[3]}]": s for s in mis_superficies}
 
-        # â”€â”€ COLUMNAS PRINCIPALES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        # ── COLUMNAS PRINCIPALES ──────────────────────────────────────────
         c4d_left, c4d_right = st.columns([1.1, 2.5])
 
         with c4d_left:
-            # â”€â”€ VARIABLE Y MODO DE SELECCIÃ“N â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-            opciones_var_4d = ["PresiÃ³n Total [Actual]", "Ï_âˆž", "V_âˆž", "P_âˆž"]
-            var_4d_sel = st.selectbox("ðŸ“Š Variable a visualizar:", opciones_var_4d, key="var_4d_sel_ui")
+            # ── VARIABLE Y MODO DE SELECCIÓN ─────────────────────────────
+            opciones_var_4d = ["Presión Total [Actual]", "�?_∞", "V_∞", "P_∞"]
+            var_4d_sel = st.selectbox("📊 Variable a visualizar:", opciones_var_4d, key="var_4d_sel_ui")
 
             modo_sel_4d = st.radio(
-                "Modo de selecciÃ³n de planos:",
-                ["âœ… Individual", "ðŸ“ Por PosiciÃ³n X", "ðŸŽ¯ Por AOA"],
+                "Modo de selección de planos:",
+                ["✅ Individual", "�? Por Posición X", "🎯 Por AOA"],
                 horizontal=True,
                 key="modo_sel_4d"
             )
@@ -4739,15 +4739,15 @@ elif st.session_state.seccion_actual == 'betz_4d':
                     return (-1 if m.group(1) else 1) * float(str(m.group(2)).replace(',', '.'))
                 return None
 
-            if modo_sel_4d == "âœ… Individual":
+            if modo_sel_4d == "✅ Individual":
                 sel_labels = st.multiselect("Seleccionar planos:", list(dict_superficies.keys()), key="sel_4d_main")
 
-            elif modo_sel_4d == "ðŸ“ Por PosiciÃ³n X":
+            elif modo_sel_4d == "�? Por Posición X":
                 # Agrupar por X
                 x_positions = sorted(set(s[2] for s in mis_superficies))
                 x_sel = st.multiselect("Posiciones X [mm]:", x_positions, default=x_positions, key="sel_x_4d")
                 sel_labels = [lbl for lbl, s in dict_superficies.items() if s[2] in x_sel]
-                st.caption(f"ðŸ“Š {len(sel_labels)} planos en {len(x_sel)} posiciones X")
+                st.caption(f"📊 {len(sel_labels)} planos en {len(x_sel)} posiciones X")
 
             else:  # Por AOA
                 all_aoas_4d = sorted(set(
@@ -4759,57 +4759,57 @@ elif st.session_state.seccion_actual == 'betz_4d':
                     sel_labels = []
                 else:
                     aoas_sel_4d = st.multiselect(
-                        "AOAs [Â°]:", [f"{a}Â°" for a in all_aoas_4d],
-                        default=[f"{a}Â°" for a in all_aoas_4d],
+                        "AOAs [°]:", [f"{a}°" for a in all_aoas_4d],
+                        default=[f"{a}°" for a in all_aoas_4d],
                         key="sel_aoa_4d"
                     )
-                    aoas_num_4d = [float(a.replace('Â°','')) for a in aoas_sel_4d]
+                    aoas_num_4d = [float(a.replace('°','')) for a in aoas_sel_4d]
                     sel_labels = [lbl for lbl, s in dict_superficies.items()
                                   if _extraer_aoa_4d(s[1]) in aoas_num_4d]
-                    st.caption(f"ðŸ“Š {len(sel_labels)} planos seleccionados")
+                    st.caption(f"📊 {len(sel_labels)} planos seleccionados")
 
             st.markdown("---")
 
-            # â”€â”€ VISUALIZACIÃ“N Y ESCALA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-            st.markdown("##### ðŸŽ¨ Opciones de VisualizaciÃ³n")
+            # ── VISUALIZACIÓN Y ESCALA ──────────────────────────────────────
+            st.markdown("##### 🎨 Opciones de Visualización")
             c_vis1, c_vis2, c_vis3 = st.columns(3)
-            vis_modelo = c_vis1.selectbox("Modelo 3D:", ["Azul TranslÃºcido", "Negro Mate", "Plata Metalizada", "Puntos"], index=0, key="vis_mod_4d")
+            vis_modelo = c_vis1.selectbox("Modelo 3D:", ["Azul Translúcido", "Negro Mate", "Plata Metalizada", "Puntos"], index=0, key="vis_mod_4d")
             vis_bg = c_vis2.selectbox("Fondo:", ["Oscuro (Negro)", "Claro (Blanco)"], index=0, key="vis_bg_4d")
             vis_ejes = c_vis3.checkbox("Mostrar Ejes 3D", value=True, key="vis_ejes_4d")
             
-            pressure_scale = st.slider("Escala de Relieve (PresiÃ³nâ†’X):", 0.1, 10.0, 1.0, 0.1, key="scale_4d_viz")
+            pressure_scale = st.slider("Escala de Relieve (Presión→X):", 0.1, 10.0, 1.0, 0.1, key="scale_4d_viz")
 
-            # â”€â”€ POSICIONAMIENTO DEL MODELO 3D â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            # ── POSICIONAMIENTO DEL MODELO 3D ─────────────────────────────
             if 'objeto_referencia_4d' in st.session_state:
                 st.markdown("---")
                 st.markdown("""
                 <div style="background:#0d1f35; border:1px solid #1e4060; border-radius:8px; padding:12px; margin-bottom:8px;">
-                    <h5 style="color:#60a5fa; margin:0 0 6px 0;">âœˆï¸ PosiciÃ³n y Actitud del Modelo</h5>
+                    <h5 style="color:#60a5fa; margin:0 0 6px 0;">✈�? Posición y Actitud del Modelo</h5>
                     <p style="color:#93c5fd; font-size:0.78rem; margin:0; line-height:1.6;">
-                        <b>Alpha Î± (+)</b> â†’ nariz sube (plano XZ)<br>
-                        <b>Beta Î² (+)</b> â†’ nariz hacia ala derecha (plano XY)<br>
-                        RotaciÃ³n en torno al CG definido en Modelos.
+                        <b>Alpha α (+)</b> → nariz sube (plano XZ)<br>
+                        <b>Beta β (+)</b> → nariz hacia ala derecha (plano XY)<br>
+                        Rotación en torno al CG definido en Modelos.
                     </p>
                 </div>
                 """, unsafe_allow_html=True)
 
                 c_ab1, c_ab2 = st.columns(2)
                 st.session_state.modelo_4d_alpha = c_ab1.number_input(
-                    "Î± Alpha [Â°]", value=float(st.session_state.modelo_4d_alpha),
+                    "α Alpha [°]", value=float(st.session_state.modelo_4d_alpha),
                     min_value=-90.0, max_value=90.0, step=1.0, format="%.1f", key="inp_alpha_4d"
                 )
                 st.session_state.modelo_4d_beta = c_ab2.number_input(
-                    "Î² Beta [Â°]", value=float(st.session_state.modelo_4d_beta),
+                    "β Beta [°]", value=float(st.session_state.modelo_4d_beta),
                     min_value=-90.0, max_value=90.0, step=1.0, format="%.1f", key="inp_beta_4d"
                 )
 
-                st.markdown("**TraslaciÃ³n [mm]:**")
+                st.markdown("**Traslación [mm]:**")
                 c_t1, c_t2, c_t3 = st.columns(3)
                 st.session_state.modelo_4d_dx = c_t1.number_input("dX", value=float(st.session_state.modelo_4d_dx), step=10.0, format="%.1f", key="inp_dx_4d")
                 st.session_state.modelo_4d_dy = c_t2.number_input("dY", value=float(st.session_state.modelo_4d_dy), step=10.0, format="%.1f", key="inp_dy_4d")
                 st.session_state.modelo_4d_dz = c_t3.number_input("dZ", value=float(st.session_state.modelo_4d_dz), step=10.0, format="%.1f", key="inp_dz_4d")
 
-                if st.button("ðŸ”„ Resetear posiciÃ³n del modelo", key="btn_reset_pose_4d", use_container_width=True):
+                if st.button("🔄 Resetear posición del modelo", key="btn_reset_pose_4d", use_container_width=True):
                     st.session_state.modelo_4d_alpha = 0.0
                     st.session_state.modelo_4d_beta  = 0.0
                     st.session_state.modelo_4d_dx    = 0.0
@@ -4835,7 +4835,7 @@ elif st.session_state.seccion_actual == 'betz_4d':
 
                 g_min, g_max = (min(all_pressures), max(all_pressures)) if all_pressures else (0, 1)
 
-                if st.button("ðŸš€ Generar Escena 4D", key="btn_render_4d", type="primary", use_container_width=True):
+                if st.button("🚀 Generar Escena 4D", key="btn_render_4d", type="primary", use_container_width=True):
                     fig_4d = go.Figure()
 
                     # Modelo 3D con Alpha/Beta aplicados
@@ -4865,7 +4865,7 @@ elif st.session_state.seccion_actual == 'betz_4d':
                             elif vis_modelo == "Plata Metalizada":
                                 color_m, opac = '#e0e0e0', 1.0
                                 lighting = dict(ambient=0.4, diffuse=0.8, specular=1.0, roughness=0.1)
-                            else: # Azul TranslÃºcido
+                            else: # Azul Translúcido
                                 color_m, opac = '#5588cc', 0.3
                                 lighting = dict(ambient=0.4, diffuse=0.8)
                                 
@@ -4877,7 +4877,7 @@ elif st.session_state.seccion_actual == 'betz_4d':
                                 lighting=lighting
                             ))
 
-                    # Planos de presiÃ³n
+                    # Planos de presión
                     for label in sel_labels:
                         df = loaded_dfs.get(label)
                         if df is None: continue
@@ -4911,10 +4911,10 @@ elif st.session_state.seccion_actual == 'betz_4d':
                     )
 
                     fig_4d.update_layout(
-                        title=f"Escena 4D â€” Î±={st.session_state.modelo_4d_alpha:.1f}Â° Î²={st.session_state.modelo_4d_beta:.1f}Â°",
+                        title=f"Escena 4D — α={st.session_state.modelo_4d_alpha:.1f}° β={st.session_state.modelo_4d_beta:.1f}°",
                         scene=dict(
                             aspectmode='data',
-                            xaxis=dict(title="X (EstaciÃ³n)" if vis_ejes else "", autorange="reversed", **axis_props),
+                            xaxis=dict(title="X (Estación)" if vis_ejes else "", autorange="reversed", **axis_props),
                             yaxis=dict(title="Y (Envergadura)" if vis_ejes else "", **axis_props),
                             zaxis=dict(title="Z (Altura)" if vis_ejes else "", **axis_props)
                         ),
@@ -4930,7 +4930,7 @@ elif st.session_state.seccion_actual == 'betz_4d':
                 if 'fig_4d_cache' in st.session_state:
                     st.plotly_chart(st.session_state['fig_4d_cache'], use_container_width=True)
             else:
-                st.info("SeleccionÃ¡ al menos un plano para visualizar.")
+                st.info("Seleccioná al menos un plano para visualizar.")
 
 
 
@@ -4938,15 +4938,15 @@ elif st.session_state.seccion_actual == 'animacion_4d':
     st.markdown("""
     <div class="header-container">
         <h1 style="font-size: 3rem; margin-bottom: 1rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
-            ðŸŽ¬ ANIMACIÃ“N 4D
+            🎬 ANIMACIÓN 4D
         </h1>
         <h2 style="font-size: 1.8rem; margin-bottom: 0; opacity: 0.9;">
-            InterpolaciÃ³n de planos de presiÃ³n y cabeceo del modelo geomÃ©trico
+            Interpolación de planos de presión y cabeceo del modelo geométrico
         </h2>
     </div>
     """, unsafe_allow_html=True)
 
-    # â”€â”€ INIT SESSION STATE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── INIT SESSION STATE ────────────────────────────────────────────────────
     if 'anim4d_grillas' not in st.session_state: st.session_state.anim4d_grillas = None
     if 'anim4d_aoa_range' not in st.session_state: st.session_state.anim4d_aoa_range = None
     if 'anim4d_x_range' not in st.session_state: st.session_state.anim4d_x_range = None
@@ -4972,38 +4972,38 @@ elif st.session_state.seccion_actual == 'animacion_4d':
     try:
         mis_superficies_anim = auth.get_user_surfaces_4d(st.session_state.username)
     except AttributeError:
-        st.error("Error conectando con base de datos (funciÃ³n get_user_surfaces_4d no encontrada).")
+        st.error("Error conectando con base de datos (función get_user_surfaces_4d no encontrada).")
         mis_superficies_anim = []
 
     if not mis_superficies_anim:
-        st.info("âš ï¸ No hay planos 4D guardados. Ve a **Vis. Estela 4D â†’ Paso 1** para guardar planos primero.")
+        st.info("⚠�? No hay planos 4D guardados. Ve a **Vis. Estela 4D → Paso 1** para guardar planos primero.")
     else:
         dict_sup_anim = {f"{s[1]} (X={s[2]}mm) [{s[3][:10] if s[3] else ''}]": s for s in mis_superficies_anim}
 
-        # â”€â”€ PASO 1: SELECCIÃ“N DE PLANOS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        # ── PASO 1: SELECCIÓN DE PLANOS ──────────────────────────────────────
         c_sel_left, c_sel_right = st.columns([1.2, 2])
 
         with c_sel_left:
-            st.markdown("### ðŸ“‚ Paso 1: SelecciÃ³n de Planos")
+            st.markdown("### 📂 Paso 1: Selección de Planos")
 
-            opciones_var_anim4d = ["PresiÃ³n Total [Actual]", "Ï_âˆž", "V_âˆž", "P_âˆž"]
-            var_anim_sel = st.selectbox("ðŸ“Š Variable a visualizar:", opciones_var_anim4d, key="var_anim4d_sel")
+            opciones_var_anim4d = ["Presión Total [Actual]", "�?_∞", "V_∞", "P_∞"]
+            var_anim_sel = st.selectbox("📊 Variable a visualizar:", opciones_var_anim4d, key="var_anim4d_sel")
 
             modo_fil_anim = st.radio(
                 "Filtrar por:",
-                ["âœ… Individual", "ðŸ“ Por Plano (X)", "ðŸŽ¯ Por AOA"],
+                ["✅ Individual", "�? Por Plano (X)", "🎯 Por AOA"],
                 key="modo_fil_anim4d",
                 horizontal=True
             )
 
-            if modo_fil_anim == "âœ… Individual":
+            if modo_fil_anim == "✅ Individual":
                 sel_anim_labels = st.multiselect("Seleccionar planos:", list(dict_sup_anim.keys()), key="sel_anim_ind")
 
-            elif modo_fil_anim == "ðŸ“ Por Plano (X)":
+            elif modo_fil_anim == "�? Por Plano (X)":
                 x_positions_anim = sorted(set(s[2] for s in mis_superficies_anim))
                 x_sel_anim = st.multiselect("Posiciones X [mm]:", x_positions_anim, default=x_positions_anim, key="sel_x_anim")
                 sel_anim_labels = [lbl for lbl, s in dict_sup_anim.items() if s[2] in x_sel_anim]
-                st.caption(f"ðŸ“Š {len(sel_anim_labels)} planos en {len(x_sel_anim)} posiciones X")
+                st.caption(f"📊 {len(sel_anim_labels)} planos en {len(x_sel_anim)} posiciones X")
 
             else:  # Por AOA
                 all_aoas_anim = sorted(set(
@@ -5011,27 +5011,27 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                     if _aoa_from_name_anim(s[1]) is not None
                 ))
                 if not all_aoas_anim:
-                    st.warning("âš ï¸ No se detectaron AOAs en los nombres (formato: OAO{N} o OAOneg{N})")
+                    st.warning("⚠�? No se detectaron AOAs en los nombres (formato: OAO{N} o OAOneg{N})")
                     sel_anim_labels = []
                 else:
                     aoas_sel_anim = st.multiselect(
-                        "Seleccionar AOAs [Â°]:", [f"{a}Â°" for a in all_aoas_anim],
-                        default=[f"{a}Â°" for a in all_aoas_anim], key="sel_aoas_anim4d"
+                        "Seleccionar AOAs [°]:", [f"{a}°" for a in all_aoas_anim],
+                        default=[f"{a}°" for a in all_aoas_anim], key="sel_aoas_anim4d"
                     )
-                    aoas_num_anim = [float(a.replace('Â°', '')) for a in aoas_sel_anim]
+                    aoas_num_anim = [float(a.replace('°', '')) for a in aoas_sel_anim]
                     sel_anim_labels = [lbl for lbl, s in dict_sup_anim.items()
                                        if _aoa_from_name_anim(s[1]) in aoas_num_anim]
-                    st.caption(f"ðŸ“Š {len(sel_anim_labels)} planos seleccionados")
+                    st.caption(f"📊 {len(sel_anim_labels)} planos seleccionados")
 
-            pressure_scale_anim = st.slider("Escala de Relieve [presiÃ³nâ†’X]:", 0.1, 10.0, 1.0, 0.1, key="scale_anim_interp")
+            pressure_scale_anim = st.slider("Escala de Relieve [presión→X]:", 0.1, 10.0, 1.0, 0.1, key="scale_anim_interp")
             mostrar_modelo_anim = st.checkbox("Mostrar modelo 3D", value=True, key="show_model_anim")
 
         with c_sel_right:
             if sel_anim_labels:
-                st.markdown("### ðŸ”¢ Paso 2: Pre-computar InterpolaciÃ³n")
-                st.info("ComputÃ¡ la grilla una vez. Luego el slider moverÃ¡ el grÃ¡fico al instante sin recalcular.")
+                st.markdown("### 🔢 Paso 2: Pre-computar Interpolación")
+                st.info("Computá la grilla una vez. Luego el slider moverá el gráfico al instante sin recalcular.")
 
-                if st.button("âš¡ Pre-computar interpolaciÃ³n", type="primary", use_container_width=True, key="btn_precompute"):
+                if st.button("⚡ Pre-computar interpolación", type="primary", use_container_width=True, key="btn_precompute"):
                     from scipy.interpolate import griddata as _gd_anim
 
                     # Cargar todos los planos seleccionados
@@ -5069,8 +5069,8 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                         x_arr_pc   = np.array([d['x']   for d in items_precomp])
 
                         # --- Estrategia de grilla: puntos REALES del plano ---
-                        # Usamos la uniÃ³n de todos los puntos YZ como dominio de interpolaciÃ³n.
-                        # Esto preserva todos los puntos de mediciÃ³n reales sin perder resoluciÃ³n.
+                        # Usamos la unión de todos los puntos YZ como dominio de interpolación.
+                        # Esto preserva todos los puntos de medición reales sin perder resolución.
                         all_yz_pts = np.column_stack([all_y_pc, all_z_pc])
                         # Eliminar duplicados para la grilla base
                         _, uniq_idx = np.unique(np.round(all_yz_pts, 4), axis=0, return_index=True)
@@ -5113,13 +5113,13 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                         st.session_state.anim4d_aoa_range = (float(aoa_arr_pc.min()), float(aoa_arr_pc.max()))
                         status_pc.empty(); prog_pc.empty()
                         n_pts = len(Y_base)
-                        st.success(f"âœ… Pre-computaciÃ³n completada: {len(items_precomp)} planos | {n_pts:,} puntos reales | AOA {aoa_arr_pc.min():.1f}Â° â†’ {aoa_arr_pc.max():.1f}Â°")
+                        st.success(f"✅ Pre-computación completada: {len(items_precomp)} planos | {n_pts:,} puntos reales | AOA {aoa_arr_pc.min():.1f}° → {aoa_arr_pc.max():.1f}°")
                         st.rerun()
 
-        # â”€â”€ PASO 3: VISUALIZACIÃ“N INTERACTIVA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        # ── PASO 3: VISUALIZACIÓN INTERACTIVA ────────────────────────────────
         if st.session_state.anim4d_grillas is not None:
             st.markdown("---")
-            st.markdown("### ðŸŽ›ï¸ Paso 3: VisualizaciÃ³n Interactiva")
+            st.markdown("### 🎛�? Paso 3: Visualización Interactiva")
 
             g = st.session_state.anim4d_grillas
             aoa_min_v, aoa_max_v = st.session_state.anim4d_aoa_range
@@ -5131,16 +5131,16 @@ elif st.session_state.seccion_actual == 'animacion_4d':
             with c_ctrl_anim:
                 if aoa_min_v != aoa_max_v:
                     alpha_slider = st.slider(
-                        f"Î± Alpha [Â°]  ({aoa_min_v:.1f}Â° â†’ {aoa_max_v:.1f}Â°):",
+                        f"α Alpha [°]  ({aoa_min_v:.1f}° → {aoa_max_v:.1f}°):",
                         min_value=float(aoa_min_v), max_value=float(aoa_max_v),
                         value=float(aoa_min_v), step=0.5, key="alpha_slider_anim4d"
                     )
                 else:
                     alpha_slider = float(aoa_min_v)
-                    st.info(f"Solo un AOA: {aoa_min_v}Â°")
+                    st.info(f"Solo un AOA: {aoa_min_v}°")
 
-                st.markdown("##### ðŸŽ¨ VisualizaciÃ³n")
-                vis_modelo_a = st.selectbox("Modelo 3D:", ["Azul TranslÃºcido", "Negro Mate", "Plata Metalizada", "Puntos"], index=0, key="vis_mod_anim")
+                st.markdown("##### 🎨 Visualización")
+                vis_modelo_a = st.selectbox("Modelo 3D:", ["Azul Translúcido", "Negro Mate", "Plata Metalizada", "Puntos"], index=0, key="vis_mod_anim")
                 c_va1, c_va2 = st.columns(2)
                 vis_bg_a = c_va1.selectbox("Fondo:", ["Oscuro (Negro)", "Claro (Blanco)"], index=0, key="vis_bg_anim")
                 vis_ejes_a = c_va2.checkbox("Mostrar Ejes 3D", value=True, key="vis_ejes_anim")
@@ -5157,23 +5157,23 @@ elif st.session_state.seccion_actual == 'animacion_4d':
 
                 st.markdown(f"""
                 <div style="background:#111; border:1px solid #333; border-radius:8px; padding:10px; margin-top:10px;">
-                    <p style="color:#888; font-size:0.75rem; margin:0;">InterpolaciÃ³n activa</p>
-                    <p style="color:white; font-size:0.9rem; margin:4px 0;">Î± = {alpha_slider:.1f}Â°</p>
+                    <p style="color:#888; font-size:0.75rem; margin:0;">Interpolación activa</p>
+                    <p style="color:white; font-size:0.9rem; margin:4px 0;">α = {alpha_slider:.1f}°</p>
                     <p style="color:#aaa; font-size:0.75rem; margin:0;">
                         Entre {g['items'][idx_lo]['name']}<br>
                         y {g['items'][idx_hi]['name']}<br>
-                        t = {t_v:.2f} | X â‰ˆ {x_v:.1f} mm
+                        t = {t_v:.2f} | X ≈ {x_v:.1f} mm
                     </p>
                 </div>
                 """, unsafe_allow_html=True)
 
-                if st.button("ðŸ—‘ï¸ Limpiar pre-computaciÃ³n", key="btn_clear_precomp", use_container_width=True):
+                if st.button("🗑�? Limpiar pre-computación", key="btn_clear_precomp", use_container_width=True):
                     st.session_state.anim4d_grillas = None
                     st.session_state.anim4d_aoa_range = None
                     st.rerun()
 
             with c_plot_anim:
-                # Interpolar presiÃ³n al vuelo (rÃ¡pido, la grilla ya estÃ¡ lista)
+                # Interpolar presión al vuelo (rápido, la grilla ya está lista)
                 P_interp = (1 - t_v) * g['grillas'][idx_lo] + t_v * g['grillas'][idx_hi]
                 # Y y Z son ahora arrays 1D de puntos reales
                 Y_v = g['Y']   # 1D
@@ -5201,7 +5201,7 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                         elif vis_modelo_a == "Plata Metalizada":
                             color_m, opac = '#e0e0e0', 1.0
                             lighting = dict(ambient=0.4, diffuse=0.8, specular=1.0, roughness=0.1)
-                        else: # Azul TranslÃºcido
+                        else: # Azul Translúcido
                             color_m, opac = '#5588cc', 0.3
                             lighting = dict(ambient=0.4, diffuse=0.8)
 
@@ -5213,8 +5213,8 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                             lighting=lighting
                         ))
 
-                # Plano interpolado â€” con todos los puntos reales
-                # Escala: pmin_v / pmax_v son el mÃ­n/mÃ¡x GLOBAL de todos los planos seleccionados
+                # Plano interpolado — con todos los puntos reales
+                # Escala: pmin_v / pmax_v son el mín/máx GLOBAL de todos los planos seleccionados
                 if mask_v.any():
                     Y_ok = Y_v[mask_v]
                     Z_ok = Z_v[mask_v]
@@ -5232,8 +5232,8 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                             intensity=P_ok,
                             colorscale='Jet', cmin=pmin_v, cmax=pmax_v,
                             showscale=True, opacity=1.0, flatshading=True,
-                            name=f"PresiÃ³n (Î±={alpha_slider:.1f}Â°)",
-                            colorbar=dict(title=dict(text=g.get('var','PresiÃ³n'), side='right'))
+                            name=f"Presión (α={alpha_slider:.1f}°)",
+                            colorbar=dict(title=dict(text=g.get('var','Presión'), side='right'))
                         ))
                     except Exception as e_tri:
                         fig_live.add_trace(go.Scatter3d(
@@ -5241,17 +5241,17 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                             mode='markers',
                             marker=dict(size=3, color=P_ok, colorscale='Jet', showscale=True,
                                         cmin=pmin_v, cmax=pmax_v),
-                            name=f"PresiÃ³n (Î±={alpha_slider:.1f}Â°)"
+                            name=f"Presión (α={alpha_slider:.1f}°)"
                         ))
                 bg_color_a = '#0e1117' if "Oscuro" in vis_bg_a else '#ffffff'
                 font_color_a = 'white' if "Oscuro" in vis_bg_a else 'black'
                 axis_props_a = dict(showgrid=vis_ejes_a, zeroline=vis_ejes_a, showticklabels=vis_ejes_a, showaxeslabels=vis_ejes_a, showbackground=False)
 
                 fig_live.update_layout(
-                    title=f"Î± = {alpha_slider:.1f}Â°",
+                    title=f"α = {alpha_slider:.1f}°",
                     scene=dict(
                         aspectmode='data',
-                        xaxis=dict(title="X (EstaciÃ³n)" if vis_ejes_a else "", autorange="reversed", **axis_props_a),
+                        xaxis=dict(title="X (Estación)" if vis_ejes_a else "", autorange="reversed", **axis_props_a),
                         yaxis=dict(title="Y (Envergadura)" if vis_ejes_a else "", **axis_props_a),
                         zaxis=dict(title="Z (Altura)" if vis_ejes_a else "", **axis_props_a)
                     ),
@@ -5264,34 +5264,34 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                 st.plotly_chart(fig_live, use_container_width=True)
 
             st.markdown("---")
-            st.markdown("### ðŸŽ¥ Paso 4: Generar AnimaciÃ³n GIF")
-            st.caption("ðŸ’¡ Matplotlib puro â€” sin Chrome ni kaleido. Dos modos: 2D suave (contourf) o 4D isomÃ©trico con modelo.")
+            st.markdown("### 🎥 Paso 4: Generar Animación GIF")
+            st.caption("💡 Matplotlib puro — sin Chrome ni kaleido. Dos modos: 2D suave (contourf) o 4D isométrico con modelo.")
 
             c_gif0, c_gif1, c_gif2, c_gif3 = st.columns(4)
-            tipo_gif  = c_gif0.radio("Tipo:", ["ðŸ—ºï¸ 2D suave", "ðŸš€ 4D"], key="tipo_gif_sel")
+            tipo_gif  = c_gif0.radio("Tipo:", ["🗺�? 2D suave", "🚀 4D"], key="tipo_gif_sel")
             fps_gif   = c_gif1.slider("FPS:", 1, 10, 3, key="fps_gif_anim")
-            n_pas_gif = c_gif2.slider("NÂ° frames:", 5, 60, 15, key="npasos_gif")
-            sc_gif    = c_gif3.slider("Ã— relieve (4D):", 0.1, 10.0, 1.0, 0.1, key="sc_gif_anim")
+            n_pas_gif = c_gif2.slider("N° frames:", 5, 60, 15, key="npasos_gif")
+            sc_gif    = c_gif3.slider("× relieve (4D):", 0.1, 10.0, 1.0, 0.1, key="sc_gif_anim")
 
             elev_gif, azim_gif = 25, -135
             if "4D" in tipo_gif:
-                st.markdown("##### ðŸ“· PosiciÃ³n de CÃ¡mara (Vista 4D)")
+                st.markdown("##### 📷 Posición de Cámara (Vista 4D)")
                 c_cam1, c_cam2, c_cam3 = st.columns(3)
-                preset_cam = c_cam1.selectbox("Preajustes:", ["IsomÃ©trica", "Opuesta a IsomÃ©trica", "Frente (aguas abajo)", "Lateral", "Planta", "Personalizada"], key="preset_cam_gif")
-                if preset_cam == "IsomÃ©trica": elev_def, azim_def = 25, -135
-                elif preset_cam == "Opuesta a IsomÃ©trica": elev_def, azim_def = 25, 45
+                preset_cam = c_cam1.selectbox("Preajustes:", ["Isométrica", "Opuesta a Isométrica", "Frente (aguas abajo)", "Lateral", "Planta", "Personalizada"], key="preset_cam_gif")
+                if preset_cam == "Isométrica": elev_def, azim_def = 25, -135
+                elif preset_cam == "Opuesta a Isométrica": elev_def, azim_def = 25, 45
                 elif preset_cam == "Frente (aguas abajo)": elev_def, azim_def = 0, -180
                 elif preset_cam == "Lateral": elev_def, azim_def = 0, -90
                 elif preset_cam == "Planta": elev_def, azim_def = 90, -90
                 else: elev_def, azim_def = 25, -135
 
-                elev_gif = c_cam2.slider("ElevaciÃ³n [Â°]", -90, 90, elev_def, disabled=(preset_cam != "Personalizada"), key="elev_gif_anim")
-                azim_gif = c_cam3.slider("Azimut [Â°]", -180, 180, azim_def, disabled=(preset_cam != "Personalizada"), key="azim_gif_anim")
+                elev_gif = c_cam2.slider("Elevación [°]", -90, 90, elev_def, disabled=(preset_cam != "Personalizada"), key="elev_gif_anim")
+                azim_gif = c_cam3.slider("Azimut [°]", -180, 180, azim_def, disabled=(preset_cam != "Personalizada"), key="azim_gif_anim")
                 if preset_cam != "Personalizada": elev_gif, azim_gif = elev_def, azim_def
 
             c_btn1, c_btn2 = st.columns(2)
-            btn_preview = c_btn1.button("ðŸ‘ï¸ Previsualizar Vista (1 frame)", use_container_width=True)
-            btn_generar = c_btn2.button("ðŸŽ¥ Generar GIF Completo", type="primary", use_container_width=True)
+            btn_preview = c_btn1.button("�?�? Previsualizar Vista (1 frame)", use_container_width=True)
+            btn_generar = c_btn2.button("🎥 Generar GIF Completo", type="primary", use_container_width=True)
 
             if btn_preview or btn_generar:
                 import matplotlib
@@ -5324,9 +5324,9 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                 try:
                     for fi, alpha_i in enumerate(alpha_range_gif):
                         if not btn_preview:
-                            status_gif.text(f"Frame {fi+1}/{n_pas_gif}  Î±={alpha_i:.1f}Â°")
+                            status_gif.text(f"Frame {fi+1}/{n_pas_gif}  α={alpha_i:.1f}°")
                         else:
-                            status_gif.text(f"Generando previsualizaciÃ³n para Î±={alpha_i:.1f}Â°...")
+                            status_gif.text(f"Generando previsualización para α={alpha_i:.1f}°...")
 
                         idx_lo_g = max(0, min(int(np.searchsorted(g['aoa_arr'], alpha_i)) - 1, len(g['aoa_arr']) - 2))
                         idx_hi_g = idx_lo_g + 1
@@ -5340,7 +5340,7 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                         text_color_mpl = 'white' if "Oscuro" in vis_bg_a else 'black'
 
                         if "2D" in tipo_gif:
-                            # â”€â”€ 2D: contourf suave sobre grilla densa â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                            # ── 2D: contourf suave sobre grilla densa ─────────────
                             fig_mpl, ax_mpl = _plt.subplots(figsize=(9, 7), facecolor=bg_color_mpl)
                             ax_mpl.set_facecolor(bg_color_mpl)
 
@@ -5350,19 +5350,19 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                                              (Yr, Zr), method='linear')
                                 # Relleno smooth con contourf
                                 cf = ax_mpl.contourf(Yr, Zr, Pr, levels=40, cmap='jet', norm=norm_gif)
-                                # IsolÃ­neas encima
+                                # Isolíneas encima
                                 ax_mpl.contour(Yr, Zr, Pr, levels=12, colors='white', linewidths=0.4, alpha=0.4)
-                                cb = fig_mpl.colorbar(cf, ax=ax_mpl, label=g.get('var', 'PresiÃ³n [Pa]'))
+                                cb = fig_mpl.colorbar(cf, ax=ax_mpl, label=g.get('var', 'Presión [Pa]'))
                                 cb.ax.yaxis.label.set_color(text_color_mpl)
                                 cb.ax.tick_params(colors=text_color_mpl)
 
-                            # LÃ­nea de simetrÃ­a
+                            # Línea de simetría
                             y_mid_g = (y_lim[0] + y_lim[1]) / 2
                             ax_mpl.axvline(y_mid_g, color='cyan', lw=1.2, ls='--', alpha=0.7, label=f'Y_mid={y_mid_g:.0f}')
                             ax_mpl.set_xlim(y_lim); ax_mpl.set_ylim(z_lim)
                             ax_mpl.set_aspect('equal', 'box')
                             
-                            ax_mpl.set_title(f"Î± = {alpha_i:.1f}Â°  |  Plano YZ â€” {g.get('var','PresiÃ³n')}",
+                            ax_mpl.set_title(f"α = {alpha_i:.1f}°  |  Plano YZ — {g.get('var','Presión')}",
                                              color=text_color_mpl, fontsize=13, pad=10)
                                              
                             if not vis_ejes_a:
@@ -5377,12 +5377,12 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                                           edgecolor='#444' if "Oscuro" in vis_bg_a else '#ccc', loc='upper right')
 
                         else:
-                            # â”€â”€ 4D con modelo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                            # ── 4D con modelo ──────────────────────────
                             fig_mpl = _plt.figure(figsize=(11, 8), facecolor=bg_color_mpl)
                             ax3 = fig_mpl.add_subplot(111, projection='3d')
                             ax3.set_facecolor(bg_color_mpl)
 
-                            # Plano de presiÃ³n
+                            # Plano de presión
                             if mask_g.any():
                                 Y_ok_g = g['Y'][mask_g]; Z_ok_g = g['Z'][mask_g]; P_ok_g = P_g[mask_g]
                                 # Interpolar a grilla regular para superficie suave
@@ -5410,7 +5410,7 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                                         c_mod, op_mod = '#222222', 1.0
                                     elif vis_modelo_a == "Plata Metalizada":
                                         c_mod, op_mod = '#aaaaaa', 1.0
-                                    else: # Azul TranslÃºcido
+                                    else: # Azul Translúcido
                                         c_mod, op_mod = '#5588cc', 0.35
                                     
                                     try:
@@ -5433,10 +5433,10 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                                 
                             # Vista
                             ax3.view_init(elev=elev_gif, azim=azim_gif)
-                            title_obj = ax3.set_title(f"Î± = {alpha_i:.1f}Â°  |  Vista 4D (Elev: {elev_gif}Â°, Azim: {azim_gif}Â°)",
+                            title_obj = ax3.set_title(f"α = {alpha_i:.1f}°  |  Vista 4D (Elev: {elev_gif}°, Azim: {azim_gif}°)",
                                           color=text_color_mpl, fontsize=12, pad=12)
                             
-                            # Invertir eje X (avance del aviÃ³n)
+                            # Invertir eje X (avance del avión)
                             ax3.invert_xaxis()
                             fig_mpl.tight_layout()
 
@@ -5450,17 +5450,17 @@ elif st.session_state.seccion_actual == 'animacion_4d':
 
                     if btn_preview:
                         status_gif.empty()
-                        st.image(frames_gif[0], caption="PrevisualizaciÃ³n del Frame 1")
+                        st.image(frames_gif[0], caption="Previsualización del Frame 1")
                     else:
                         status_gif.text("Compilando GIF...")
                         gif_path_anim = os.path.join(temp_dir_gif, "animacion_4d.gif")
                         images_gif = [imageio.imread(f) for f in frames_gif]
                         imageio.mimsave(gif_path_anim, images_gif, fps=fps_gif, loop=0)
-                        st.success(f"âœ… GIF generado: {n_pas_gif} frames Â· {fps_gif} FPS Â· {tipo_gif}")
+                        st.success(f"✅ GIF generado: {n_pas_gif} frames · {fps_gif} FPS · {tipo_gif}")
                         st.image(gif_path_anim)
                         nombre_gif = "animacion_2d.gif" if "2D" in tipo_gif else "animacion_4d_iso.gif"
                         with open(gif_path_anim, "rb") as fg:
-                            st.download_button("ðŸ“¥ Descargar GIF", fg, file_name=nombre_gif,
+                            st.download_button("📥 Descargar GIF", fg, file_name=nombre_gif,
                                               mime="image/gif", key="dl_gif_anim4d")
 
                 except Exception as e_gif:
@@ -5475,15 +5475,15 @@ elif st.session_state.seccion_actual == 'herramientas':
     st.markdown("""
     <div class="header-container">
         <h1 style="font-size: 3rem; margin-bottom: 1rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
-            ðŸ”§ HERRAMIENTAS DE PROCESAMIENTO
+            🔧 HERRAMIENTAS DE PROCESAMIENTO
         </h1>
         <h2 style="font-size: 1.8rem; margin-bottom: 0; opacity: 0.9;">
-            Herramientas avanzadas para el procesamiento y anÃ¡lisis de datos aerodinÃ¡micos
+            Herramientas avanzadas para el procesamiento y análisis de datos aerodinámicos
         </h2>
     </div>
     """, unsafe_allow_html=True)
     
-    # Inicializar variables de sesiÃ³n si no existen
+    # Inicializar variables de sesión si no existen
     if 'archivos_unidos' not in st.session_state:
         st.session_state.archivos_unidos = None
     if 'matriz_presiones' not in st.session_state:
@@ -5495,7 +5495,7 @@ elif st.session_state.seccion_actual == 'herramientas':
     with st.container():
         st.markdown("""
         <div class="section-card" style="border-left: 5px solid #0ea5e9; margin-bottom: 10px;">
-            <h3 style="color: #0ea5e9; margin: 0;">ðŸ“ 01. UNIÃ“N DE ARCHIVOS</h3>
+            <h3 style="color: #0ea5e9; margin: 0;">�? 01. UNIÓN DE ARCHIVOS</h3>
         </div>
         """, unsafe_allow_html=True)
         
@@ -5504,9 +5504,9 @@ elif st.session_state.seccion_actual == 'herramientas':
         with c_desc:
             st.markdown("""
             <p style="color: #ccc; font-size: 0.95rem;">
-                Utilidad para combinar mÃºltiples archivos CSV de incertidumbre en un Ãºnico conjunto de datos.
+                Utilidad para combinar múltiples archivos CSV de incertidumbre en un único conjunto de datos.
                 <br><br>
-                El sistema detectarÃ¡ automÃ¡ticamente si hay puntos temporales sobrepuestos y generarÃ¡ una alerta.
+                El sistema detectará automáticamente si hay puntos temporales sobrepuestos y generará una alerta.
             </p>
             """, unsafe_allow_html=True)
 
@@ -5525,7 +5525,7 @@ elif st.session_state.seccion_actual == 'herramientas':
             with c_btn:
                  st.write("") # Spacer
                  st.write("")
-                 btn_unir = st.button("ðŸ”— Unir Ahora", key="btn_unir", type="primary", use_container_width=True)
+                 btn_unir = st.button("🔗 Unir Ahora", key="btn_unir", type="primary", use_container_width=True)
 
             if btn_unir:
                 if archivos_union and len(archivos_union) > 1:
@@ -5541,23 +5541,23 @@ elif st.session_state.seccion_actual == 'herramientas':
                                 'puntos_sobrepuestos': puntos_sobrepuestos
                             }
                             
-                            st.success(f"âœ… {len(archivos_union)} archivos unidos correctamente")
+                            st.success(f"✅ {len(archivos_union)} archivos unidos correctamente")
                             
                             if puntos_sobrepuestos:
-                                st.warning(f"âš ï¸ Se detectaron {len(puntos_sobrepuestos)} puntos sobrepuestos")
+                                st.warning(f"⚠�? Se detectaron {len(puntos_sobrepuestos)} puntos sobrepuestos")
                                 with st.expander("Ver puntos sobrepuestos"):
                                     for punto in puntos_sobrepuestos:
                                         st.write(f"Y={punto[0]}, Z={punto[1]}, Tiempo={punto[2]}s")
                             
-                            # BotÃ³n de descarga
+                            # Botón de descarga
                             st.download_button(
-                                label="ðŸ“¥ Descargar CSV Unido",
+                                label="📥 Descargar CSV Unido",
                                 data=contenido_unido.encode('utf-8-sig'),
                                 file_name=f"{nombre_archivo_union}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                                 mime="text/csv"
                             )
                 else:
-                    st.error("âŒ Seleccione min. 2 archivos")
+                    st.error("�?� Seleccione min. 2 archivos")
 
     st.markdown("---")
 
@@ -5565,7 +5565,7 @@ elif st.session_state.seccion_actual == 'herramientas':
     with st.container():
         st.markdown("""
         <div class="section-card" style="border-left: 5px solid #f59e0b; margin-bottom: 10px;">
-            <h3 style="color: #f59e0b; margin: 0;">ðŸ“Š 02. MATRIZ DE PRESIONES</h3>
+            <h3 style="color: #f59e0b; margin: 0;">📊 02. MATRIZ DE PRESIONES</h3>
         </div>
         """, unsafe_allow_html=True)
         
@@ -5576,7 +5576,7 @@ elif st.session_state.seccion_actual == 'herramientas':
             <p style="color: #ccc; font-size: 0.95rem;">
                 Extrae una matriz estructurada (Filas=Y, Columnas=Z) de presiones a partir de datos crudos.
                 <br><br>
-                Ideal para anÃ¡lisis numÃ©rico posterior o verificaciÃ³n manual de campos.
+                Ideal para análisis numérico posterior o verificación manual de campos.
             </p>
             """, unsafe_allow_html=True)
             
@@ -5594,12 +5594,12 @@ elif st.session_state.seccion_actual == 'herramientas':
             with c_btn:
                 st.write("")
                 st.write("")
-                btn_matriz = st.button("ðŸ“Š Extraer", key="btn_matriz", type="primary", use_container_width=True)
+                btn_matriz = st.button("📊 Extraer", key="btn_matriz", type="primary", use_container_width=True)
 
-            # ConfiguraciÃ³n de sensores para esta herramienta
-            with st.expander("ConfiguraciÃ³n de Sensores y AtmÃ³sfera (Avanzado)"):
+            # Configuración de sensores para esta herramienta
+            with st.expander("Configuración de Sensores y Atmósfera (Avanzado)"):
                 configuracion_matriz = mostrar_configuracion_sensores("herramienta2")
-                upl_inf_vtk = st.file_uploader("ðŸ”— 'Valores en el infinito.txt' para normalizaciÃ³n VTK:", type=['txt', 'csv'], key="upl_inf_vtk")
+                upl_inf_vtk = st.file_uploader("🔗 'Valores en el infinito.txt' para normalización VTK:", type=['txt', 'csv'], key="upl_inf_vtk")
 
             if btn_matriz:
                 if archivo_matriz:
@@ -5612,20 +5612,20 @@ elif st.session_state.seccion_actual == 'herramientas':
                                 'nombre': nombre_matriz
                             }
 
-                            st.success("âœ… Matriz extraÃ­da")
+                            st.success("✅ Matriz extraída")
                             st.dataframe(matriz.head(), use_container_width=True)
 
-                            # BotÃ³n de descarga
+                            # Botón de descarga
                             df_matriz = pd.DataFrame(matriz, columns=["Y", "Z", "Presion"])
                             csv_matriz = df_matriz.to_csv(sep=';', decimal=',', index=False)
                             st.download_button(
-                                label="ðŸ“¥ Descargar Matriz CSV",
+                                label="📥 Descargar Matriz CSV",
                                 data=csv_matriz.encode('utf-8-sig'),
                                 file_name=f"{nombre_matriz}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                                 mime="text/csv"
                             )
                 else:
-                    st.error("âŒ Falta archivo")
+                    st.error("�?� Falta archivo")
 
     st.markdown("---")
 
@@ -5633,27 +5633,27 @@ elif st.session_state.seccion_actual == 'herramientas':
     with st.container():
         st.markdown("""
         <div class="section-card" style="border-left: 5px solid #10b981; margin-bottom: 10px;">
-            <h3 style="color: #10b981; margin: 0;">ðŸŽ¯ 03. GENERADOR VTK (CFD)</h3>
+            <h3 style="color: #10b981; margin: 0;">🎯 03. GENERADOR VTK (CFD)</h3>
             <p style="color:#aaa; margin: 6px 0 0 0; font-size:0.9rem;">
-                Convierte datos de presiÃ³n en archivos <b>.VTK</b> compatibles con ParaView / Salome.
-                ElegÃ­ el tipo de archivo (2D, 3D o 4D) y la fuente de datos.
+                Convierte datos de presión en archivos <b>.VTK</b> compatibles con ParaView / Salome.
+                Elegí el tipo de archivo (2D, 3D o 4D) y la fuente de datos.
             </p>
         </div>
         """, unsafe_allow_html=True)
 
-        # â”€â”€â”€ VTK 2D â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        with st.expander("ðŸ—ºï¸ VTK 2D â€” Plano de PresiÃ³n  |  Plano YZ (X fijo). PresiÃ³n como color.", expanded=True):
+        # ─── VTK 2D ─────────────────────────────────────────────────────
+        with st.expander("🗺�? VTK 2D — Plano de Presión  |  Plano YZ (X fijo). Presión como color.", expanded=True):
 
             fuente_2d = st.radio(
                 "Fuente de datos:",
-                ["ðŸ“‚ Drive 2D (base de datos)", "ðŸ’¾ Memoria (sesiÃ³n actual)", "ðŸ“ Subir CSV nuevo"],
+                ["📂 Drive 2D (base de datos)", "💾 Memoria (sesión actual)", "�? Subir CSV nuevo"],
                 key="fuente_vtk2d", horizontal=True
             )
 
             df_vtk2d = None
             fname_2d_drive = None          # nombre original del archivo en Drive
 
-            if fuente_2d == "ðŸ“‚ Drive 2D (base de datos)":
+            if fuente_2d == "📂 Drive 2D (base de datos)":
                 archivos_2d = auth.get_user_files_2d(st.session_state.username)
                 if archivos_2d:
                     dict_2d = {f"{a[1]} [{a[2][:10] if a[2] else ''}]": a for a in archivos_2d}
@@ -5665,17 +5665,17 @@ elif st.session_state.seccion_actual == 'herramientas':
                         if raw_2d:
                             import io
                             df_vtk2d = pd.read_csv(io.BytesIO(raw_2d), sep=';', decimal=',')
-                            st.success(f"âœ… Cargado desde Drive: **{fname_2d_drive}**")
+                            st.success(f"✅ Cargado desde Drive: **{fname_2d_drive}**")
                 else:
-                    st.info("No hay archivos 2D en Drive. GuardÃ¡ desde BETZ 2D â†’ Paso 4.")
+                    st.info("No hay archivos 2D en Drive. Guardá desde BETZ 2D → Paso 4.")
 
-            elif fuente_2d == "ðŸ’¾ Memoria (sesiÃ³n actual)":
+            elif fuente_2d == "💾 Memoria (sesión actual)":
                 mat_disp = st.session_state.get('matriz_presiones')
                 if mat_disp:
-                    st.success(f"âœ… Usando: {mat_disp['nombre']}")
+                    st.success(f"✅ Usando: {mat_disp['nombre']}")
                     df_vtk2d = mat_disp['matriz']
                 else:
-                    st.warning("No hay matriz en sesiÃ³n. UsÃ¡ Herramienta 02 o cargÃ¡ desde Drive.")
+                    st.warning("No hay matriz en sesión. Usá Herramienta 02 o cargá desde Drive.")
 
             else:
                 csv_new = st.file_uploader("CSV Matriz (sep=;, dec=,):", type=['csv'], key="up_vtk2d")
@@ -5686,7 +5686,7 @@ elif st.session_state.seccion_actual == 'herramientas':
                         st.error(f"Error leyendo CSV: {e}")
 
             if df_vtk2d is not None:
-                x_vtk2d = st.number_input("ðŸ“ PosiciÃ³n X [mm]:", value=0.0, step=10.0, key="x_vtk2d")
+                x_vtk2d = st.number_input("�? Posición X [mm]:", value=0.0, step=10.0, key="x_vtk2d")
                 res_vtk2d = st.slider("Suavizado:", 1, 5, 2, key="res_vtk2d")
 
                 # Nombre auto: si viene de Drive reemplazamos prefijo, sino usamos X
@@ -5704,38 +5704,38 @@ elif st.session_state.seccion_actual == 'herramientas':
                     nombre_vtk2d = nombre_auto_vtk2d
                     c2d_nom.code(f"{nombre_vtk2d}.vtk")
 
-                if st.button("ðŸ—ºï¸ Generar VTK 2D", key="btn_gen_vtk2d", type="primary"):
+                if st.button("🗺�? Generar VTK 2D", key="btn_gen_vtk2d", type="primary"):
                     resultado_2d = crear_vtk_plano_presion_2d(df_vtk2d, nombre_vtk2d, x_vtk2d)
                     if resultado_2d:
                         vtk_path_2d, vtk_bytes_2d = resultado_2d
                         c_dl1, c_dl2 = st.columns(2)
                         with c_dl1:
-                            st.download_button("ðŸ“¥ Descargar VTK 2D", vtk_bytes_2d,
+                            st.download_button("📥 Descargar VTK 2D", vtk_bytes_2d,
                                                file_name=os.path.basename(vtk_path_2d),
                                                mime="application/octet-stream", key="dl_vtk2d")
                         with c_dl2:
-                            if st.button("â˜ï¸ Guardar en Drive", key="save_vtk2d_drive"):
+                            if st.button("�?�? Guardar en Drive", key="save_vtk2d_drive"):
                                 if auth.save_vtk_plano(st.session_state.username,
                                                        os.path.basename(vtk_path_2d), vtk_bytes_2d):
-                                    st.success("âœ… Subido â†’ HERRAMIENTAS/ARCHIVOS VTK/PLANOS DE PRESION")
+                                    st.success("✅ Subido → HERRAMIENTAS/ARCHIVOS VTK/PLANOS DE PRESION")
                                 else:
                                     st.error("Error al subir a Drive")
                     else:
-                        st.error("âŒ No se pudo generar el VTK.")
+                        st.error("�?� No se pudo generar el VTK.")
 
-        # â”€â”€â”€ VTK 3D â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        with st.expander("ðŸ•¸ï¸ VTK 3D â€” Malla Delaunay  |  TriangulaciÃ³n 3D fiel a los datos. Ideal para CFD.", expanded=True):
+        # ─── VTK 3D ─────────────────────────────────────────────────────
+        with st.expander("🕸�? VTK 3D — Malla Delaunay  |  Triangulación 3D fiel a los datos. Ideal para CFD.", expanded=True):
 
             fuente_3d = st.radio(
                 "Fuente de datos:",
-                ["ðŸ“‚ Drive 3D (base de datos)", "ðŸ’¾ Memoria (sesiÃ³n actual)", "ðŸ“ Subir CSV nuevo"],
+                ["📂 Drive 3D (base de datos)", "💾 Memoria (sesión actual)", "�? Subir CSV nuevo"],
                 key="fuente_vtk3d", horizontal=True
             )
 
             df_vtk3d = None
             fname_3d_drive = None
 
-            if fuente_3d == "ðŸ“‚ Drive 3D (base de datos)":
+            if fuente_3d == "📂 Drive 3D (base de datos)":
                 archivos_3d = auth.get_user_surfaces(st.session_state.username)
                 if archivos_3d:
                     dict_3d = {f"{s[1]} [{s[3][:10] if s[3] else ''}]": s for s in archivos_3d}
@@ -5745,17 +5745,17 @@ elif st.session_state.seccion_actual == 'herramientas':
                         fname_3d_drive = dict_3d[sel_3d][1]          # ej: 3D-X500-OAO10
                         data_str_3d = dict_3d[sel_3d][4]
                         df_vtk3d = pd.DataFrame(_json.loads(data_str_3d))
-                        st.success(f"âœ… Cargado: **{fname_3d_drive}**")
+                        st.success(f"✅ Cargado: **{fname_3d_drive}**")
                 else:
-                    st.info("No hay planos 3D en Drive. GuardÃ¡ desde BETZ 3D â†’ Paso 5.")
+                    st.info("No hay planos 3D en Drive. Guardá desde BETZ 3D → Paso 5.")
 
-            elif fuente_3d == "ðŸ’¾ Memoria (sesiÃ³n actual)":
+            elif fuente_3d == "💾 Memoria (sesión actual)":
                 mat_disp3d = st.session_state.get('matriz_presiones')
                 if mat_disp3d:
-                    st.success(f"âœ… Usando: {mat_disp3d['nombre']}")
+                    st.success(f"✅ Usando: {mat_disp3d['nombre']}")
                     df_vtk3d = mat_disp3d['matriz']
                 else:
-                    st.warning("No hay matriz en sesiÃ³n.")
+                    st.warning("No hay matriz en sesión.")
 
             else:
                 csv_new3d = st.file_uploader("CSV Matriz:", type=['csv'], key="up_vtk3d")
@@ -5766,7 +5766,7 @@ elif st.session_state.seccion_actual == 'herramientas':
                         st.error(f"Error: {e}")
 
             if df_vtk3d is not None:
-                x_vtk3d = st.number_input("ðŸ“ PosiciÃ³n X [mm]:", value=0.0, step=10.0, key="x_vtk3d")
+                x_vtk3d = st.number_input("�? Posición X [mm]:", value=0.0, step=10.0, key="x_vtk3d")
 
                 if fname_3d_drive:
                     stem_3d = os.path.splitext(fname_3d_drive)[0]
@@ -5782,32 +5782,32 @@ elif st.session_state.seccion_actual == 'herramientas':
                     nombre_vtk3d = nombre_auto_vtk3d
                     c3d_nom.code(f"{nombre_vtk3d}.vtk")
 
-                if st.button("ðŸ•¸ï¸ Generar VTK 3D Delaunay", key="btn_gen_vtk3d", type="primary"):
+                if st.button("🕸�? Generar VTK 3D Delaunay", key="btn_gen_vtk3d", type="primary"):
                     res_3d = crear_vtk_superficie_3d_delaunay(df_vtk3d, nombre_vtk3d, x_vtk3d)
                     if res_3d:
                         with open(res_3d, "rb") as f3d:
                             vtk_bytes_3d = f3d.read()
                         c_dl3, c_dl4 = st.columns(2)
                         with c_dl3:
-                            st.download_button("ðŸ“¥ Descargar VTK 3D", vtk_bytes_3d,
+                            st.download_button("📥 Descargar VTK 3D", vtk_bytes_3d,
                                                file_name=f"{nombre_vtk3d}.vtk",
                                                mime="application/octet-stream", key="dl_vtk3d")
                         with c_dl4:
-                            if st.button("â˜ï¸ Guardar en Drive", key="save_vtk3d_drive"):
+                            if st.button("�?�? Guardar en Drive", key="save_vtk3d_drive"):
                                 if auth.save_vtk_superficie(st.session_state.username,
                                                             f"{nombre_vtk3d}.vtk", vtk_bytes_3d):
-                                    st.success("âœ… Subido â†’ HERRAMIENTAS/ARCHIVOS VTK/SUPERFICIES 3D")
+                                    st.success("✅ Subido → HERRAMIENTAS/ARCHIVOS VTK/SUPERFICIES 3D")
                                 else:
                                     st.error("Error al subir a Drive")
                     else:
-                        st.error("âŒ No se pudo generar el VTK.")
+                        st.error("�?� No se pudo generar el VTK.")
 
-        # â”€â”€â”€ VTK 4D â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        with st.expander("ðŸŒŒ VTK 4D â€” Multi-plano  |  Genera un VTK Delaunay por cada plano 4D, en su estaciÃ³n X.", expanded=True):
+        # ─── VTK 4D ─────────────────────────────────────────────────────
+        with st.expander("🌌 VTK 4D — Multi-plano  |  Genera un VTK Delaunay por cada plano 4D, en su estación X.", expanded=True):
 
             archivos_4d_vtk = auth.get_user_surfaces_4d(st.session_state.username)
             if not archivos_4d_vtk:
-                st.info("No hay planos 4D en Drive. GuardÃ¡ desde BETZ 4D â†’ Paso 1.")
+                st.info("No hay planos 4D en Drive. Guardá desde BETZ 4D → Paso 1.")
             else:
                 dict_4d_vtk = {f"{s[1]} (X={s[2]}mm) [{s[3][:10] if s[3] else ''}]": s for s in archivos_4d_vtk}
                 sels_4d = st.multiselect("Seleccionar planos 4D:", list(dict_4d_vtk.keys()), key="sels_4d_vtk")
@@ -5822,17 +5822,17 @@ elif st.session_state.seccion_actual == 'herramientas':
                             stem_4d = s4[1]
                             auto_4d = "VTK-" + stem_4d[stem_4d.index("-")+1:] if "-" in stem_4d else f"VTK-{stem_4d}"
                             custom_names_4d[lab] = st.text_input(
-                                f"ðŸ·ï¸ Nombre para {s4[1]}:", value=auto_4d, key=f"nom4d_{s4[1]}"
+                                f"�?��? Nombre para {s4[1]}:", value=auto_4d, key=f"nom4d_{s4[1]}"
                             )
                     else:
-                        # Mostrar los nombres automÃ¡ticos como preview
+                        # Mostrar los nombres automáticos como preview
                         for lab in sels_4d:
                             s4 = dict_4d_vtk[lab]
                             stem_4d = s4[1]
                             auto_4d = "VTK-" + stem_4d[stem_4d.index("-")+1:] if "-" in stem_4d else f"VTK-{stem_4d}"
                             st.code(f"{auto_4d}.vtk", language=None)
 
-                    if st.button("ðŸŒŒ Generar VTK por cada plano", key="btn_gen_vtk4d", type="primary"):
+                    if st.button("🌌 Generar VTK por cada plano", key="btn_gen_vtk4d", type="primary"):
                         import json as _json4
                         for lab in sels_4d:
                             s4 = dict_4d_vtk[lab]
@@ -5847,13 +5847,13 @@ elif st.session_state.seccion_actual == 'herramientas':
                                 with open(res_s4, "rb") as f4:
                                     bytes_s4 = f4.read()
                                 st.download_button(
-                                    f"ðŸ“¥ {nom_s4}.vtk",
+                                    f"📥 {nom_s4}.vtk",
                                     bytes_s4,
                                     file_name=f"{nom_s4}.vtk",
                                     mime="application/octet-stream",
                                     key=f"dl_vtk4d_{s4[1]}"
                                 )
-                                st.success(f"âœ… {nom_s4}.vtk generado")
+                                st.success(f"✅ {nom_s4}.vtk generado")
                             else:
                                 st.error(f"Error generando VTK para {s4[1]}")
 
@@ -5870,12 +5870,12 @@ elif st.session_state.seccion_actual == 'configuracion':
     # Hero Title for Config
     st.markdown("""
     <div style="text-align: center; padding: 4rem 2rem; background: linear-gradient(180deg, #000 0%, #111 100%); margin-bottom: 3rem;">
-        <h1 style="font-size: 3.5rem; margin-bottom: 1rem; letter-spacing: 4px; color: #fff; text-transform: uppercase;">ConfiguraciÃ³n</h1>
-        <p style="color: #666; font-size: 1.2rem; max-width: 600px; margin: 0 auto;">Estado del sistema y gestiÃ³n de parÃ¡metros operativos.</p>
+        <h1 style="font-size: 3.5rem; margin-bottom: 1rem; letter-spacing: 4px; color: #fff; text-transform: uppercase;">Configuración</h1>
+        <p style="color: #666; font-size: 1.2rem; max-width: 600px; margin: 0 auto;">Estado del sistema y gestión de parámetros operativos.</p>
     </div>
     """, unsafe_allow_html=True)
     
-    st.markdown("### ðŸ”Œ Estado del Sistema")
+    st.markdown("### 🔌 Estado del Sistema")
     
     # Check Database
     db_ok = os.path.exists("users.db")
@@ -5885,10 +5885,10 @@ elif st.session_state.seccion_actual == 'configuracion':
     with c1:
         st.markdown(f"""
         <div class="section-card" style="text-align: center;">
-            <div style="font-size: 2rem; margin-bottom: 10px;">ðŸ’¾</div>
+            <div style="font-size: 2rem; margin-bottom: 10px;">💾</div>
             <h4 style="margin:0; color:white;">Base de Datos</h4>
             <div style="font-size: 1.2rem; font-weight:bold; color: {'#4ade80' if db_ok else '#f87171'}; margin: 10px 0;">
-                {'â— ONLINE' if db_ok else 'â— OFFLINE'}
+                {'�? ONLINE' if db_ok else '�? OFFLINE'}
             </div>
             <p style="color: grey; font-size: 0.8rem; margin:0;">users.db ({db_size:.1f} KB)</p>
         </div>
@@ -5897,8 +5897,8 @@ elif st.session_state.seccion_actual == 'configuracion':
     with c2:
         st.markdown(f"""
         <div class="section-card" style="text-align: center;">
-            <div style="font-size: 2rem; margin-bottom: 10px;">ðŸ‘¤</div>
-            <h4 style="margin:0; color:white;">SesiÃ³n Activa</h4>
+            <div style="font-size: 2rem; margin-bottom: 10px;">👤</div>
+            <h4 style="margin:0; color:white;">Sesión Activa</h4>
             <div style="font-size: 1.2rem; font-weight:bold; color: #60a5fa; margin: 10px 0;">
                 {st.session_state.username}
             </div>
@@ -5909,8 +5909,8 @@ elif st.session_state.seccion_actual == 'configuracion':
     with c3:
         st.markdown(f"""
         <div class="section-card" style="text-align: center;">
-            <div style="font-size: 2rem; margin-bottom: 10px;">ðŸš€</div>
-            <h4 style="margin:0; color:white;">VersiÃ³n App</h4>
+            <div style="font-size: 2rem; margin-bottom: 10px;">🚀</div>
+            <h4 style="margin:0; color:white;">Versión App</h4>
             <div style="font-size: 1.2rem; font-weight:bold; color: #a78bfa; margin: 10px 0;">
                 v2.1.0
             </div>
@@ -5919,8 +5919,8 @@ elif st.session_state.seccion_actual == 'configuracion':
         """, unsafe_allow_html=True)
 
     st.markdown("---")
-    st.markdown("### ðŸ—ƒï¸ Explorador de Archivos en Drive")
-    st.info("NavegÃ¡ entre carpetas, renombrÃ¡ o eliminÃ¡ archivos de tu cuenta en Google Drive.")
+    st.markdown("### 🗃�? Explorador de Archivos en Drive")
+    st.info("Navegá entre carpetas, renombrá o eliminá archivos de tu cuenta en Google Drive.")
 
     import drive_api as _dapi
 
@@ -5934,15 +5934,15 @@ elif st.session_state.seccion_actual == 'configuracion':
     if 'drive_confirm_delete_id' not in st.session_state:
         st.session_state.drive_confirm_delete_id = None
 
-    # --- Obtener la carpeta raÃ­z del usuario la primera vez ---
+    # --- Obtener la carpeta raíz del usuario la primera vez ---
     if st.session_state.drive_current_folder_id is None:
         with st.spinner("Conectando con Google Drive..."):
             user_root_id = _dapi.get_user_root(st.session_state.username)
         if user_root_id:
             st.session_state.drive_current_folder_id = user_root_id
-            st.session_state.drive_folder_path = [(user_root_id, f"ðŸ“ {st.session_state.username}")]
+            st.session_state.drive_folder_path = [(user_root_id, f"�? {st.session_state.username}")]
         else:
-            st.error("âŒ No se pudo conectar con Google Drive. VerificÃ¡ las credenciales.")
+            st.error("�?� No se pudo conectar con Google Drive. Verificá las credenciales.")
             user_root_id = None
 
     current_folder_id = st.session_state.drive_current_folder_id
@@ -5957,7 +5957,7 @@ elif st.session_state.seccion_actual == 'configuracion':
                     st.markdown(f"<span style='color:#60a5fa; font-weight:bold;'>{fname}</span>", unsafe_allow_html=True)
                 else:
                     if st.button(fname, key=f"bread_{fid}"):
-                        # Navegar hacia atrÃ¡s a esta carpeta
+                        # Navegar hacia atrás a esta carpeta
                         idx = next((j for j, (x, _) in enumerate(st.session_state.drive_folder_path) if x == fid), None)
                         if idx is not None:
                             st.session_state.drive_folder_path = st.session_state.drive_folder_path[:idx + 1]
@@ -5967,7 +5967,7 @@ elif st.session_state.seccion_actual == 'configuracion':
                             st.rerun()
             if i < len(st.session_state.drive_folder_path) - 1:
                 with breadcrumb_cols[i * 2 + 1]:
-                    st.markdown("<span style='color:#555;'> â€º </span>", unsafe_allow_html=True)
+                    st.markdown("<span style='color:#555;'> › </span>", unsafe_allow_html=True)
 
         st.markdown("<hr style='border-color:#222; margin: 0.5rem 0;'>", unsafe_allow_html=True)
 
@@ -5980,18 +5980,18 @@ elif st.session_state.seccion_actual == 'configuracion':
         archivos = [f for f in contenido if f.get('mimeType') != FOLDER_MIME]
 
         if not contenido:
-            st.markdown("<p style='color:#666; font-style:italic;'>Esta carpeta estÃ¡ vacÃ­a.</p>", unsafe_allow_html=True)
+            st.markdown("<p style='color:#666; font-style:italic;'>Esta carpeta está vacía.</p>", unsafe_allow_html=True)
         else:
             # --- MOSTRAR CARPETAS ---
             for carpeta in carpetas:
                 c_icon, c_name, c_btn = st.columns([0.05, 0.75, 0.2])
                 with c_icon:
-                    st.markdown("ðŸ“")
+                    st.markdown("�?")
                 with c_name:
                     st.markdown(f"<span style='color:#fbbf24;'>{carpeta['name']}</span>", unsafe_allow_html=True)
                 with c_btn:
-                    if st.button("Abrir â†’", key=f"open_{carpeta['id']}"):
-                        st.session_state.drive_folder_path.append((carpeta['id'], f"ðŸ“ {carpeta['name']}"))
+                    if st.button("Abrir →", key=f"open_{carpeta['id']}"):
+                        st.session_state.drive_folder_path.append((carpeta['id'], f"�? {carpeta['name']}"))
                         st.session_state.drive_current_folder_id = carpeta['id']
                         st.session_state.drive_rename_file_id = None
                         st.session_state.drive_confirm_delete_id = None
@@ -6015,32 +6015,32 @@ elif st.session_state.seccion_actual == 'configuracion':
                     with r_col1:
                         nuevo_nombre = st.text_input("Nuevo nombre:", value=fname, key=f"inp_rename_{fid}", label_visibility="collapsed")
                     with r_col2:
-                        if st.button("âœ… Guardar", key=f"confirm_rename_{fid}"):
+                        if st.button("✅ Guardar", key=f"confirm_rename_{fid}"):
                             with st.spinner("Renombrando..."):
                                 ok = _dapi.rename_file(fid, nuevo_nombre)
                             if ok:
-                                st.success(f"âœ… Renombrado a '{nuevo_nombre}'")
+                                st.success(f"✅ Renombrado a '{nuevo_nombre}'")
                             else:
-                                st.error("âŒ Error al renombrar.")
+                                st.error("�?� Error al renombrar.")
                             st.session_state.drive_rename_file_id = None
                             st.rerun()
                     with r_col3:
-                        if st.button("âœ– Cancelar", key=f"cancel_rename_{fid}"):
+                        if st.button("✖ Cancelar", key=f"cancel_rename_{fid}"):
                             st.session_state.drive_rename_file_id = None
                             st.rerun()
 
                 elif is_confirming_delete:
-                    # --- MODO CONFIRMACIÃ“N BORRADO ---
-                    st.warning(f"âš ï¸ Â¿Seguro que querÃ©s eliminar **{fname}**? Esta acciÃ³n es irreversible.")
+                    # --- MODO CONFIRMACIÓN BORRADO ---
+                    st.warning(f"⚠�? ¿Seguro que querés eliminar **{fname}**? Esta acción es irreversible.")
                     d_col1, d_col2 = st.columns(2)
                     with d_col1:
-                        if st.button("ðŸ—‘ï¸ SÃ­, eliminar", type="primary", key=f"confirm_del_{fid}"):
+                        if st.button("🗑�? Sí, eliminar", type="primary", key=f"confirm_del_{fid}"):
                             with st.spinner("Eliminando..."):
                                 ok = _dapi.delete_file(fid)
                             if ok:
-                                st.success(f"âœ… '{fname}' eliminado.")
+                                st.success(f"✅ '{fname}' eliminado.")
                             else:
-                                st.error("âŒ Error al eliminar.")
+                                st.error("�?� Error al eliminar.")
                             st.session_state.drive_confirm_delete_id = None
                             st.rerun()
                     with d_col2:
@@ -6052,57 +6052,57 @@ elif st.session_state.seccion_actual == 'configuracion':
                     # --- MODO NORMAL ---
                     f_col1, f_col2, f_col3, f_col4 = st.columns([0.05, 0.65, 0.15, 0.15])
                     with f_col1:
-                        st.markdown("ðŸ“„")
+                        st.markdown("📄")
                     with f_col2:
                         st.markdown(f"<span style='color:#e5e7eb;'>{fname}</span>"
                                     f"<br><span style='color:#555; font-size:0.75rem;'>{created}</span>",
                                     unsafe_allow_html=True)
                     with f_col3:
-                        if st.button("âœï¸ Renombrar", key=f"ren_{fid}"):
+                        if st.button("�?�? Renombrar", key=f"ren_{fid}"):
                             st.session_state.drive_rename_file_id = fid
                             st.session_state.drive_confirm_delete_id = None
                             st.rerun()
                     with f_col4:
-                        if st.button("ðŸ—‘ï¸ Eliminar", key=f"del_{fid}"):
+                        if st.button("🗑�? Eliminar", key=f"del_{fid}"):
                             st.session_state.drive_confirm_delete_id = fid
                             st.session_state.drive_rename_file_id = None
                             st.rerun()
 
     st.markdown("---")
-    st.markdown("### ðŸ‘¥ GestiÃ³n de Usuarios")
+    st.markdown("### 👥 Gestión de Usuarios")
     
     if st.session_state.username == 'admin':
-        st.success("âœ… Acceso de Administrador - Panel de GestiÃ³n de Usuarios")
+        st.success("✅ Acceso de Administrador - Panel de Gestión de Usuarios")
         
-        with st.expander("âž• Crear Nuevo Usuario", expanded=False):
+        with st.expander("➕ Crear Nuevo Usuario", expanded=False):
             col_u1, col_u2 = st.columns(2)
             with col_u1:
                 new_username = st.text_input("Nombre de Usuario", key="admin_new_user")
             with col_u2:
-                new_password = st.text_input("ContraseÃ±a", type="password", key="admin_new_pass")
+                new_password = st.text_input("Contraseña", type="password", key="admin_new_pass")
             
             if st.button("Crear Usuario", type="primary"):
                 if not new_username or not new_password:
                     st.error("Complete todos los campos")
                 elif len(new_password) < 4:
-                    st.error("La contraseÃ±a debe tener al menos 4 caracteres")
+                    st.error("La contraseña debe tener al menos 4 caracteres")
                 else:
                     if auth.create_user(new_username, new_password):
-                        st.success(f"âœ… Usuario '{new_username}' creado exitosamente")
+                        st.success(f"✅ Usuario '{new_username}' creado exitosamente")
                     else:
-                        st.error(f"âŒ El usuario '{new_username}' ya existe")
+                        st.error(f"�?� El usuario '{new_username}' ya existe")
         
-        st.info("ðŸ’¡ Los usuarios creados podrÃ¡n acceder inmediatamente con sus credenciales.")
+        st.info("💡 Los usuarios creados podrán acceder inmediatamente con sus credenciales.")
     else:
-        st.warning("âš ï¸ Solo el administrador puede gestionar usuarios. Contacte al admin para solicitar acceso.")
+        st.warning("⚠�? Solo el administrador puede gestionar usuarios. Contacte al admin para solicitar acceso.")
 
 
 # Footer
 st.markdown("---")
 st.markdown(f"""
 <div style='text-align: center; color: #6b7280; padding: 2rem;'>
-    <p><strong>Laboratorio de AerodinÃ¡mica y Fluidos - UTN HAEDO</strong></p>
-    <p>Sistema de AnÃ¡lisis de Datos AerodinÃ¡micos â€¢ VersiÃ³n 1.43 - Con Herramientas de Procesamiento</p>
-    <p><small>Ãšltima actualizaciÃ³n: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}</small></p>
+    <p><strong>Laboratorio de Aerodinámica y Fluidos - UTN HAEDO</strong></p>
+    <p>Sistema de Análisis de Datos Aerodinámicos • Versión 1.43 - Con Herramientas de Procesamiento</p>
+    <p><small>Última actualización: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}</small></p>
 </div>
 """, unsafe_allow_html=True)
