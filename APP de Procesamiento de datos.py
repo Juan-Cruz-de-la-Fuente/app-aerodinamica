@@ -5229,10 +5229,13 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                         x_g  = (1 - t_g) * g['x_arr'][idx_lo_g]  + t_g * g['x_arr'][idx_hi_g]
                         mask_g = ~np.isnan(P_g)
 
+                        bg_color_mpl = '#0e1117' if "Oscuro" in vis_bg_a else '#ffffff'
+                        text_color_mpl = 'white' if "Oscuro" in vis_bg_a else 'black'
+
                         if "2D" in tipo_gif:
                             # ── 2D: contourf suave sobre grilla densa ─────────────
-                            fig_mpl, ax_mpl = _plt.subplots(figsize=(9, 7), facecolor='#0e1117')
-                            ax_mpl.set_facecolor('#0e1117')
+                            fig_mpl, ax_mpl = _plt.subplots(figsize=(9, 7), facecolor=bg_color_mpl)
+                            ax_mpl.set_facecolor(bg_color_mpl)
 
                             if mask_g.any():
                                 # Interpolar puntos reales a grilla regular
@@ -5243,28 +5246,34 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                                 # Isolíneas encima
                                 ax_mpl.contour(Yr, Zr, Pr, levels=12, colors='white', linewidths=0.4, alpha=0.4)
                                 cb = fig_mpl.colorbar(cf, ax=ax_mpl, label=g.get('var', 'Presión [Pa]'))
-                                cb.ax.yaxis.label.set_color('white')
-                                cb.ax.tick_params(colors='white')
+                                cb.ax.yaxis.label.set_color(text_color_mpl)
+                                cb.ax.tick_params(colors=text_color_mpl)
 
                             # Línea de simetría
                             y_mid_g = (y_lim[0] + y_lim[1]) / 2
                             ax_mpl.axvline(y_mid_g, color='cyan', lw=1.2, ls='--', alpha=0.7, label=f'Y_mid={y_mid_g:.0f}')
                             ax_mpl.set_xlim(y_lim); ax_mpl.set_ylim(z_lim)
-                            ax_mpl.set_xlabel("Y [mm]", color='white')
-                            ax_mpl.set_ylabel("Z [mm]", color='white')
-                            ax_mpl.tick_params(colors='white')
-                            ax_mpl.set_title(f"α = {alpha_i:.1f}°  |  Plano YZ — {g.get('var','Presión')}",
-                                             color='white', fontsize=13, pad=10)
                             ax_mpl.set_aspect('equal', 'box')
-                            ax_mpl.legend(fontsize=8, facecolor='#1a1a2e', labelcolor='white',
-                                          edgecolor='#444', loc='upper right')
-                            for sp in ax_mpl.spines.values(): sp.set_edgecolor('#444')
+                            
+                            ax_mpl.set_title(f"α = {alpha_i:.1f}°  |  Plano YZ — {g.get('var','Presión')}",
+                                             color=text_color_mpl, fontsize=13, pad=10)
+                                             
+                            if not vis_ejes_a:
+                                ax_mpl.axis('off')
+                            else:
+                                ax_mpl.set_xlabel("Y [mm]", color=text_color_mpl)
+                                ax_mpl.set_ylabel("Z [mm]", color=text_color_mpl)
+                                ax_mpl.tick_params(colors=text_color_mpl)
+                                for sp in ax_mpl.spines.values(): sp.set_edgecolor('#444' if "Oscuro" in vis_bg_a else '#ccc')
+
+                            ax_mpl.legend(fontsize=8, facecolor=bg_color_mpl, labelcolor=text_color_mpl,
+                                          edgecolor='#444' if "Oscuro" in vis_bg_a else '#ccc', loc='upper right')
 
                         else:
                             # ── 4D con modelo ──────────────────────────
-                            fig_mpl = _plt.figure(figsize=(11, 8), facecolor='#0e1117')
+                            fig_mpl = _plt.figure(figsize=(11, 8), facecolor=bg_color_mpl)
                             ax3 = fig_mpl.add_subplot(111, projection='3d')
-                            ax3.set_facecolor('#0e1117')
+                            ax3.set_facecolor(bg_color_mpl)
 
                             # Plano de presión
                             if mask_g.any():
@@ -5285,25 +5294,41 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                                         st.session_state.objeto_referencia_4d)
                                 cg_g2 = st.session_state.get('modelo_cg', {'x': 0.0, 'y': 0.0, 'z': 0.0})
                                 xm_g2, ym_g2, zm_g2 = _pose_anim(obj_b, alpha_i, 0.0, cg_g2)
-                                ax3.scatter(xm_g2, ym_g2, zm_g2,
-                                            c='#5588cc', s=1, alpha=0.25, linewidths=0)
+                                
+                                if vis_modelo_a == "Puntos" or obj_b['type'] == 'scatter':
+                                    c_mod, op_mod = '#888888', 0.5
+                                else:
+                                    if vis_modelo_a == "Negro Mate":
+                                        c_mod, op_mod = '#222222', 1.0
+                                    elif vis_modelo_a == "Plata Metalizada":
+                                        c_mod, op_mod = '#aaaaaa', 1.0
+                                    else: # Azul Translúcido
+                                        c_mod, op_mod = '#5588cc', 0.25
+                                # En matplotlib 3D renderizamos el modelo pesado siempre como scatter denso para el GIF para no saturar memoria
+                                ax3.scatter(xm_g2, ym_g2, zm_g2, c=c_mod, s=1, alpha=op_mod, linewidths=0)
 
-                            ax3.set_xlabel("X", color='white', fontsize=9)
-                            ax3.set_ylabel("Y", color='white', fontsize=9)
-                            ax3.set_zlabel("Z", color='white', fontsize=9)
-                            ax3.tick_params(colors='white', labelsize=7)
-                            ax3.xaxis.pane.fill = False; ax3.yaxis.pane.fill = False; ax3.zaxis.pane.fill = False
-                            ax3.xaxis.pane.set_edgecolor('#333'); ax3.yaxis.pane.set_edgecolor('#333'); ax3.zaxis.pane.set_edgecolor('#333')
+                            if not vis_ejes_a:
+                                ax3.set_axis_off()
+                            else:
+                                ax3.set_xlabel("X", color=text_color_mpl, fontsize=9)
+                                ax3.set_ylabel("Y", color=text_color_mpl, fontsize=9)
+                                ax3.set_zlabel("Z", color=text_color_mpl, fontsize=9)
+                                ax3.tick_params(colors=text_color_mpl, labelsize=7)
+                                ax3.xaxis.pane.fill = False; ax3.yaxis.pane.fill = False; ax3.zaxis.pane.fill = False
+                                edge_c = '#333' if "Oscuro" in vis_bg_a else '#ddd'
+                                ax3.xaxis.pane.set_edgecolor(edge_c); ax3.yaxis.pane.set_edgecolor(edge_c); ax3.zaxis.pane.set_edgecolor(edge_c)
+                                
                             # Vista
                             ax3.view_init(elev=elev_gif, azim=azim_gif)
-                            ax3.set_title(f"α = {alpha_i:.1f}°  |  Vista 4D (Elev: {elev_gif}°, Azim: {azim_gif}°)",
-                                          color='white', fontsize=12, pad=12)
+                            title_obj = ax3.set_title(f"α = {alpha_i:.1f}°  |  Vista 4D (Elev: {elev_gif}°, Azim: {azim_gif}°)",
+                                          color=text_color_mpl, fontsize=12, pad=12)
+                            
                             # Invertir eje X (avance del avión)
                             ax3.invert_xaxis()
                             fig_mpl.tight_layout()
 
                         fp_gif = os.path.join(temp_dir_gif, f"frame_{fi:03d}.png")
-                        fig_mpl.savefig(fp_gif, dpi=110, bbox_inches='tight', facecolor='#0e1117')
+                        fig_mpl.savefig(fp_gif, dpi=110, bbox_inches='tight', facecolor=bg_color_mpl)
                         _plt.close(fig_mpl)
                         frames_gif.append(fp_gif)
                         
