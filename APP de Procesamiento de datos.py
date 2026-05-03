@@ -3464,8 +3464,13 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                         # Un tamaño de 7x7 en una grilla de 150x150 representa ~5% del dominio
                         local_min = ndimage.minimum_filter(V_grid, size=7) == V_grid
                         
-                        # Filtrar mínimos espurios (deben tener una caída significativa, ej. > 3% del rango total)
-                        mascara_vortices = local_min & (V_grid < (p_libre - rango_total * 0.03))
+                        # Filtrar mínimos espurios
+                        if ignorar_centro:
+                            # En modo forzado, bajamos el filtro casi a 0 para atrapar comas muy débiles
+                            mascara_vortices = local_min & (V_grid < (p_libre - 1.0))
+                        else:
+                            # En modo normal, exigimos al menos 3% de caída para no ver ruido
+                            mascara_vortices = local_min & (V_grid < (p_libre - rango_total * 0.03))
                         
                         # Obtener las coordenadas de los núcleos
                         min_coords = np.argwhere(mascara_vortices)
