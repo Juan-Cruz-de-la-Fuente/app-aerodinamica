@@ -4663,7 +4663,13 @@ elif st.session_state.seccion_actual == 'betz_4d':
 
             st.markdown("---")
 
-            # ── ESCALA DE RELIEVE ─────────────────────────────────────────
+            # ── VISUALIZACIÓN Y ESCALA ──────────────────────────────────────
+            st.markdown("##### 🎨 Opciones de Visualización")
+            c_vis1, c_vis2, c_vis3 = st.columns(3)
+            vis_modelo = c_vis1.selectbox("Modelo 3D:", ["Azul Translúcido", "Negro Mate", "Plata Metalizada", "Puntos"], index=0, key="vis_mod_4d")
+            vis_bg = c_vis2.selectbox("Fondo:", ["Oscuro (Negro)", "Claro (Blanco)"], index=0, key="vis_bg_4d")
+            vis_ejes = c_vis3.checkbox("Mostrar Ejes 3D", value=True, key="vis_ejes_4d")
+            
             pressure_scale = st.slider("Escala de Relieve (Presión→X):", 0.1, 10.0, 1.0, 0.1, key="scale_4d_viz")
 
             # ── POSICIONAMIENTO DEL MODELO 3D ─────────────────────────────
@@ -4739,19 +4745,29 @@ elif st.session_state.seccion_actual == 'betz_4d':
                             cg_4d
                         )
                         obj = st.session_state.objeto_referencia_4d
-                        if obj['type'] == 'mesh':
+                        if vis_modelo == "Puntos" or obj['type'] == 'scatter':
+                            fig_4d.add_trace(go.Scatter3d(
+                                x=xm, y=ym, z=zm,
+                                mode='markers', marker=dict(size=2, color='#888', opacity=0.5),
+                                name=obj.get('name', 'Modelo')
+                            ))
+                        else:
+                            if vis_modelo == "Negro Mate":
+                                color_m, opac = '#222222', 1.0
+                                lighting = dict(ambient=0.3, diffuse=0.5, specular=0.1, roughness=0.9)
+                            elif vis_modelo == "Plata Metalizada":
+                                color_m, opac = '#e0e0e0', 1.0
+                                lighting = dict(ambient=0.4, diffuse=0.8, specular=1.0, roughness=0.1)
+                            else: # Azul Translúcido
+                                color_m, opac = '#5588cc', 0.3
+                                lighting = dict(ambient=0.4, diffuse=0.8)
+                                
                             fig_4d.add_trace(go.Mesh3d(
                                 x=xm, y=ym, z=zm,
                                 i=obj['i'], j=obj['j'], k=obj['k'],
-                                color='#5588cc', opacity=0.3, name=obj.get('name','Modelo'),
+                                color=color_m, opacity=opac, name=obj.get('name','Modelo'),
                                 alphahull=0, showscale=False,
-                                lighting=dict(ambient=0.4, diffuse=0.8)
-                            ))
-                        elif obj['type'] == 'scatter':
-                            fig_4d.add_trace(go.Scatter3d(
-                                x=xm, y=ym, z=zm,
-                                mode='markers', marker=dict(size=2, color='#5588cc', opacity=0.5),
-                                name=obj.get('name', 'Modelo')
+                                lighting=lighting
                             ))
 
                     # Planos de presión
@@ -4779,16 +4795,25 @@ elif st.session_state.seccion_actual == 'betz_4d':
                         except Exception as e:
                             st.warning(f"Error ploteando {s_data[1]}: {e}")
 
+                    bg_color = '#0e1117' if "Oscuro" in vis_bg else '#ffffff'
+                    font_color = 'white' if "Oscuro" in vis_bg else 'black'
+                    
+                    axis_props = dict(
+                        showgrid=vis_ejes, zeroline=vis_ejes, showticklabels=vis_ejes,
+                        showaxeslabels=vis_ejes, showbackground=False
+                    )
+
                     fig_4d.update_layout(
                         title=f"Escena 4D — α={st.session_state.modelo_4d_alpha:.1f}° β={st.session_state.modelo_4d_beta:.1f}°",
                         scene=dict(
                             aspectmode='data',
-                            xaxis=dict(title="X (Estación)", autorange="reversed"),
-                            yaxis_title="Y (Envergadura)",
-                            zaxis_title="Z (Altura)"
+                            xaxis=dict(title="X (Estación)" if vis_ejes else "", autorange="reversed", **axis_props),
+                            yaxis=dict(title="Y (Envergadura)" if vis_ejes else "", **axis_props),
+                            zaxis=dict(title="Z (Altura)" if vis_ejes else "", **axis_props)
                         ),
-                        paper_bgcolor='rgba(0,0,0,0)',
-                        font=dict(color='white'),
+                        paper_bgcolor=bg_color,
+                        plot_bgcolor=bg_color,
+                        font=dict(color=font_color),
                         height=750,
                         margin=dict(l=0, r=0, b=0, t=40)
                     )
@@ -5007,6 +5032,13 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                     alpha_slider = float(aoa_min_v)
                     st.info(f"Solo un AOA: {aoa_min_v}°")
 
+                st.markdown("##### 🎨 Visualización")
+                vis_modelo_a = st.selectbox("Modelo 3D:", ["Azul Translúcido", "Negro Mate", "Plata Metalizada", "Puntos"], index=0, key="vis_mod_anim")
+                c_va1, c_va2 = st.columns(2)
+                vis_bg_a = c_va1.selectbox("Fondo:", ["Oscuro (Negro)", "Claro (Blanco)"], index=0, key="vis_bg_anim")
+                vis_ejes_a = c_va2.checkbox("Mostrar Ejes 3D", value=True, key="vis_ejes_anim")
+                
+                st.markdown("---")
                 sc_anim = st.slider("Escala Relieve:", 0.1, 10.0, pressure_scale_anim, 0.1, key="sc_anim_live")
 
                 # Info del plano interpolado
@@ -5049,18 +5081,29 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                     cg_anim = st.session_state.get('modelo_cg', {'x': 0.0, 'y': 0.0, 'z': 0.0})
                     xm_a, ym_a, zm_a = _pose_anim(obj_anim, alpha_slider, 0.0, cg_anim)
                     obj_ref = st.session_state.objeto_referencia_4d
-                    if obj_ref['type'] == 'mesh':
+                    if vis_modelo_a == "Puntos" or obj_ref['type'] == 'scatter':
+                        fig_live.add_trace(go.Scatter3d(
+                            x=xm_a, y=ym_a, z=zm_a,
+                            mode='markers', marker=dict(size=2, color='#888', opacity=0.5),
+                            name="Modelo"
+                        ))
+                    else:
+                        if vis_modelo_a == "Negro Mate":
+                            color_m, opac = '#222222', 1.0
+                            lighting = dict(ambient=0.3, diffuse=0.5, specular=0.1, roughness=0.9)
+                        elif vis_modelo_a == "Plata Metalizada":
+                            color_m, opac = '#e0e0e0', 1.0
+                            lighting = dict(ambient=0.4, diffuse=0.8, specular=1.0, roughness=0.1)
+                        else: # Azul Translúcido
+                            color_m, opac = '#5588cc', 0.3
+                            lighting = dict(ambient=0.4, diffuse=0.8)
+
                         fig_live.add_trace(go.Mesh3d(
                             x=xm_a, y=ym_a, z=zm_a,
                             i=obj_ref['i'], j=obj_ref['j'], k=obj_ref['k'],
-                            color='#5588cc', opacity=0.3, name="Modelo",
-                            alphahull=0, showscale=False
-                        ))
-                    elif obj_ref['type'] == 'scatter':
-                        fig_live.add_trace(go.Scatter3d(
-                            x=xm_a, y=ym_a, z=zm_a,
-                            mode='markers', marker=dict(size=2, color='#5588cc', opacity=0.5),
-                            name="Modelo"
+                            color=color_m, opacity=opac, name="Modelo",
+                            alphahull=0, showscale=False,
+                            lighting=lighting
                         ))
 
                 # Plano interpolado — con todos los puntos reales
@@ -5093,16 +5136,21 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                                         cmin=pmin_v, cmax=pmax_v),
                             name=f"Presión (α={alpha_slider:.1f}°)"
                         ))
+                bg_color_a = '#0e1117' if "Oscuro" in vis_bg_a else '#ffffff'
+                font_color_a = 'white' if "Oscuro" in vis_bg_a else 'black'
+                axis_props_a = dict(showgrid=vis_ejes_a, zeroline=vis_ejes_a, showticklabels=vis_ejes_a, showaxeslabels=vis_ejes_a, showbackground=False)
+
                 fig_live.update_layout(
                     title=f"α = {alpha_slider:.1f}°",
                     scene=dict(
                         aspectmode='data',
-                        xaxis=dict(title="X (Estación)", autorange="reversed"),
-                        yaxis_title="Y (Envergadura)",
-                        zaxis_title="Z (Altura)"
+                        xaxis=dict(title="X (Estación)" if vis_ejes_a else "", autorange="reversed", **axis_props_a),
+                        yaxis=dict(title="Y (Envergadura)" if vis_ejes_a else "", **axis_props_a),
+                        zaxis=dict(title="Z (Altura)" if vis_ejes_a else "", **axis_props_a)
                     ),
-                    paper_bgcolor='rgba(0,0,0,0)',
-                    font=dict(color='white'),
+                    paper_bgcolor=bg_color_a,
+                    plot_bgcolor=bg_color_a,
+                    font=dict(color=font_color_a),
                     height=620,
                     margin=dict(l=0, r=0, b=0, t=40)
                 )
