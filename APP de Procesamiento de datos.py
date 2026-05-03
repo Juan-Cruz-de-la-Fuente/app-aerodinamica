@@ -5297,15 +5297,21 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                                 
                                 if vis_modelo_a == "Puntos" or obj_b['type'] == 'scatter':
                                     c_mod, op_mod = '#888888', 0.5
+                                    ax3.scatter(xm_g2, ym_g2, zm_g2, c=c_mod, s=1, alpha=op_mod, linewidths=0)
                                 else:
                                     if vis_modelo_a == "Negro Mate":
                                         c_mod, op_mod = '#222222', 1.0
                                     elif vis_modelo_a == "Plata Metalizada":
                                         c_mod, op_mod = '#aaaaaa', 1.0
                                     else: # Azul Translúcido
-                                        c_mod, op_mod = '#5588cc', 0.25
-                                # En matplotlib 3D renderizamos el modelo pesado siempre como scatter denso para el GIF para no saturar memoria
-                                ax3.scatter(xm_g2, ym_g2, zm_g2, c=c_mod, s=1, alpha=op_mod, linewidths=0)
+                                        c_mod, op_mod = '#5588cc', 0.35
+                                    
+                                    try:
+                                        triangles = np.column_stack([obj_b['i'], obj_b['j'], obj_b['k']])
+                                        ax3.plot_trisurf(xm_g2, ym_g2, zm_g2, triangles=triangles,
+                                                         color=c_mod, alpha=op_mod, shade=True, linewidth=0, antialiased=False)
+                                    except Exception:
+                                        ax3.scatter(xm_g2, ym_g2, zm_g2, c=c_mod, s=1, alpha=op_mod, linewidths=0)
 
                             if not vis_ejes_a:
                                 ax3.set_axis_off()
