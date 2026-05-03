@@ -3450,11 +3450,11 @@ Estelas y soportes no llegan a P_libre → quedan descartados."""
                         rango_total = p_libre - p_minimo_global  # rango completo del campo
 
                         # Usar filtro de mínimo local para encontrar los núcleos de los vórtices
-                        # Un tamaño de 15x15 en una grilla de 150x150 representa un 10% del dominio
-                        local_min = ndimage.minimum_filter(V_grid, size=15) == V_grid
+                        # Un tamaño de 7x7 en una grilla de 150x150 representa ~5% del dominio
+                        local_min = ndimage.minimum_filter(V_grid, size=7) == V_grid
                         
-                        # Filtrar mínimos espurios (deben tener una caída significativa, ej. > 10% del rango total)
-                        mascara_vortices = local_min & (V_grid < (p_libre - rango_total * 0.10))
+                        # Filtrar mínimos espurios (deben tener una caída significativa, ej. > 3% del rango total)
+                        mascara_vortices = local_min & (V_grid < (p_libre - rango_total * 0.03))
                         
                         # Obtener las coordenadas de los núcleos
                         min_coords = np.argwhere(mascara_vortices)
@@ -3468,7 +3468,7 @@ Estelas y soportes no llegan a P_libre → quedan descartados."""
                             is_duplicate = False
                             for v in vortices:
                                 dist = np.sqrt((y_core - v['y'])**2 + (z_core - v['z'])**2)
-                                if dist < ((y_grid_vals[-1] - y_grid_vals[0]) / 20.0): # 5% del dominio
+                                if dist < ((y_grid_vals[-1] - y_grid_vals[0]) / 50.0): # 2% del dominio
                                     is_duplicate = True
                                     break
                             if is_duplicate:
@@ -3485,8 +3485,11 @@ Estelas y soportes no llegan a P_libre → quedan descartados."""
                             best_area = 0.0
                             cobertura_alcanzada = 0.0
 
-                            # Barrer isobandas desde el núcleo hacia P_libre
-                            niveles_busqueda = np.linspace(p_core + 1.0, p_libre - 1.0, 40)
+                            # Barrer isobandas desde el núcleo hacia P_libre usando saltos relativos
+                            rango_core = p_libre - p_core
+                            if rango_core <= 0: continue
+                            
+                            niveles_busqueda = np.linspace(p_core + rango_core * 0.02, p_libre - rango_core * 0.02, 60)
 
                             for target_p in niveles_busqueda:
                                 cobertura_nivel = (target_p - p_core) / (p_libre - p_core) if (p_libre - p_core) != 0 else 0
