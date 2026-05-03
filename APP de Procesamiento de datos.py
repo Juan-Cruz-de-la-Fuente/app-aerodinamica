@@ -3509,6 +3509,16 @@ Estelas y soportes no llegan a P_libre → quedan descartados."""
                                 for path in cs.get_paths():
                                     for poly in path.to_polygons():
                                         if len(poly) > 2 and Path(poly).contains_point((y_core, z_core)):
+                                            # Chequear si toca los bordes del dominio
+                                            touches_boundary = (
+                                                np.any(poly[:,0] <= y_grid_vals[0] + 1e-5) or
+                                                np.any(poly[:,0] >= y_grid_vals[-1] - 1e-5) or
+                                                np.any(poly[:,1] <= z_grid_vals[0] + 1e-5) or
+                                                np.any(poly[:,1] >= z_grid_vals[-1] - 1e-5)
+                                            )
+                                            if touches_boundary:
+                                                continue # Rechazar isobandas que tocan el límite
+
                                             area = 0.5 * np.abs(np.dot(poly[:,0], np.roll(poly[:,1], 1)) - np.dot(poly[:,1], np.roll(poly[:,0], 1)))
                                             if area > level_area:
                                                 level_area = area
