@@ -3459,7 +3459,15 @@ Estelas y soportes no llegan a P_libre → quedan descartados."""
                         
                         # Obtener las coordenadas de los núcleos
                         min_coords = np.argwhere(mascara_vortices)
+                        
+                        # Ordenar por profundidad (presión) y tomar los 15 más profundos para no colgar el sistema
+                        if len(min_coords) > 0:
+                            presiones_min = V_grid[min_coords[:, 0], min_coords[:, 1]]
+                            indices_ordenados = np.argsort(presiones_min)
+                            min_coords = min_coords[indices_ordenados][:15]
+
                         vortices = []
+                        fig_tmp, ax_tmp = plt.subplots()
 
                         for row, col in min_coords:
                             p_core = V_grid[row, col]
@@ -3494,7 +3502,7 @@ Estelas y soportes no llegan a P_libre → quedan descartados."""
 
                             for target_p in niveles_busqueda:
                                 cobertura_nivel = (target_p - p_core) / (p_libre - p_core) if (p_libre - p_core) != 0 else 0
-                                fig_tmp, ax_tmp = plt.subplots()
+                                ax_tmp.clear()
                                 cs = ax_tmp.contour(Y_grid, Z_grid, V_grid, levels=[target_p])
                                 level_poly, level_area = None, 0.0
 
@@ -3505,8 +3513,6 @@ Estelas y soportes no llegan a P_libre → quedan descartados."""
                                             if area > level_area:
                                                 level_area = area
                                                 level_poly = poly
-
-                                plt.close(fig_tmp)
 
                                 if level_poly is not None:
                                     # El contorno se "abrió" (explota de tamaño): llegamos al límite
@@ -3527,6 +3533,8 @@ Estelas y soportes no llegan a P_libre → quedan descartados."""
                                     'cobertura': round(cobertura_alcanzada * 100, 1),
                                     'poly_pts': best_poly.tolist()
                                 })
+
+                        plt.close(fig_tmp)
 
 
                         # --- RENDERIZADO FINAL ---
