@@ -5113,12 +5113,32 @@ elif st.session_state.seccion_actual == 'animacion_4d':
             st.caption("💡 Matplotlib puro — sin Chrome ni kaleido. Dos modos: 2D suave (contourf) o 4D isométrico con modelo.")
 
             c_gif0, c_gif1, c_gif2, c_gif3 = st.columns(4)
-            tipo_gif  = c_gif0.radio("Tipo:", ["🗺️ 2D suave", "🚀 4D isométrico"], key="tipo_gif_sel")
+            tipo_gif  = c_gif0.radio("Tipo:", ["🗺️ 2D suave", "🚀 4D"], key="tipo_gif_sel")
             fps_gif   = c_gif1.slider("FPS:", 1, 10, 3, key="fps_gif_anim")
             n_pas_gif = c_gif2.slider("N° frames:", 5, 60, 15, key="npasos_gif")
             sc_gif    = c_gif3.slider("× relieve (4D):", 0.1, 10.0, 1.0, 0.1, key="sc_gif_anim")
 
-            if st.button("🎥 Generar GIF", type="primary", use_container_width=True, key="btn_gen_gif_anim"):
+            elev_gif, azim_gif = 25, -135
+            if "4D" in tipo_gif:
+                st.markdown("##### 📷 Posición de Cámara (Vista 4D)")
+                c_cam1, c_cam2, c_cam3 = st.columns(3)
+                preset_cam = c_cam1.selectbox("Preajustes:", ["Isométrica", "Opuesta a Isométrica", "Frente (aguas abajo)", "Lateral", "Planta", "Personalizada"], key="preset_cam_gif")
+                if preset_cam == "Isométrica": elev_def, azim_def = 25, -135
+                elif preset_cam == "Opuesta a Isométrica": elev_def, azim_def = 25, 45
+                elif preset_cam == "Frente (aguas abajo)": elev_def, azim_def = 0, -180
+                elif preset_cam == "Lateral": elev_def, azim_def = 0, -90
+                elif preset_cam == "Planta": elev_def, azim_def = 90, -90
+                else: elev_def, azim_def = 25, -135
+
+                elev_gif = c_cam2.slider("Elevación [°]", -90, 90, elev_def, disabled=(preset_cam != "Personalizada"), key="elev_gif_anim")
+                azim_gif = c_cam3.slider("Azimut [°]", -180, 180, azim_def, disabled=(preset_cam != "Personalizada"), key="azim_gif_anim")
+                if preset_cam != "Personalizada": elev_gif, azim_gif = elev_def, azim_def
+
+            c_btn1, c_btn2 = st.columns(2)
+            btn_preview = c_btn1.button("👁️ Previsualizar Vista (1 frame)", use_container_width=True)
+            btn_generar = c_btn2.button("🎥 Generar GIF Completo", type="primary", use_container_width=True)
+
+            if btn_preview or btn_generar:
                 import matplotlib
                 matplotlib.use('Agg')
                 import matplotlib.pyplot as _plt
@@ -5129,13 +5149,16 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                 from scipy.spatial import Delaunay as _Del_gif
 
                 alpha_range_gif = np.linspace(aoa_min_v, aoa_max_v, n_pas_gif)
+                if btn_preview:
+                    alpha_range_gif = [alpha_range_gif[0]] # Solo renderiza el primer frame para previsualizar
+
                 status_gif = st.empty()
                 prog_gif   = st.progress(0)
                 frames_gif = []
                 temp_dir_gif = tempfile.mkdtemp()
                 norm_gif = _mcolors.Normalize(vmin=pmin_v, vmax=pmax_v)
 
-                # Grilla regular densa para contourf (2D suave)
+                # Grilla regular densa para contourf (2D suave) o superficie suave (4D)
                 N_GRID = 200
                 y_lim = (float(g['Y'].min()), float(g['Y'].max()))
                 z_lim = (float(g['Z'].min()), float(g['Z'].max()))
@@ -5145,7 +5168,11 @@ elif st.session_state.seccion_actual == 'animacion_4d':
 
                 try:
                     for fi, alpha_i in enumerate(alpha_range_gif):
-                        status_gif.text(f"Frame {fi+1}/{n_pas_gif}  α={alpha_i:.1f}°")
+                        if not btn_preview:
+                            status_gif.text(f"Frame {fi+1}/{n_pas_gif}  α={alpha_i:.1f}°")
+                        else:
+                            status_gif.text(f"Generando previsualización para α={alpha_i:.1f}°...")
+
                         idx_lo_g = max(0, min(int(np.searchsorted(g['aoa_arr'], alpha_i)) - 1, len(g['aoa_arr']) - 2))
                         idx_hi_g = idx_lo_g + 1
                         denom_t = g['aoa_arr'][idx_hi_g] - g['aoa_arr'][idx_lo_g]
@@ -5154,7 +5181,7 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                         x_g  = (1 - t_g) * g['x_arr'][idx_lo_g]  + t_g * g['x_arr'][idx_hi_g]
                         mask_g = ~np.isnan(P_g)
 
-                        if tipo_gif == "🗺️ 2D suave":
+                        if "2D" in tipo_gif:
                             # ── 2D: contourf suave sobre grilla densa ─────────────
                             fig_mpl, ax_mpl = _plt.subplots(figsize=(9, 7), facecolor='#0e1117')
                             ax_mpl.set_facecolor('#0e1117')
@@ -5186,7 +5213,7 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                             for sp in ax_mpl.spines.values(): sp.set_edgecolor('#444')
 
                         else:
-                            # ── 4D isométrico con modelo ──────────────────────────
+                            # ── 4D con modelo ──────────────────────────
                             fig_mpl = _plt.figure(figsize=(11, 8), facecolor='#0e1117')
                             ax3 = fig_mpl.add_subplot(111, projection='3d')
                             ax3.set_facecolor('#0e1117')
@@ -5219,9 +5246,9 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                             ax3.tick_params(colors='white', labelsize=7)
                             ax3.xaxis.pane.fill = False; ax3.yaxis.pane.fill = False; ax3.zaxis.pane.fill = False
                             ax3.xaxis.pane.set_edgecolor('#333'); ax3.yaxis.pane.set_edgecolor('#333'); ax3.zaxis.pane.set_edgecolor('#333')
-                            # Vista isométrica
-                            ax3.view_init(elev=25, azim=-135)
-                            ax3.set_title(f"α = {alpha_i:.1f}°  |  Vista 4D Isométrica",
+                            # Vista
+                            ax3.view_init(elev=elev_gif, azim=azim_gif)
+                            ax3.set_title(f"α = {alpha_i:.1f}°  |  Vista 4D (Elev: {elev_gif}°, Azim: {azim_gif}°)",
                                           color='white', fontsize=12, pad=12)
                             # Invertir eje X (avance del avión)
                             ax3.invert_xaxis()
@@ -5231,18 +5258,24 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                         fig_mpl.savefig(fp_gif, dpi=110, bbox_inches='tight', facecolor='#0e1117')
                         _plt.close(fig_mpl)
                         frames_gif.append(fp_gif)
-                        prog_gif.progress((fi + 1) / n_pas_gif)
+                        
+                        if not btn_preview:
+                            prog_gif.progress((fi + 1) / n_pas_gif)
 
-                    status_gif.text("Compilando GIF...")
-                    gif_path_anim = os.path.join(temp_dir_gif, "animacion_4d.gif")
-                    images_gif = [imageio.imread(f) for f in frames_gif]
-                    imageio.mimsave(gif_path_anim, images_gif, fps=fps_gif, loop=0)
-                    st.success(f"✅ GIF generado: {n_pas_gif} frames · {fps_gif} FPS · {tipo_gif}")
-                    st.image(gif_path_anim)
-                    nombre_gif = "animacion_2d.gif" if "2D" in tipo_gif else "animacion_4d_iso.gif"
-                    with open(gif_path_anim, "rb") as fg:
-                        st.download_button("📥 Descargar GIF", fg, file_name=nombre_gif,
-                                          mime="image/gif", key="dl_gif_anim4d")
+                    if btn_preview:
+                        status_gif.empty()
+                        st.image(frames_gif[0], caption="Previsualización del Frame 1")
+                    else:
+                        status_gif.text("Compilando GIF...")
+                        gif_path_anim = os.path.join(temp_dir_gif, "animacion_4d.gif")
+                        images_gif = [imageio.imread(f) for f in frames_gif]
+                        imageio.mimsave(gif_path_anim, images_gif, fps=fps_gif, loop=0)
+                        st.success(f"✅ GIF generado: {n_pas_gif} frames · {fps_gif} FPS · {tipo_gif}")
+                        st.image(gif_path_anim)
+                        nombre_gif = "animacion_2d.gif" if "2D" in tipo_gif else "animacion_4d_iso.gif"
+                        with open(gif_path_anim, "rb") as fg:
+                            st.download_button("📥 Descargar GIF", fg, file_name=nombre_gif,
+                                              mime="image/gif", key="dl_gif_anim4d")
 
                 except Exception as e_gif:
                     st.error(f"Error generando GIF: {e_gif}")
