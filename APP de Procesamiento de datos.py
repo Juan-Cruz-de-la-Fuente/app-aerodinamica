@@ -7,7 +7,7 @@ def calcular_variable_atmosferica(df, variable):
     res = df.get('Presion', pd.Series([0]*len(df)))
     if variable == 'Presión Total [Actual]':
         return res
-    elif variable == '�?_∞':
+    elif variable == ' ?_∞':
         return df.get('rho_inf', 1.225).fillna(1.225)
     elif variable == 'V_∞':
         return df.get('V_inf', 0.0).fillna(0.0)
@@ -229,7 +229,7 @@ st.markdown("""
 def rotate_points(x, y, z, angle_x, angle_y, angle_z):
     """
     Rota puntos 3D alrededor de los ejes X, Y, Z.
-    �?ngulos en grados.
+     ?ngulos en grados.
     """
     # Convertir a radianes
     rad_x = np.radians(angle_x)
@@ -360,7 +360,7 @@ def render_navbar():
                     if st.button("📈 Vis. Estela 2D", use_container_width=True, type="primary" if st.session_state.seccion_actual == 'vis_2d_nueva' else "secondary"):
                         st.session_state.seccion_actual = 'vis_2d_nueva'
                         st.rerun()
-                    if st.button("🌪�? Vis. Estela 3D", use_container_width=True, type="primary" if st.session_state.seccion_actual == 'betz_3d' else "secondary"):
+                    if st.button("🌪️? Vis. Estela 3D", use_container_width=True, type="primary" if st.session_state.seccion_actual == 'betz_3d' else "secondary"):
                         st.session_state.seccion_actual = 'betz_3d'
                         st.rerun()
                     if st.button("🌌 Vis. Estela 4D", use_container_width=True, type="primary" if st.session_state.seccion_actual == 'betz_4d' else "secondary"):
@@ -390,7 +390,7 @@ def render_navbar():
 
             with c5:
                 t5 = "primary" if st.session_state.seccion_actual == 'configuracion' else "secondary"
-                if st.button("⚙�? CONFIG", use_container_width=True, type=t5):
+                if st.button("⚙️? CONFIG", use_container_width=True, type=t5):
                     st.session_state.seccion_actual = 'configuracion'
                     st.rerun()
 
@@ -487,7 +487,7 @@ def login_page():
     
     c1, c2, c3 = st.columns([1, 1.5, 1])
     with c2:
-        st.markdown("### �? Iniciar Sesión")
+        st.markdown("###  ? Iniciar Sesión")
         username = st.text_input("Usuario", placeholder="admin", key="login_user")
         password = st.text_input("Contraseña", type="password", placeholder="••••", key="login_pass")
         
@@ -1380,7 +1380,7 @@ def crear_grafico_diferencia_areas(sub_archivo_a, sub_archivo_b, configuracion):
 
 def mostrar_configuracion_sensores(section_key):
     """Muestra los widgets de configuración de sensores y guarda el estado."""
-    st.markdown("### �? Configuración de Sensores y Geometría")
+    st.markdown("###  ? Configuración de Sensores y Geometría")
 
     config_key = f'configuracion_{section_key}'
     if config_key not in st.session_state:
@@ -1394,7 +1394,7 @@ def mostrar_configuracion_sensores(section_key):
         key=f'orden_sensores_{section_key}'
     )
     
-    st.info("�? **Pregunta:** ¿Qué sensor corresponde a la toma número 12 (la que se encuentra cerca del piso)?")
+    st.info(" ? **Pregunta:** ¿Qué sensor corresponde a la toma número 12 (la que se encuentra cerca del piso)?")
     sensor_referencia = st.selectbox(
         "Sensor de referencia (toma 12):", [f"Sensor {i}" for i in range(1, 13)],
         index=11, help="Seleccione el sensor que corresponde a la toma física número 12.",
@@ -1738,7 +1738,7 @@ def crear_archivo_vtk_superficie_delaunay(df_matriz, nombre_archivo_vtk):
         return nombre_archivo_vtk
 
     except Exception as e:
-        print(f"�?� Error al crear archivo VTK de superficie Delaunay: {str(e)}")
+        print(f" ?  Error al crear archivo VTK de superficie Delaunay: {str(e)}")
         return None
 
 def crear_sub_archivos_3d_por_tiempo_y_posicion(df_datos, nombre_archivo):
@@ -1923,7 +1923,7 @@ def crear_archivo_vtk_interpolado(df_matriz, nombre_base, resolucion_factor=2, m
         return nombre_archivo
 
     except Exception as e:
-        st.error(f"�?� Error al crear el archivo VTK interpolado: {str(e)}")
+        st.error(f" ?  Error al crear el archivo VTK interpolado: {str(e)}")
         return None
 
 
@@ -1996,7 +1996,7 @@ def crear_vtk_superficie_3d_delaunay(df_matriz, nombre_base, posicion_x=0.0):
         return nombre_archivo_vtk
 
     except Exception as e:
-        st.error(f"�?� Error al crear el archivo VTK de superficie 3D: {str(e)}")
+        st.error(f" ?  Error al crear el archivo VTK de superficie 3D: {str(e)}")
         return None
 
 # ---------------------------------------------------------------------------
@@ -2056,7 +2056,7 @@ def crear_vtk_plano_presion_2d(df_matriz, nombre_base, posicion_x=0.0):
         return nombre_archivo, vtk_str.encode('ascii')
 
     except Exception as e:
-        st.error(f"�?� Error al crear VTK Plano 2D: {str(e)}")
+        st.error(f" ?  Error al crear VTK Plano 2D: {str(e)}")
         return None
 
 
@@ -2064,7 +2064,7 @@ def crear_vtk_plano_presion_2d(df_matriz, nombre_base, posicion_x=0.0):
 
 # Contenido principal según la sección
 if st.session_state.seccion_actual == 'inicio':
-    # --- LECTURA DE IM�?GENES CAROUSEL ---
+    # --- LECTURA DE IM ?GENES CAROUSEL ---
     folder_portada = "Imagenes de portada"
     img_b64_list = []
     if os.path.exists(folder_portada):
@@ -2245,7 +2245,7 @@ if st.session_state.seccion_actual == 'inicio':
 </div>
 """, unsafe_allow_html=True)
     
-    # --- 🛠�? SECCIÓN 2: ACCESO A SECCIONES (GRID) ---
+    # --- 🛠️? SECCIÓN 2: ACCESO A SECCIONES (GRID) ---
     st.markdown("<h2 style='margin-top: 4rem; margin-bottom: 2rem; text-align: center;'>NUESTRO TABLERO DE TRABAJO</h2>", unsafe_allow_html=True)
     
     # === GRUPO 1: ESTELAS ===
@@ -2280,7 +2280,7 @@ if st.session_state.seccion_actual == 'inicio':
     with r2c1:
         st.markdown("""
         <div class="section-card" style="border-left: 5px solid #8b5cf6; height: 160px; margin-bottom: 10px;">
-            <h3 style="color: #8b5cf6; margin-top: 0; margin-bottom: 10px;">🌪�? VIS. ESTELA 3D</h3>
+            <h3 style="color: #8b5cf6; margin-top: 0; margin-bottom: 10px;">🌪️? VIS. ESTELA 3D</h3>
             <p style="color: #bbb; font-size: 0.95rem; margin-bottom: 0;">Reconstrucción 3D volumétrica a partir de cortes. Genera mallas VTK para exportación a CFD.</p>
         </div>
         """, unsafe_allow_html=True)
@@ -2325,7 +2325,7 @@ if st.session_state.seccion_actual == 'inicio':
          st.rerun()
 
     st.markdown("---")
-    st.markdown("<div style='text-align:center; color:#444; font-size: 0.8rem;'>UTN HAEDO // DEPARTAMENTO DE INGENIER�?A AERON�?UTICA</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:center; color:#444; font-size: 0.8rem;'>UTN HAEDO // DEPARTAMENTO DE INGENIER ?A AERON ?UTICA</div>", unsafe_allow_html=True)
 
 
 
@@ -2412,7 +2412,7 @@ elif st.session_state.seccion_actual == 'betz_2d':
         st.markdown("---")
         st.markdown("""
         <div class="section-card" style="margin-bottom: 20px;">
-            <h3 style="margin-top: 0; color: white;">�? PASO 2: IMPORTACIÓN DE ARCHIVOS CRUDOS</h3>
+            <h3 style="margin-top: 0; color: white;"> ? PASO 2: IMPORTACIÓN DE ARCHIVOS CRUDOS</h3>
             <p style="color: #bbb; margin-bottom: 20px;">Cargue los archivos CSV de incertidumbre generados por el sistema de adquisición.</p>
         </div>
         """, unsafe_allow_html=True)
@@ -2472,7 +2472,7 @@ elif st.session_state.seccion_actual == 'betz_2d':
                              csv_t = datos_ordenados_tiempo.to_csv(sep=';', index=False, decimal=',').encode('utf-8-sig')
                              st.download_button("📥 Ord. por Tiempo", csv_t, f"{nombre_base}_time.csv", "text/csv", key=f"dt_{nombre_base}")
     else:
-        st.info("⚠�? Configure la geometría en el Paso 1 para habilitar la carga de archivos.")
+        st.info("⚠️? Configure la geometría en el Paso 1 para habilitar la carga de archivos.")
 
 
     # Mostrar datos procesados
@@ -2491,7 +2491,7 @@ elif st.session_state.seccion_actual == 'betz_2d':
                     st.dataframe(coordenadas_unicas, use_container_width=True)
 
 
-    # --- PASO 3: AN�?LISIS DETALLADO ---
+    # --- PASO 3: AN ?LISIS DETALLADO ---
     if st.session_state.sub_archivos_generados:
         st.markdown("---")
         st.markdown("""
@@ -2543,7 +2543,7 @@ elif st.session_state.seccion_actual == 'betz_2d':
         # Mostrar 1 expander por archivo origen
         for archivo_origen, tiempos_dict in grouped.items():
             num_tiempos = len(tiempos_dict)
-            with st.expander(f"�? {archivo_origen} - {num_tiempos} tiempos", expanded=False):
+            with st.expander(f" ? {archivo_origen} - {num_tiempos} tiempos", expanded=False):
                 # Generar ZIP con todos los sub-archivos de este origen (para descargar de una)
                 # Crearlo aquí en memoria y mostrar botón
                 buffer = io.BytesIO()
@@ -2567,7 +2567,7 @@ elif st.session_state.seccion_actual == 'betz_2d':
 
                 # Para cada tiempo, listar sub-archivos (X) y dar botón CSV por cada uno
                 for tiempo, items in sorted(tiempos_dict.items()):
-                    st.markdown(f"#### �?��? {tiempo}")
+                    st.markdown(f"####  ?  ? {tiempo}")
                     for it in sorted(items, key=lambda r: (r['Pos X'] if pd.notna(r['Pos X']) else 1e9)):
                         clave = it['Clave']
                         nombre = it['Nombre Salida']
@@ -2654,12 +2654,12 @@ elif st.session_state.seccion_actual == 'betz_2d':
             ])
             st.dataframe(pos_df, use_container_width=True)
     else:
-        st.warning("⚠�? No hay datos procesados aún. Suba archivos en el Paso 2.")
+        st.warning("⚠️? No hay datos procesados aún. Suba archivos en el Paso 2.")
 
 
     # Contenedor para los filtros de visualización
     with st.container(border=True):
-        st.markdown("#### �? Filtros de Visualización")
+        st.markdown("####  ? Filtros de Visualización")
         
         sub_archivos = st.session_state.sub_archivos_generados.values()
         archivos_opciones = sorted(list(set(sa['archivo_fuente'] for sa in sub_archivos)))
@@ -2797,14 +2797,14 @@ elif st.session_state.seccion_actual == 'betz_2d':
             with col3:
                 st.metric("Total de puntos", total_puntos)
         else:
-            st.error("�?� No se pudo generar el gráfico. Verifique los datos seleccionados.")
+            st.error(" ?  No se pudo generar el gráfico. Verifique los datos seleccionados.")
 
     
-        # NUEVA SECCIÓN: RESTA DE �?REAS
-        # NUEVA SECCIÓN: RESTA DE �?REAS
+        # NUEVA SECCIÓN: RESTA DE  ?REAS
+        # NUEVA SECCIÓN: RESTA DE  ?REAS
         if st.session_state.sub_archivos_generados:
             st.markdown("---")
-            st.markdown("## ➖ Análisis de Diferencias de �?reas")
+            st.markdown("## ➖ Análisis de Diferencias de  ?reas")
             st.markdown("Selecciona dos sub-archivos para calcular la diferencia de áreas entre sus perfiles de presión")
             
             # Crear lista de opciones para los selectores
@@ -2835,7 +2835,7 @@ elif st.session_state.seccion_actual == 'betz_2d':
             # --- INICIO DE LA ESTRUCTURA CORREGIDA ---
 
             # PARTE 1: Botón para CALCULAR. Su única misión es generar el gráfico y ponerlo en una "bandeja" temporal.
-            if st.button("🔄 Calcular Diferencia de �?reas", type="primary", use_container_width=True):
+            if st.button("🔄 Calcular Diferencia de  ?reas", type="primary", use_container_width=True):
                 if archivo_a and archivo_b and archivo_a != archivo_b:
                     with st.spinner("Calculando diferencia de áreas..."):
                         fig_diferencia, diferencia_area = crear_grafico_diferencia_areas(
@@ -2853,11 +2853,11 @@ elif st.session_state.seccion_actual == 'betz_2d':
                                 "archivo_b": archivo_b
                             }
                         else:
-                            st.error("�?� No se pudo calcular la diferencia.")
+                            st.error(" ?  No se pudo calcular la diferencia.")
                             if 'figura_diferencia_temporal' in st.session_state:
                                 del st.session_state.figura_diferencia_temporal
                 else:
-                    st.warning("⚠�? Seleccione dos sub-archivos diferentes para calcular la diferencia.")
+                    st.warning("⚠️? Seleccione dos sub-archivos diferentes para calcular la diferencia.")
 
             # PARTE 2: Este bloque está AFUERA del anterior. Revisa si hay algo en la "bandeja" temporal.
             # Si hay algo, lo muestra junto con TODOS sus botones (Guardar, métricas, descarga).
@@ -2891,18 +2891,18 @@ elif st.session_state.seccion_actual == 'betz_2d':
                 area_b = calcular_area_bajo_curva(z_b, p_b)
                 
                 with col_m1:
-                    st.metric(f"�?rea {st.session_state.sub_archivos_generados[archivo_a_calc]['archivo_fuente']}", f"{area_a:.2f} Pa·mm")
+                    st.metric(f" ?rea {st.session_state.sub_archivos_generados[archivo_a_calc]['archivo_fuente']}", f"{area_a:.2f} Pa·mm")
                 with col_m2:
-                    st.metric(f"�?rea {st.session_state.sub_archivos_generados[archivo_b_calc]['archivo_fuente']}", f"{area_b:.2f} Pa·mm")
+                    st.metric(f" ?rea {st.session_state.sub_archivos_generados[archivo_b_calc]['archivo_fuente']}", f"{area_b:.2f} Pa·mm")
                 with col_m3:
-                    st.metric("Diferencia de �?reas", f"{diferencia_area:.2f} Pa·mm", delta=f"{diferencia_area:.2f}", delta_color="normal" if diferencia_area >= 0 else "inverse")
+                    st.metric("Diferencia de  ?reas", f"{diferencia_area:.2f} Pa·mm", delta=f"{diferencia_area:.2f}", delta_color="normal" if diferencia_area >= 0 else "inverse")
                 
                 if diferencia_area > 0:
                     st.success(f"✅ El área de **{st.session_state.sub_archivos_generados[archivo_a_calc]['archivo_fuente']}** es **{diferencia_area:.2f} Pa·mm** mayor que la de **{st.session_state.sub_archivos_generados[archivo_b_calc]['archivo_fuente']}**")
                 elif diferencia_area < 0:
-                    st.info(f"ℹ�? El área de **{st.session_state.sub_archivos_generados[archivo_b_calc]['archivo_fuente']}** es **{abs(diferencia_area):.2f} Pa·mm** mayor que la de **{st.session_state.sub_archivos_generados[archivo_a_calc]['archivo_fuente']}**")
+                    st.info(f"ℹ️? El área de **{st.session_state.sub_archivos_generados[archivo_b_calc]['archivo_fuente']}** es **{abs(diferencia_area):.2f} Pa·mm** mayor que la de **{st.session_state.sub_archivos_generados[archivo_a_calc]['archivo_fuente']}**")
                 else:
-                    st.info("ℹ�? Las áreas son prácticamente iguales")
+                    st.info("ℹ️? Las áreas son prácticamente iguales")
                 
                 html_diferencia = fig_diferencia.to_html()
                 st.download_button(
@@ -2991,7 +2991,7 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
     st.markdown("---")
     st.markdown("""
     <div class="section-card" style="margin-bottom: 20px;">
-        <h3 style="margin-top: 0; color: white;">�? PASO 2: IMPORTACIÓN DE ARCHIVOS CRUDOS</h3>
+        <h3 style="margin-top: 0; color: white;"> ? PASO 2: IMPORTACIÓN DE ARCHIVOS CRUDOS</h3>
         <p style="color: #bbb; margin-bottom: 20px;">Cargue uno o múltiples archivos CSV crudos de ensayo para generar los planos espaciales en 2D.</p>
     </div>
     """, unsafe_allow_html=True)
@@ -3051,7 +3051,7 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
             ejecutar_viz_2d = False
             if fuente_plot_2d == "Archivos Crudos (Memoria)":
                 if not _archivos_mem_2d:
-                    st.warning("⚠�? No hay archivos procesados en memoria.")
+                    st.warning("⚠️? No hay archivos procesados en memoria.")
                 else:
                     archivo_sel = st.selectbox("Seleccionar Archivo (X):", list(_archivos_mem_2d.keys()))
                     df_selected = _archivos_mem_2d[archivo_sel]
@@ -3060,21 +3060,21 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
                     ejecutar_viz_2d = True
             else:
                 if not _archivos_drv_2d:
-                    st.warning("⚠�? No hay matrices 2D en tu Drive.")
+                    st.warning("⚠️? No hay matrices 2D en tu Drive.")
                 else:
                     dict_drv_2d = {f"{a[1]} [{a[2][:10] if a[2] else ''}]": a for a in _archivos_drv_2d}
                     archivo_drv_sel = st.selectbox("Seleccionar Matriz Drive:", list(dict_drv_2d.keys()))
                     ejecutar_viz_2d = True
 
             st.markdown("### 3. Visualización")
-            opciones_var_2d = ["Presión Total [Actual]", "�?_∞", "V_∞", "P_∞"]
+            opciones_var_2d = ["Presión Total [Actual]", " ?_∞", "V_∞", "P_∞"]
             var_2d_sel = st.selectbox("📊 Variable a visualizar:", opciones_var_2d, key="var_2d_sel_ui")
             
             plot_type = st.selectbox("Render de Pixeles:", ["Contour Suavizado", "Mapa de Calor (Celdas)"])
 
             st.markdown("---")
-            st.markdown("### �? Medición de Trazos")
-            st.info("La Regla ↘�? del gráfico mide nativamente en [mm]. Ingresa aquí el trazo medido para convertir a [c]:")
+            st.markdown("###  ? Medición de Trazos")
+            st.info("La Regla ↘️? del gráfico mide nativamente en [mm]. Ingresa aquí el trazo medido para convertir a [c]:")
             long_leida = st.number_input("Longitud Leída [mm]:", value=0.0, step=1.0)
             if long_leida > 0:
                 st.success(f"**Longitud Equiv:** {(long_leida / cuerda_mm):.3f} c")
@@ -3125,14 +3125,14 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
                     df_matriz['Presion'] = calcular_variable_atmosferica(df_matriz, var_2d_sel)
                 
                 if df_matriz.empty:
-                    st.error("�?� No se pudieron extraer datos espaciales (Y, Z, P). Comprueba tu archivo físico.")
+                    st.error(" ?  No se pudieron extraer datos espaciales (Y, Z, P). Comprueba tu archivo físico.")
                 else:
                     y_plot = df_matriz['Y'].values
                     z_plot = df_matriz['Z'].values
                     val_plot = df_matriz['Presion'].values
                     eje_label = "mm"
                     z_title = "P [Pa]"
-                    if var_2d_sel == "�?_∞":
+                    if var_2d_sel == " ?_∞":
                         z_title = "Densidad [kg/m³]"
                         hover_text = "Densidad: %{z:.2f} kg/m³"
                     elif var_2d_sel == "V_∞":
@@ -3158,7 +3158,7 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
                                 dtick_val = 1
                             elif "V_∞" in var_2d_sel:
                                 dtick_val = 0.1
-                            elif "�?_∞" in var_2d_sel:
+                            elif " ?_∞" in var_2d_sel:
                                 dtick_val = 0.05
                             
                             c_args = dict(showlines=False)
@@ -3214,14 +3214,14 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
         st.markdown("---")
         st.markdown("""
         <div class="section-card" style="margin-bottom: 20px;">
-            <h3 style="margin-top: 0; color: white;">�?�? PASO 4: GUARDAR MATRIZ EN DRIVE (2D)</h3>
+            <h3 style="margin-top: 0; color: white;"> ? ? PASO 4: GUARDAR MATRIZ EN DRIVE (2D)</h3>
             <p style="color: #bbb; margin-bottom: 0;">Guarda la matriz de presiones del plano seleccionado en <b>ENSAYO DE ESTELA / 2D</b>.</p>
         </div>
         """, unsafe_allow_html=True)
         if not df_matriz.empty:
             c_2d_a, c_2d_b = st.columns(2)
-            aoa_2d = c_2d_a.number_input("�?ngulo de Ataque [°]:", value=0.0, step=0.5, format="%.1f", key="aoa_2d_paso4")
-            x_2d = c_2d_b.number_input("�? Posición X (Estación) [mm]:", value=0.0, step=10.0, key="x_2d_paso4")
+            aoa_2d = c_2d_a.number_input(" ?ngulo de Ataque [°]:", value=0.0, step=0.5, format="%.1f", key="aoa_2d_paso4")
+            x_2d = c_2d_b.number_input(" ? Posición X (Estación) [mm]:", value=0.0, step=10.0, key="x_2d_paso4")
 
             _aoa_str_2d = str(int(aoa_2d)) if aoa_2d == int(aoa_2d) else f"{aoa_2d:.1f}"
             _aoa_str_2d = _aoa_str_2d.replace("-", "neg")
@@ -3243,18 +3243,18 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
                 st.download_button("📥 Descargar Matriz 2D", csv_bytes_2d,
                                    file_name=nombre_csv_2d, mime="text/csv", key="dl_2d_matriz")
             with col_2d_drive:
-                if st.button("�?�? Guardar en Drive (2D)", key="save_2d_drive", use_container_width=True):
+                if st.button(" ? ? Guardar en Drive (2D)", key="save_2d_drive", use_container_width=True):
                     if auth.save_csv_2d(st.session_state.username, nombre_csv_2d, csv_bytes_2d):
                         st.success(f"✅ Subido a Drive → ENSAYO DE ESTELA/2D/{nombre_csv_2d}")
                     else:
                         st.error("Error al subir a Drive")
 
-    # --- PASO 5: AN�?LISIS DE PAR�?METROS ATMOSFÉRICOS (INFINITO) ---
+    # --- PASO 5: AN ?LISIS DE PAR ?METROS ATMOSFÉRICOS (INFINITO) ---
     if _archivos_mem_2d:
         st.markdown("---")
         st.markdown("""
         <div class="section-card" style="margin-bottom: 20px;">
-            <h3 style="margin-top: 0; color: white;">📊 PASO 5: AN�?LISIS DE PAR�?METROS ATMOSFÉRICOS (INFINITO)</h3>
+            <h3 style="margin-top: 0; color: white;">📊 PASO 5: AN ?LISIS DE PAR ?METROS ATMOSFÉRICOS (INFINITO)</h3>
             <p style="color: #bbb; margin-bottom: 0;">Analice la estabilidad de las variables en el infinito durante todo el ensayo.</p>
         </div>
         """, unsafe_allow_html=True)
@@ -3271,7 +3271,7 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
                 inf_data_list.append(tmp_df)
         
         if not inf_data_list:
-            st.warning("⚠�? No se detectaron metadatos temporales en los archivos actuales. Por favor, selecciona los archivos y vuelve a cargarlos para activar este análisis.")
+            st.warning("⚠️? No se detectaron metadatos temporales en los archivos actuales. Por favor, selecciona los archivos y vuelve a cargarlos para activar este análisis.")
         else:
             df_inf_global = pd.concat(inf_data_list).drop_duplicates()
             # Formato real del timestamp: DDMMYYHHMMSS (ej: 260424144919 = 26/04/2024 14:49:19)
@@ -3291,7 +3291,7 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
             
             c_inf_1, c_inf_2 = st.columns([1, 2])
             with c_inf_1:
-                options_inf = ["�?_∞", "V_∞", "P_∞", "T_∞"]
+                options_inf = [" ?_∞", "V_∞", "P_∞", "T_∞"]
                 # Filtrar opciones si el archivo es viejo y no tiene T_inf
                 if 'T_inf' not in df_inf_global.columns:
                     st.caption("Nota: Temperatura no disponible en estos datos.")
@@ -3301,9 +3301,9 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
                 tipo_inf_plot = st.radio("Tipo de Análisis:", ["Evolución Temporal", "Distribución Normal"], key="tipo_inf_plot")
                 
                 # Map variable name
-                inf_col_map = {"�?_∞": "rho_inf", "V_∞": "V_inf", "P_∞": "P_inf", "T_∞": "T_inf"}
+                inf_col_map = {" ?_∞": "rho_inf", "V_∞": "V_inf", "P_∞": "P_inf", "T_∞": "T_inf"}
                 col_plot = inf_col_map[var_inf_plot]
-                unit_plot = {"�?_∞": "[kg/m³]", "V_∞": "[m/s]", "P_∞": "[Pa]", "T_∞": "[°C]"}[var_inf_plot]
+                unit_plot = {" ?_∞": "[kg/m³]", "V_∞": "[m/s]", "P_∞": "[Pa]", "T_∞": "[°C]"}[var_inf_plot]
 
             with c_inf_2:
                 if tipo_inf_plot == "Evolución Temporal":
@@ -3326,7 +3326,7 @@ elif st.session_state.seccion_actual == 'vis_2d_nueva':
 
 elif st.session_state.seccion_actual == 'analisis_vortices':
 
-    # ── MOTOR DE DETECCIÓN AUTOM�?TICA ────────────────────────────────────────
+    # ── MOTOR DE DETECCIÓN AUTOM ?TICA ────────────────────────────────────────
     def _detectar_vortices(y_data, z_data, p_data):
         """
         Detección automática de vórtices basada en física.
@@ -3370,20 +3370,30 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
 
         dy = y_lin[1] - y_lin[0]
         dz = z_lin[1] - z_lin[0]
-        y_mid = (y_lin[0] + y_lin[-1]) / 2.0
+        y_min, y_max = y_lin[0], y_lin[-1]
+        y_mid = (y_min + y_max) / 2.0
+        y_span = y_max - y_min
 
         N_ANG   = 24
-        MAX_R   = int(GRID * 0.28)
-        REC_THR = 0.65          # recuperación del 65 % de la profundidad
+        MAX_R   = int(GRID * 0.35)
+        REC_THR = 0.60          # recuperación del 60 % de la profundidad
         angles  = np.linspace(0, 2 * np.pi, N_ANG, endpoint=False)
         sins    = np.sin(angles)
         coss    = np.cos(angles)
 
         scored = []
         for ri, ci in cands:
+            y_val = float(y_lin[ci])
+            z_val = float(z_lin[ri])
+            
+            # 1. Ignorar el centro (soporte/fuselaje)
+            # El soporte suele estar en el medio. Bloqueamos el 12% central.
+            if abs(y_val - y_mid) < y_span * 0.06:
+                continue
+
             p_core = Ps[ri, ci]
             depth  = p_bg - p_core
-            if depth < p_range * 0.05:
+            if depth < p_range * 0.04:
                 continue
 
             radii     = []
@@ -3396,64 +3406,68 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                     if not (0 <= ri2 < GRID and 0 <= ci2 < GRID):
                         n_boundary += 1
                         break
+                    # Criterio de recuperación local
                     if Ps[ri2, ci2] >= p_core + depth * REC_THR:
                         found = r
                         break
                 if found is not None:
                     radii.append(found)
 
-            # si muchas direcciones tocan el borde → no es aislado
-            if n_boundary > N_ANG // 3:
-                continue
-            # si menos del 55 % de las direcciones recuperan → estela / soporte
-            if len(radii) < N_ANG * 0.55:
-                continue
+            # 2. Discriminadores morfológicos estrictos
+            if n_boundary > N_ANG // 3: continue  # Toca mucho borde
+            if len(radii) < N_ANG * 0.70: continue # No cierra (estela abierta)
 
             r_arr  = np.array(radii, dtype=float)
             r_mean = r_arr.mean()
             r_std  = r_arr.std()
             cov    = r_std / (r_mean + 1e-6)
-            compactness = max(0.0, 1.0 - cov * 2.2)
-
-            # muy elongado (CoV alto) → estela
-            if compactness < 0.20:
+            
+            # Circularidad: castigo fuerte a formas elongadas (como la estela del soporte)
+            compactness = max(0.0, 1.0 - cov * 2.5)
+            if compactness < 0.35:
                 continue
+
+            # Relación de aspecto (Z vs Y) para descartar bandas verticales
+            semi_y_est = float(np.mean(r_arr * np.abs(np.cos(angles[:len(radii)])))) * dy
+            semi_z_est = float(np.mean(r_arr * np.abs(np.sin(angles[:len(radii)])))) * dz
+            aspect_ratio = semi_z_est / (semi_y_est + 1e-6)
+            
+            if aspect_ratio > 2.5 or aspect_ratio < 0.4:
+                continue # Demasiado estirado (soporte o estela laminar)
 
             r_real_mm = r_mean * max(dy, dz)
-            dom = max(y_lin[-1] - y_lin[0], z_lin[-1] - z_lin[0])
+            dom = max(y_span, z_lin[-1] - z_lin[0])
             r_frac = r_real_mm / dom
-            if r_frac < 0.01 or r_frac > 0.42:
+            if r_frac < 0.005 or r_frac > 0.40:
                 continue
 
-            score = compactness * 0.55 + min(depth / p_range * 2, 1.0) * 0.45
-
-            # semi-ejes estimados por proyección de los radios muestreados
-            ang_used = angles[:len(radii)]
-            semi_y = float(np.mean(r_arr * np.abs(np.cos(ang_used)))) * dy
-            semi_z = float(np.mean(r_arr * np.abs(np.sin(ang_used)))) * dz
-            semi_y = max(semi_y, dy)
-            semi_z = max(semi_z, dz)
+            # Score final: prioriza profundidad, circularidad y distancia al centro
+            dist_centro_norm = abs(y_val - y_mid) / (y_span / 2)
+            score = (compactness * 0.4) + (min(depth / p_range * 2, 1.0) * 0.4) + (dist_centro_norm * 0.2)
 
             scored.append(dict(
                 ri=ri, ci=ci,
-                y=float(y_lin[ci]), z=float(z_lin[ri]),
+                y=y_val, z=z_val,
                 p_core=p_core, depth=depth,
                 compactness=compactness, score=score,
-                semi_y=semi_y, semi_z=semi_z,
-                area=np.pi * semi_y * semi_z,
+                semi_y=max(semi_y_est, dy), semi_z=max(semi_z_est, dz),
+                area=np.pi * semi_y_est * semi_z_est,
             ))
 
         if not scored:
             return [], Pg, y_lin, z_lin
 
-        # NMS – eliminar duplicados cercanos
+        # 3. NMS y Simetría
         scored.sort(key=lambda x: -x['score'])
-        min_sep = GRID * 0.07
+        min_sep = GRID * 0.08
         selected = []
         for c in scored:
             if not any(np.hypot(c['ri'] - s['ri'], c['ci'] - s['ci']) < min_sep for s in selected):
                 selected.append(c)
-        selected = selected[:8]
+        
+        # Limitar a los 6 mejores candidatos
+        selected = selected[:6]
+
 
         # Emparejamiento simétrico (bonus de puntuación)
         sym_tol_y = (y_lin[-1] - y_lin[0]) * 0.09
@@ -3500,7 +3514,7 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
     st.markdown("""
         <div class="header-container">
             <h1 style="font-size: 3rem; margin-bottom: 1rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
-            🌀 AN�?LISIS DE VÓRTICES
+            🌀 AN ?LISIS DE VÓRTICES
             </h1>
             <h2 style="font-size: 1.8rem; margin-bottom: 0; opacity: 0.9;">
             Detección Automática Basada en Física · Sin Configuración
@@ -3518,13 +3532,13 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
 
     fuente_vortices = st.radio(
         "Fuente de datos:",
-        ["�? Subir CSV (Y, Z, Presion)", "🧠 Desde Archivos 2D en Memoria", "�?�? Cargar desde Drive"],
+        [" ? Subir CSV (Y, Z, Presion)", "🧠 Desde Archivos 2D en Memoria", " ? ? Cargar desde Drive"],
         horizontal=True, key="fuente_vortices_v2"
     )
 
     df_matriz = pd.DataFrame()
 
-    if fuente_vortices == "�? Subir CSV (Y, Z, Presion)":
+    if fuente_vortices == " ? Subir CSV (Y, Z, Presion)":
         up_csv = st.file_uploader("CSV con columnas Y, Z, Presion (sep=; dec=,)", type=['csv'], key="up_csv_vortex")
         if up_csv:
             try:
@@ -3532,7 +3546,7 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                 if not {'Y','Z','Presion'}.issubset(df_matriz.columns):
                     df_matriz = pd.read_csv(up_csv, sep=',', decimal='.')
                 if not {'Y','Z','Presion'}.issubset(df_matriz.columns):
-                    st.error("�?� El CSV debe tener columnas: Y, Z, Presion")
+                    st.error(" ?  El CSV debe tener columnas: Y, Z, Presion")
                     df_matriz = pd.DataFrame()
                 else:
                     st.success(f"✅ {len(df_matriz)} puntos cargados")
@@ -3541,7 +3555,7 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
 
     elif fuente_vortices == "🧠 Desde Archivos 2D en Memoria":
         if 'archivos_2d_cargados' not in st.session_state or not st.session_state.archivos_2d_cargados:
-            st.warning("⚠�? No hay matrices en memoria. Cargá primero desde Vis. Estela 2D.")
+            st.warning("⚠️? No hay matrices en memoria. Cargá primero desde Vis. Estela 2D.")
         else:
             archivo_sel = st.selectbox("Archivo:", list(st.session_state.archivos_2d_cargados.keys()), key="sel_arch_vort")
             df_selected = st.session_state.archivos_2d_cargados[archivo_sel]
@@ -3588,17 +3602,17 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                     if {'Y','Z','Presion'}.issubset(df_matriz.columns):
                         st.success(f"✅ {len(df_matriz)} puntos desde Drive")
                     else:
-                        st.error("�?� Columnas Y, Z, Presion no encontradas")
+                        st.error(" ?  Columnas Y, Z, Presion no encontradas")
                         df_matriz = pd.DataFrame()
 
-    # ── EJECUCIÓN AUTOM�?TICA ────────────────────────────────────────────────
+    # ── EJECUCIÓN AUTOM ?TICA ────────────────────────────────────────────────
     if not df_matriz.empty and {'Y','Z','Presion'}.issubset(df_matriz.columns):
 
         df_clean = df_matriz[['Y','Z','Presion']].dropna()
         if len(df_clean) < 10:
             st.error("Insuficientes puntos válidos para la detección.")
         else:
-            with st.spinner("�? Detectando vórtices automáticamente..."):
+            with st.spinner(" ? Detectando vórtices automáticamente..."):
                 try:
                     vortices, P_grid, y_lin, z_lin = _detectar_vortices(
                         df_clean['Y'].values,
@@ -3616,10 +3630,10 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                 y_plot_raw = df_clean['Y'].values
                 y_mid_sym  = (y_plot_raw.min() + y_plot_raw.max()) / 2.0
 
-                # ── GR�?FICO PRINCIPAL ───────────────────────────────────────
+                # ── GR ?FICO PRINCIPAL ───────────────────────────────────────
                 n_det = len(vortices)
                 if n_det == 0:
-                    st.warning("⚠�? No se detectaron vórtices. El campo de presión no presenta mínimos circulares aislados.")
+                    st.warning("⚠️? No se detectaron vórtices. El campo de presión no presenta mínimos circulares aislados.")
                 else:
                     st.success(f"✅ {n_det} vórtice{'s' if n_det>1 else ''} detectado{'s' if n_det>1 else ''}")
 
@@ -3688,7 +3702,7 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                         "ΔP → P∞ [Pa]"   : round(v['depth'], 2),
                         "Semi-eje Y [mm]" : v['semi_y'],
                         "Semi-eje Z [mm]" : v['semi_z'],
-                        "�?rea [mm²]"      : round(v['area'], 2),
+                        " ?rea [mm²]"      : round(v['area'], 2),
                         "R equiv. [mm]"   : round(np.sqrt(v['area'] / np.pi), 2),
                         "Circularidad"    : v['compactness'],
                         "Par simétrico"   : "✅" if v['has_pair'] else "—",
@@ -3705,7 +3719,7 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                             V_v   = float(df_inf_global['V_inf'].mean())
                         except Exception:
                             pass
-                    st.caption(f"�?∞ = {rho_v:.3f} kg/m³  |  V∞ = {V_v:.2f} m/s")
+                    st.caption(f" ?∞ = {rho_v:.3f} kg/m³  |  V∞ = {V_v:.2f} m/s")
                     df_gamma = pd.DataFrame([{
                         "ID"     : v['id'],
                         "Γ [m²/s]": round(
@@ -3714,9 +3728,9 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                     } for v in vortices])
                     st.table(df_gamma)
 
-                    # ── GEOMETR�?A INTER-CENTROS ─────────────────────────────
+                    # ── GEOMETR ?A INTER-CENTROS ─────────────────────────────
                     if len(vortices) > 1:
-                        st.markdown("#### �? Distancias entre Núcleos")
+                        st.markdown("####  ? Distancias entre Núcleos")
                         pairs_dist = []
                         for i in range(len(vortices)):
                             for j in range(i+1, len(vortices)):
@@ -3730,16 +3744,16 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                                 })
                         st.table(pd.DataFrame(pairs_dist))
 
-                    # ── SIMETR�?A Y GUIÑADA ──────────────────────────────────
+                    # ── SIMETR ?A Y GUIÑADA ──────────────────────────────────
                     st.markdown("---")
-                    st.markdown("### ⚖�? Análisis de Simetría — Estimación de Guiñada (β)")
+                    st.markdown("### ⚖️? Análisis de Simetría — Estimación de Guiñada (β)")
                     y_min_d, y_max_d = y_plot_raw.min(), y_plot_raw.max()
                     st.markdown(f"""
                     <div style="background:#0d1f35;border:1px solid #1e4060;border-radius:8px;padding:12px;margin-bottom:12px;">
                     <p style="color:#93c5fd;font-size:0.85rem;margin:0;line-height:1.8;">
                     <b>Eje de simetría Y:</b> {y_mid_sym:.1f} mm
                     (rango [{y_min_d:.1f} → {y_max_d:.1f}] mm)<br>
-                    Si �?rea izquierda ≠ �?rea derecha → posible guiñada β ≠ 0.
+                    Si  ?rea izquierda ≠  ?rea derecha → posible guiñada β ≠ 0.
                     </p></div>
                     """, unsafe_allow_html=True)
 
@@ -3750,7 +3764,7 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                         "Vórtice"       : v['id'],
                         "Centro Y [mm]" : round(v['y'], 2),
                         "Centro Z [mm]" : round(v['z'], 2),
-                        "�?rea [mm²]"    : round(v['area'], 2),
+                        " ?rea [mm²]"    : round(v['area'], 2),
                         "Semiplano"     : "Izquierda (Y<mid)" if v['y'] < y_mid_sym else "Derecha (Y≥mid)"
                     } for v in vortices]
                     st.dataframe(pd.DataFrame(area_desg), use_container_width=True, hide_index=True)
@@ -3760,13 +3774,13 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                         asim     = (area_der - area_izq) / total_area
                         beta_est = asim * 15.0
                         col_iz, col_der, col_asim, col_beta = st.columns(4)
-                        col_iz.metric("�?rea Izquierda [mm²]", f"{area_izq:.1f}")
-                        col_der.metric("�?rea Derecha [mm²]",  f"{area_der:.1f}")
+                        col_iz.metric(" ?rea Izquierda [mm²]", f"{area_izq:.1f}")
+                        col_der.metric(" ?rea Derecha [mm²]",  f"{area_der:.1f}")
                         col_asim.metric("Asimetría (±1)", f"{asim:+.3f}")
                         col_beta.metric("β estimado [°]",  f"{beta_est:+.2f}°")
                         st.markdown(f"""
                         <div style="background:#111;border-radius:8px;padding:12px;margin-top:8px;">
-                        <p style="color:#aaa;margin:0 0 6px 0;font-size:0.8rem;">Distribución �? Izquierda | Derecha →</p>
+                        <p style="color:#aaa;margin:0 0 6px 0;font-size:0.8rem;">Distribución  ? Izquierda | Derecha →</p>
                         <div style="display:flex;height:20px;border-radius:4px;overflow:hidden;">
                         <div style="background:#ef4444;width:{50*(1+asim):.1f}%;"></div>
                         <div style="background:#3b82f6;width:{50*(1-asim):.1f}%;"></div>
@@ -3781,10 +3795,10 @@ elif st.session_state.seccion_actual == 'analisis_vortices':
                         if abs(asim) < 0.05:
                             st.success("✅ Distribución simétrica — sin guiñada detectada (β ≈ 0°)")
                         elif abs(asim) < 0.15:
-                            st.warning(f"⚠�? Ligera asimetría. Posible guiñada: β ≈ {beta_est:+.1f}°")
+                            st.warning(f"⚠️? Ligera asimetría. Posible guiñada: β ≈ {beta_est:+.1f}°")
                         else:
                             lado = "derecha (+Y)" if asim > 0 else "izquierda (−Y)"
-                            st.error(f"�?� Asimetría significativa en {lado}. β ≈ {beta_est:+.1f}°")
+                            st.error(f" ?  Asimetría significativa en {lado}. β ≈ {beta_est:+.1f}°")
                     else:
                         st.info("Sin área total detectable para el análisis de simetría.")
 
@@ -3832,7 +3846,7 @@ elif st.session_state.seccion_actual == 'modelos':
 
         # ── SELECTOR DE MODO ──────────────────────────────────────────────
         st.markdown("### 🔽 Fuente del Modelo")
-        modo_opts = {"🗄�? Cargar de Base de Datos": "bd", "📂 Importar Archivo (STL / CSV)": "importar"}
+        modo_opts = {"🗄 ? Cargar de Base de Datos": "bd", "📂 Importar Archivo (STL / CSV)": "importar"}
         modo_sel_label = st.radio(
             "Seleccionar fuente:",
             list(modo_opts.keys()),
@@ -3906,7 +3920,7 @@ elif st.session_state.seccion_actual == 'modelos':
                             except Exception as e:
                                 st.error(f"Error al cargar: {e}")
                     with col_del:
-                        if st.button("🗑�? Eliminar", use_container_width=True, key="btn_del_bd"):
+                        if st.button("🗑️? Eliminar", use_container_width=True, key="btn_del_bd"):
                             try:
                                 auth.delete_user_object(obj_id)
                                 st.session_state.modelo_nombre_bd = None
@@ -3919,7 +3933,7 @@ elif st.session_state.seccion_actual == 'modelos':
             st.markdown("##### 📂 Cargar Archivo STL o CSV")
             st.caption("El modelo se importa con los ejes del archivo. Los desplazamientos y rotaciones se configuran desde la sección 4D.")
 
-            use_auto_center_imp = st.checkbox("�? Auto-centrar objeto al importar (centroide → origen)", value=True, key="auto_center_imp")
+            use_auto_center_imp = st.checkbox(" ? Auto-centrar objeto al importar (centroide → origen)", value=True, key="auto_center_imp")
 
             file_obj = st.file_uploader("Cargar archivo (STL o CSV):", type=['csv', 'stl'], key="uploader_modelo_imp")
 
@@ -3999,7 +4013,7 @@ elif st.session_state.seccion_actual == 'modelos':
             st.session_state.modelo_cg['y'] = cg_cols[1].number_input("CG — Y [mm]", value=float(st.session_state.modelo_cg.get('y', 0.0)), step=5.0, format="%.1f", key="cg_y")
             st.session_state.modelo_cg['z'] = cg_cols[2].number_input("CG — Z [mm]", value=float(st.session_state.modelo_cg.get('z', 0.0)), step=5.0, format="%.1f", key="cg_z")
 
-            if st.button("�? Auto-centrar CG (X=0, Y/Z = centroide del modelo)", use_container_width=True, key="btn_autocg"):
+            if st.button(" ? Auto-centrar CG (X=0, Y/Z = centroide del modelo)", use_container_width=True, key="btn_autocg"):
                 obj_actual = st.session_state.objeto_referencia_4d
                 x_arr = np.array(obj_actual['x']); y_arr = np.array(obj_actual['y']); z_arr = np.array(obj_actual['z'])
                 st.session_state.modelo_cg['x'] = 0.0
@@ -4011,7 +4025,7 @@ elif st.session_state.seccion_actual == 'modelos':
             # ── NOMBRE DEL MODELO ────────────────────────────────────────
             st.markdown("---")
             nombre_actual = st.session_state.objeto_referencia_4d.get('name', 'MiModelo')
-            nombre_modelo = st.text_input("�? Nombre del modelo:", value=nombre_actual, key="nombre_modelo_final")
+            nombre_modelo = st.text_input(" ? Nombre del modelo:", value=nombre_actual, key="nombre_modelo_final")
 
             # ── BOTONES FINALES ──────────────────────────────────────────
             c_btn1, c_btn2 = st.columns(2)
@@ -4041,16 +4055,16 @@ elif st.session_state.seccion_actual == 'modelos':
                     except Exception as e:
                         st.error(f"Error serializando: {e}")
 
-            # USAR EN LA P�?GINA
+            # USAR EN LA P ?GINA
             with c_btn2:
-                if st.button("✅ USAR MODELO EN LA P�?GINA", use_container_width=True, key="btn_usar_modelo"):
+                if st.button("✅ USAR MODELO EN LA P ?GINA", use_container_width=True, key="btn_usar_modelo"):
                     st.session_state.objeto_referencia_4d['name'] = nombre_modelo
                     st.session_state.objeto_referencia_4d['cg'] = st.session_state.modelo_cg.copy()
                     st.success(f"✅ Modelo '{nombre_modelo}' activado. CG: X={st.session_state.modelo_cg['x']:.1f}, Y={st.session_state.modelo_cg['y']:.1f}, Z={st.session_state.modelo_cg['z']:.1f} mm")
 
     # ── PREVIEW 3D ────────────────────────────────────────────────────────
     with c_preview:
-        st.markdown("### �?�? Vista Previa 3D")
+        st.markdown("###  ? ? Vista Previa 3D")
         if 'objeto_referencia_4d' in st.session_state:
             obj = st.session_state.objeto_referencia_4d
             cg = st.session_state.modelo_cg
@@ -4122,7 +4136,7 @@ elif st.session_state.seccion_actual == 'modelos':
 
 
 elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual == 'betz_3d':
-    st.markdown("# 🌪�? VISUALIZACIÓN DE ESTELA 3D - Análisis Tridimensional")
+    st.markdown("# 🌪️? VISUALIZACIÓN DE ESTELA 3D - Análisis Tridimensional")
     st.markdown("Análisis 3D con superficie interactiva de presiones")
     
     # Paso 1: Configuración inicial
@@ -4140,7 +4154,7 @@ elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual 
         col_datos, col_imagen = st.columns([2, 1])
 
         with col_datos:
-            st.markdown("### �? Configuración de Sensores y Geometría")
+            st.markdown("###  ? Configuración de Sensores y Geometría")
             
             # Orden de sensores
             orden_sensores = st.selectbox(
@@ -4152,7 +4166,7 @@ elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual 
             )
             
             # Pregunta sobre el sensor de referencia
-            st.info("�? **Pregunta:** ¿Qué sensor corresponde a la toma número 12 (la que se encuentra cerca del piso)?")
+            st.info(" ? **Pregunta:** ¿Qué sensor corresponde a la toma número 12 (la que se encuentra cerca del piso)?")
             sensor_referencia = st.selectbox(
                 "Sensor de referencia (toma 12):",
                 [f"Sensor {i}" for i in range(1, 13)],
@@ -4191,10 +4205,10 @@ elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual 
                 st.rerun()
 
     with col_imagen:
-        st.markdown("### �? Diagrama de Referencia")
+        st.markdown("###  ? Diagrama de Referencia")
         st.markdown("""
         <div style="background: #f8fafc; border: 2px dashed #e5e7eb; border-radius: 12px; padding: 2rem; text-align: center; color: #64748b;">
-            <h4>�? Diagrama de Referencia</h4>
+            <h4> ? Diagrama de Referencia</h4>
             <p>Aquí iría el diagrama técnico de sensores</p>
             <p><small>Subir imagen del plano técnico</small></p>
         </div>
@@ -4207,7 +4221,7 @@ elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual 
         st.markdown("""
         <div class="section-card" style="margin-bottom: 20px;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h3 style="margin: 0; color: white;">⚙�? CONFIGURACIÓN ACTIVA</h3>
+                <h3 style="margin: 0; color: white;">⚙️? CONFIGURACIÓN ACTIVA</h3>
                 <span style="color: #666; font-size: 0.8rem;">Parámetros 3D</span>
             </div>
             <div style="display: flex; gap: 20px; margin-top: 15px;">
@@ -4234,7 +4248,7 @@ elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual 
         # --- PASO 2: CARGA DE ARCHIVOS 3D ---
         st.markdown("""
         <div class="section-card" style="margin-bottom: 20px;">
-            <h3 style="margin-top: 0; color: white;">�? PASO 2: IMPORTACIÓN DE VOLÚMENES 3D</h3>
+            <h3 style="margin-top: 0; color: white;"> ? PASO 2: IMPORTACIÓN DE VOLÚMENES 3D</h3>
             <p style="color: #bbb; margin-bottom: 20px;">Cargue múltiples archivos CSV para generar superficies tridimensionales.</p>
         </div>
         """, unsafe_allow_html=True)
@@ -4257,7 +4271,7 @@ elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual 
                 nombre_archivo = uploaded_file_3d.name.replace('.csv', '').replace('incertidumbre_', '')
                 
                 if nombre_archivo not in st.session_state.archivos_3d_cargados:
-                    with st.spinner(f"�? Procesando geometría 3D para {nombre_archivo}..."):
+                    with st.spinner(f" ? Procesando geometría 3D para {nombre_archivo}..."):
                         datos_3d = procesar_promedios(uploaded_file_3d, st.session_state.configuracion_3d['orden'], uploaded_infinito_3d)
                         
                         if datos_3d is not None:
@@ -4286,12 +4300,12 @@ elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual 
             # --- PASO 3: VISUALIZACIÓN ---
             st.markdown("""
             <div class="section-card" style="margin-bottom: 20px;">
-                <h3 style="margin-top: 0; color: white;">🌪�? PASO 3: INTERACCIÓN 3D</h3>
+                <h3 style="margin-top: 0; color: white;">🌪️? PASO 3: INTERACCIÓN 3D</h3>
                 <p style="color: #bbb; margin-bottom: 20px;">Explore la superficie generada, ajuste la cámara y analice la distribución de presiones.</p>
             </div>
             """, unsafe_allow_html=True)
             
-            st.markdown("#### 🎛�? Controles Globales de Escena")
+            st.markdown("#### 🎛️? Controles Globales de Escena")
             st.info("Visualización estándar activa.")
             # Controls removed as per user request
             mostrar_cuerpo = False # Default disabled
@@ -4299,7 +4313,7 @@ elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual 
 
         st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
         
-        opciones_var_3d = ["Presión Total [Actual]", "�?_∞", "V_∞", "P_∞"]
+        opciones_var_3d = ["Presión Total [Actual]", " ?_∞", "V_∞", "P_∞"]
         var_3d_sel = st.selectbox("📊 Variable a visualizar:", opciones_var_3d, key="var_3d_sel_ui")
 
         # 🔘 Checkbox para activar/desactivar puntos medidos
@@ -4346,14 +4360,14 @@ elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual 
                             </div>
                             """, unsafe_allow_html=True)
                             
-                            if st.button(f"�?��? Ver Superficie Completa", key=f"ver_mesh3d_{nombre_archivo}", use_container_width=True):
+                            if st.button(f" ?  ? Ver Superficie Completa", key=f"ver_mesh3d_{nombre_archivo}", use_container_width=True):
                                 with st.spinner(f"Construyendo superficie completa para {nombre_archivo}..."):
                                     # Llamada a la NUEVA función de graficación con 300 puntos
                                     fig_individual = crear_superficie_delaunay_3d(
                                         datos_archivo,
                                         st.session_state.configuracion_3d,
                                         nombre_archivo,
-                                        mostrar_puntos=mostrar_puntos_3d,  # �? Aquí
+                                        mostrar_puntos=mostrar_puntos_3d,  #  ? Aquí
                                         variable=var_3d_sel
                                     )
                                     
@@ -4373,12 +4387,12 @@ elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual 
                                             key=f"download_mesh3d_{nombre_archivo}"
                                         )
                                     else:
-                                        st.error(f"�?� No se pudo generar la superficie de malla 3D para {nombre_archivo}")   
+                                        st.error(f" ?  No se pudo generar la superficie de malla 3D para {nombre_archivo}")   
         
         # --- NUEVO PASO 4: DIFERENCIA ENTRE SUPERFICIES ---
         st.markdown("""
         <div class="section-card" style="margin-bottom: 20px;">
-            <h3 style="margin-top: 0; color: white;">📉 PASO 4: AN�?LISIS DE DIFERENCIAS</h3>
+            <h3 style="margin-top: 0; color: white;">📉 PASO 4: AN ?LISIS DE DIFERENCIAS</h3>
             <p style="color: #bbb; margin-bottom: 20px;">Calcule y visualice la diferencia aritmética entre dos superficies medidas (A - B).</p>
         </div>
         """, unsafe_allow_html=True)
@@ -4424,7 +4438,7 @@ elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual 
                             archivo_a,
                             archivo_b,
                             st.session_state.configuracion_3d,
-                            mostrar_puntos=mostrar_puntos_diff  # �? Aquí
+                            mostrar_puntos=mostrar_puntos_diff  #  ? Aquí
                         )
 
                         if fig_diferencia_3d:
@@ -4518,8 +4532,8 @@ elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual 
                 x_detectado = extraer_pos_x_estacion(archivo_guardar)
 
                 c_nm1, c_nm2 = st.columns(2)
-                aoa_3d = c_nm1.number_input("�?ngulo de Ataque [mm]:", value=0.0, step=0.5, format="%.1f", key="aoa_3d")
-                x_detectado_inp = c_nm2.number_input("�? Posición X (Estación) [mm]:", value=x_detectado, step=10.0, key="x_3d_inp")
+                aoa_3d = c_nm1.number_input(" ?ngulo de Ataque [mm]:", value=0.0, step=0.5, format="%.1f", key="aoa_3d")
+                x_detectado_inp = c_nm2.number_input(" ? Posición X (Estación) [mm]:", value=x_detectado, step=10.0, key="x_3d_inp")
 
                 # Nombre auto-sugerido: 3D-Xpos-OAOgrados-Tts  (editable)
                 _aoa_str = str(int(aoa_3d)) if aoa_3d == int(aoa_3d) else f"{aoa_3d:.1f}"
@@ -4567,7 +4581,7 @@ elif st.session_state.seccion_actual == '3d' or st.session_state.seccion_actual 
                         st.error("No se pudieron extraer datos válidos (Y, Z, Presion).")
         
         else:
-            st.info("ℹ�? Para guardar una superficie, primero debe procesar al menos un archivo CSV en el **Paso 2**.")
+            st.info("ℹ️? Para guardar una superficie, primero debe procesar al menos un archivo CSV en el **Paso 2**.")
 
 
 elif st.session_state.seccion_actual == 'betz_4d':
@@ -4582,9 +4596,9 @@ elif st.session_state.seccion_actual == 'betz_4d':
     </div>
     """, unsafe_allow_html=True)
 
-    # �?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?
+    #  ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ?
     # PASO 1: GUARDAR PLANO 4D EN DRIVE
-    # �?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?
+    #  ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ?
     with st.expander("💾 PASO 1: Cargar y Guardar Plano 4D en Base de Datos", expanded=True):
         st.markdown("""
         <div class="section-card" style="margin-bottom: 12px;">
@@ -4619,11 +4633,11 @@ elif st.session_state.seccion_actual == 'betz_4d':
                 df_4d_filtrado['Tiempo_s'] = t4d_sel
 
                 x_pos_4d = st.number_input(
-                    "�? Posición X (Estación) [mm]:",
+                    " ? Posición X (Estación) [mm]:",
                     value=0.0, step=10.0, key="x_pos_4d"
                 )
 
-                aoa_4d = st.number_input("�?ngulo de Ataque [mm]:", value=0.0, step=0.5, format="%.1f", key="aoa_4d")
+                aoa_4d = st.number_input(" ?ngulo de Ataque [mm]:", value=0.0, step=0.5, format="%.1f", key="aoa_4d")
 
                 # Nombre auto-sugerido: 4D-Xpos-OAOgrados-Tts  (editable)
                 _aoa_str_4d = str(int(aoa_4d)) if aoa_4d == int(aoa_4d) else f"{aoa_4d:.1f}"
@@ -4667,7 +4681,7 @@ elif st.session_state.seccion_actual == 'betz_4d':
                             st.success(f"✅ Plano 4D guardado: **{nombre_4d}** en X={x_pos_4d} mm")
                             st.cache_data.clear()
                         else:
-                            st.error("�?� Error al guardar el plano 4D.")
+                            st.error(" ?  Error al guardar el plano 4D.")
                     else:
                         st.error("No se pudieron extraer datos válidos.")
 
@@ -4676,9 +4690,9 @@ elif st.session_state.seccion_actual == 'betz_4d':
 
     st.markdown("---")
 
-    # �?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?
+    #  ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ?
     # PASO 2: VISUALIZACIÓN 4D
-    # �?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?
+    #  ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ?
     st.markdown("### 🌌 Paso 2: Visualización 4D")
 
     # --- INIT session state para modelo 4D ---
@@ -4713,7 +4727,7 @@ elif st.session_state.seccion_actual == 'betz_4d':
         mis_superficies = []
 
     if not mis_superficies:
-        st.info("⚠�? No tienes planos 4D guardados. Usá el Paso 1 para procesar y guardar planos.")
+        st.info("⚠️? No tienes planos 4D guardados. Usá el Paso 1 para procesar y guardar planos.")
     else:
         dict_superficies = {f"{s[1]} (X={s[2]}) [{s[3]}]": s for s in mis_superficies}
 
@@ -4722,12 +4736,12 @@ elif st.session_state.seccion_actual == 'betz_4d':
 
         with c4d_left:
             # ── VARIABLE Y MODO DE SELECCIÓN ─────────────────────────────
-            opciones_var_4d = ["Presión Total [Actual]", "�?_∞", "V_∞", "P_∞"]
+            opciones_var_4d = ["Presión Total [Actual]", " ?_∞", "V_∞", "P_∞"]
             var_4d_sel = st.selectbox("📊 Variable a visualizar:", opciones_var_4d, key="var_4d_sel_ui")
 
             modo_sel_4d = st.radio(
                 "Modo de selección de planos:",
-                ["✅ Individual", "�? Por Posición X", "🎯 Por AOA"],
+                ["✅ Individual", " ? Por Posición X", "🎯 Por AOA"],
                 horizontal=True,
                 key="modo_sel_4d"
             )
@@ -4742,7 +4756,7 @@ elif st.session_state.seccion_actual == 'betz_4d':
             if modo_sel_4d == "✅ Individual":
                 sel_labels = st.multiselect("Seleccionar planos:", list(dict_superficies.keys()), key="sel_4d_main")
 
-            elif modo_sel_4d == "�? Por Posición X":
+            elif modo_sel_4d == " ? Por Posición X":
                 # Agrupar por X
                 x_positions = sorted(set(s[2] for s in mis_superficies))
                 x_sel = st.multiselect("Posiciones X [mm]:", x_positions, default=x_positions, key="sel_x_4d")
@@ -4784,7 +4798,7 @@ elif st.session_state.seccion_actual == 'betz_4d':
                 st.markdown("---")
                 st.markdown("""
                 <div style="background:#0d1f35; border:1px solid #1e4060; border-radius:8px; padding:12px; margin-bottom:8px;">
-                    <h5 style="color:#60a5fa; margin:0 0 6px 0;">✈�? Posición y Actitud del Modelo</h5>
+                    <h5 style="color:#60a5fa; margin:0 0 6px 0;">✈️? Posición y Actitud del Modelo</h5>
                     <p style="color:#93c5fd; font-size:0.78rem; margin:0; line-height:1.6;">
                         <b>Alpha α (+)</b> → nariz sube (plano XZ)<br>
                         <b>Beta β (+)</b> → nariz hacia ala derecha (plano XY)<br>
@@ -4976,7 +4990,7 @@ elif st.session_state.seccion_actual == 'animacion_4d':
         mis_superficies_anim = []
 
     if not mis_superficies_anim:
-        st.info("⚠�? No hay planos 4D guardados. Ve a **Vis. Estela 4D → Paso 1** para guardar planos primero.")
+        st.info("⚠️? No hay planos 4D guardados. Ve a **Vis. Estela 4D → Paso 1** para guardar planos primero.")
     else:
         dict_sup_anim = {f"{s[1]} (X={s[2]}mm) [{s[3][:10] if s[3] else ''}]": s for s in mis_superficies_anim}
 
@@ -4986,12 +5000,12 @@ elif st.session_state.seccion_actual == 'animacion_4d':
         with c_sel_left:
             st.markdown("### 📂 Paso 1: Selección de Planos")
 
-            opciones_var_anim4d = ["Presión Total [Actual]", "�?_∞", "V_∞", "P_∞"]
+            opciones_var_anim4d = ["Presión Total [Actual]", " ?_∞", "V_∞", "P_∞"]
             var_anim_sel = st.selectbox("📊 Variable a visualizar:", opciones_var_anim4d, key="var_anim4d_sel")
 
             modo_fil_anim = st.radio(
                 "Filtrar por:",
-                ["✅ Individual", "�? Por Plano (X)", "🎯 Por AOA"],
+                ["✅ Individual", " ? Por Plano (X)", "🎯 Por AOA"],
                 key="modo_fil_anim4d",
                 horizontal=True
             )
@@ -4999,7 +5013,7 @@ elif st.session_state.seccion_actual == 'animacion_4d':
             if modo_fil_anim == "✅ Individual":
                 sel_anim_labels = st.multiselect("Seleccionar planos:", list(dict_sup_anim.keys()), key="sel_anim_ind")
 
-            elif modo_fil_anim == "�? Por Plano (X)":
+            elif modo_fil_anim == " ? Por Plano (X)":
                 x_positions_anim = sorted(set(s[2] for s in mis_superficies_anim))
                 x_sel_anim = st.multiselect("Posiciones X [mm]:", x_positions_anim, default=x_positions_anim, key="sel_x_anim")
                 sel_anim_labels = [lbl for lbl, s in dict_sup_anim.items() if s[2] in x_sel_anim]
@@ -5011,7 +5025,7 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                     if _aoa_from_name_anim(s[1]) is not None
                 ))
                 if not all_aoas_anim:
-                    st.warning("⚠�? No se detectaron AOAs en los nombres (formato: OAO{N} o OAOneg{N})")
+                    st.warning("⚠️? No se detectaron AOAs en los nombres (formato: OAO{N} o OAOneg{N})")
                     sel_anim_labels = []
                 else:
                     aoas_sel_anim = st.multiselect(
@@ -5119,7 +5133,7 @@ elif st.session_state.seccion_actual == 'animacion_4d':
         # ── PASO 3: VISUALIZACIÓN INTERACTIVA ────────────────────────────────
         if st.session_state.anim4d_grillas is not None:
             st.markdown("---")
-            st.markdown("### 🎛�? Paso 3: Visualización Interactiva")
+            st.markdown("### 🎛️? Paso 3: Visualización Interactiva")
 
             g = st.session_state.anim4d_grillas
             aoa_min_v, aoa_max_v = st.session_state.anim4d_aoa_range
@@ -5167,7 +5181,7 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                 </div>
                 """, unsafe_allow_html=True)
 
-                if st.button("🗑�? Limpiar pre-computación", key="btn_clear_precomp", use_container_width=True):
+                if st.button("🗑️? Limpiar pre-computación", key="btn_clear_precomp", use_container_width=True):
                     st.session_state.anim4d_grillas = None
                     st.session_state.anim4d_aoa_range = None
                     st.rerun()
@@ -5268,7 +5282,7 @@ elif st.session_state.seccion_actual == 'animacion_4d':
             st.caption("💡 Matplotlib puro — sin Chrome ni kaleido. Dos modos: 2D suave (contourf) o 4D isométrico con modelo.")
 
             c_gif0, c_gif1, c_gif2, c_gif3 = st.columns(4)
-            tipo_gif  = c_gif0.radio("Tipo:", ["🗺�? 2D suave", "🚀 4D"], key="tipo_gif_sel")
+            tipo_gif  = c_gif0.radio("Tipo:", ["🗺 ? 2D suave", "🚀 4D"], key="tipo_gif_sel")
             fps_gif   = c_gif1.slider("FPS:", 1, 10, 3, key="fps_gif_anim")
             n_pas_gif = c_gif2.slider("N° frames:", 5, 60, 15, key="npasos_gif")
             sc_gif    = c_gif3.slider("× relieve (4D):", 0.1, 10.0, 1.0, 0.1, key="sc_gif_anim")
@@ -5290,7 +5304,7 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                 if preset_cam != "Personalizada": elev_gif, azim_gif = elev_def, azim_def
 
             c_btn1, c_btn2 = st.columns(2)
-            btn_preview = c_btn1.button("�?�? Previsualizar Vista (1 frame)", use_container_width=True)
+            btn_preview = c_btn1.button(" ? ? Previsualizar Vista (1 frame)", use_container_width=True)
             btn_generar = c_btn2.button("🎥 Generar GIF Completo", type="primary", use_container_width=True)
 
             if btn_preview or btn_generar:
@@ -5495,7 +5509,7 @@ elif st.session_state.seccion_actual == 'herramientas':
     with st.container():
         st.markdown("""
         <div class="section-card" style="border-left: 5px solid #0ea5e9; margin-bottom: 10px;">
-            <h3 style="color: #0ea5e9; margin: 0;">�? 01. UNIÓN DE ARCHIVOS</h3>
+            <h3 style="color: #0ea5e9; margin: 0;"> ? 01. UNIÓN DE ARCHIVOS</h3>
         </div>
         """, unsafe_allow_html=True)
         
@@ -5544,7 +5558,7 @@ elif st.session_state.seccion_actual == 'herramientas':
                             st.success(f"✅ {len(archivos_union)} archivos unidos correctamente")
                             
                             if puntos_sobrepuestos:
-                                st.warning(f"⚠�? Se detectaron {len(puntos_sobrepuestos)} puntos sobrepuestos")
+                                st.warning(f"⚠️? Se detectaron {len(puntos_sobrepuestos)} puntos sobrepuestos")
                                 with st.expander("Ver puntos sobrepuestos"):
                                     for punto in puntos_sobrepuestos:
                                         st.write(f"Y={punto[0]}, Z={punto[1]}, Tiempo={punto[2]}s")
@@ -5557,7 +5571,7 @@ elif st.session_state.seccion_actual == 'herramientas':
                                 mime="text/csv"
                             )
                 else:
-                    st.error("�?� Seleccione min. 2 archivos")
+                    st.error(" ?  Seleccione min. 2 archivos")
 
     st.markdown("---")
 
@@ -5625,7 +5639,7 @@ elif st.session_state.seccion_actual == 'herramientas':
                                 mime="text/csv"
                             )
                 else:
-                    st.error("�?� Falta archivo")
+                    st.error(" ?  Falta archivo")
 
     st.markdown("---")
 
@@ -5642,11 +5656,11 @@ elif st.session_state.seccion_actual == 'herramientas':
         """, unsafe_allow_html=True)
 
         # ─── VTK 2D ─────────────────────────────────────────────────────
-        with st.expander("🗺�? VTK 2D — Plano de Presión  |  Plano YZ (X fijo). Presión como color.", expanded=True):
+        with st.expander("🗺 ? VTK 2D — Plano de Presión  |  Plano YZ (X fijo). Presión como color.", expanded=True):
 
             fuente_2d = st.radio(
                 "Fuente de datos:",
-                ["📂 Drive 2D (base de datos)", "💾 Memoria (sesión actual)", "�? Subir CSV nuevo"],
+                ["📂 Drive 2D (base de datos)", "💾 Memoria (sesión actual)", " ? Subir CSV nuevo"],
                 key="fuente_vtk2d", horizontal=True
             )
 
@@ -5686,7 +5700,7 @@ elif st.session_state.seccion_actual == 'herramientas':
                         st.error(f"Error leyendo CSV: {e}")
 
             if df_vtk2d is not None:
-                x_vtk2d = st.number_input("�? Posición X [mm]:", value=0.0, step=10.0, key="x_vtk2d")
+                x_vtk2d = st.number_input(" ? Posición X [mm]:", value=0.0, step=10.0, key="x_vtk2d")
                 res_vtk2d = st.slider("Suavizado:", 1, 5, 2, key="res_vtk2d")
 
                 # Nombre auto: si viene de Drive reemplazamos prefijo, sino usamos X
@@ -5704,7 +5718,7 @@ elif st.session_state.seccion_actual == 'herramientas':
                     nombre_vtk2d = nombre_auto_vtk2d
                     c2d_nom.code(f"{nombre_vtk2d}.vtk")
 
-                if st.button("🗺�? Generar VTK 2D", key="btn_gen_vtk2d", type="primary"):
+                if st.button("🗺 ? Generar VTK 2D", key="btn_gen_vtk2d", type="primary"):
                     resultado_2d = crear_vtk_plano_presion_2d(df_vtk2d, nombre_vtk2d, x_vtk2d)
                     if resultado_2d:
                         vtk_path_2d, vtk_bytes_2d = resultado_2d
@@ -5714,21 +5728,21 @@ elif st.session_state.seccion_actual == 'herramientas':
                                                file_name=os.path.basename(vtk_path_2d),
                                                mime="application/octet-stream", key="dl_vtk2d")
                         with c_dl2:
-                            if st.button("�?�? Guardar en Drive", key="save_vtk2d_drive"):
+                            if st.button(" ? ? Guardar en Drive", key="save_vtk2d_drive"):
                                 if auth.save_vtk_plano(st.session_state.username,
                                                        os.path.basename(vtk_path_2d), vtk_bytes_2d):
                                     st.success("✅ Subido → HERRAMIENTAS/ARCHIVOS VTK/PLANOS DE PRESION")
                                 else:
                                     st.error("Error al subir a Drive")
                     else:
-                        st.error("�?� No se pudo generar el VTK.")
+                        st.error(" ?  No se pudo generar el VTK.")
 
         # ─── VTK 3D ─────────────────────────────────────────────────────
-        with st.expander("🕸�? VTK 3D — Malla Delaunay  |  Triangulación 3D fiel a los datos. Ideal para CFD.", expanded=True):
+        with st.expander("🕸 ? VTK 3D — Malla Delaunay  |  Triangulación 3D fiel a los datos. Ideal para CFD.", expanded=True):
 
             fuente_3d = st.radio(
                 "Fuente de datos:",
-                ["📂 Drive 3D (base de datos)", "💾 Memoria (sesión actual)", "�? Subir CSV nuevo"],
+                ["📂 Drive 3D (base de datos)", "💾 Memoria (sesión actual)", " ? Subir CSV nuevo"],
                 key="fuente_vtk3d", horizontal=True
             )
 
@@ -5766,7 +5780,7 @@ elif st.session_state.seccion_actual == 'herramientas':
                         st.error(f"Error: {e}")
 
             if df_vtk3d is not None:
-                x_vtk3d = st.number_input("�? Posición X [mm]:", value=0.0, step=10.0, key="x_vtk3d")
+                x_vtk3d = st.number_input(" ? Posición X [mm]:", value=0.0, step=10.0, key="x_vtk3d")
 
                 if fname_3d_drive:
                     stem_3d = os.path.splitext(fname_3d_drive)[0]
@@ -5782,7 +5796,7 @@ elif st.session_state.seccion_actual == 'herramientas':
                     nombre_vtk3d = nombre_auto_vtk3d
                     c3d_nom.code(f"{nombre_vtk3d}.vtk")
 
-                if st.button("🕸�? Generar VTK 3D Delaunay", key="btn_gen_vtk3d", type="primary"):
+                if st.button("🕸 ? Generar VTK 3D Delaunay", key="btn_gen_vtk3d", type="primary"):
                     res_3d = crear_vtk_superficie_3d_delaunay(df_vtk3d, nombre_vtk3d, x_vtk3d)
                     if res_3d:
                         with open(res_3d, "rb") as f3d:
@@ -5793,14 +5807,14 @@ elif st.session_state.seccion_actual == 'herramientas':
                                                file_name=f"{nombre_vtk3d}.vtk",
                                                mime="application/octet-stream", key="dl_vtk3d")
                         with c_dl4:
-                            if st.button("�?�? Guardar en Drive", key="save_vtk3d_drive"):
+                            if st.button(" ? ? Guardar en Drive", key="save_vtk3d_drive"):
                                 if auth.save_vtk_superficie(st.session_state.username,
                                                             f"{nombre_vtk3d}.vtk", vtk_bytes_3d):
                                     st.success("✅ Subido → HERRAMIENTAS/ARCHIVOS VTK/SUPERFICIES 3D")
                                 else:
                                     st.error("Error al subir a Drive")
                     else:
-                        st.error("�?� No se pudo generar el VTK.")
+                        st.error(" ?  No se pudo generar el VTK.")
 
         # ─── VTK 4D ─────────────────────────────────────────────────────
         with st.expander("🌌 VTK 4D — Multi-plano  |  Genera un VTK Delaunay por cada plano 4D, en su estación X.", expanded=True):
@@ -5822,7 +5836,7 @@ elif st.session_state.seccion_actual == 'herramientas':
                             stem_4d = s4[1]
                             auto_4d = "VTK-" + stem_4d[stem_4d.index("-")+1:] if "-" in stem_4d else f"VTK-{stem_4d}"
                             custom_names_4d[lab] = st.text_input(
-                                f"�?��? Nombre para {s4[1]}:", value=auto_4d, key=f"nom4d_{s4[1]}"
+                                f" ?  ? Nombre para {s4[1]}:", value=auto_4d, key=f"nom4d_{s4[1]}"
                             )
                     else:
                         # Mostrar los nombres automáticos como preview
@@ -5888,7 +5902,7 @@ elif st.session_state.seccion_actual == 'configuracion':
             <div style="font-size: 2rem; margin-bottom: 10px;">💾</div>
             <h4 style="margin:0; color:white;">Base de Datos</h4>
             <div style="font-size: 1.2rem; font-weight:bold; color: {'#4ade80' if db_ok else '#f87171'}; margin: 10px 0;">
-                {'�? ONLINE' if db_ok else '�? OFFLINE'}
+                {' ? ONLINE' if db_ok else ' ? OFFLINE'}
             </div>
             <p style="color: grey; font-size: 0.8rem; margin:0;">users.db ({db_size:.1f} KB)</p>
         </div>
@@ -5919,7 +5933,7 @@ elif st.session_state.seccion_actual == 'configuracion':
         """, unsafe_allow_html=True)
 
     st.markdown("---")
-    st.markdown("### 🗃�? Explorador de Archivos en Drive")
+    st.markdown("### 🗃 ? Explorador de Archivos en Drive")
     st.info("Navegá entre carpetas, renombrá o eliminá archivos de tu cuenta en Google Drive.")
 
     import drive_api as _dapi
@@ -5940,9 +5954,9 @@ elif st.session_state.seccion_actual == 'configuracion':
             user_root_id = _dapi.get_user_root(st.session_state.username)
         if user_root_id:
             st.session_state.drive_current_folder_id = user_root_id
-            st.session_state.drive_folder_path = [(user_root_id, f"�? {st.session_state.username}")]
+            st.session_state.drive_folder_path = [(user_root_id, f" ? {st.session_state.username}")]
         else:
-            st.error("�?� No se pudo conectar con Google Drive. Verificá las credenciales.")
+            st.error(" ?  No se pudo conectar con Google Drive. Verificá las credenciales.")
             user_root_id = None
 
     current_folder_id = st.session_state.drive_current_folder_id
@@ -5986,12 +6000,12 @@ elif st.session_state.seccion_actual == 'configuracion':
             for carpeta in carpetas:
                 c_icon, c_name, c_btn = st.columns([0.05, 0.75, 0.2])
                 with c_icon:
-                    st.markdown("�?")
+                    st.markdown(" ?")
                 with c_name:
                     st.markdown(f"<span style='color:#fbbf24;'>{carpeta['name']}</span>", unsafe_allow_html=True)
                 with c_btn:
                     if st.button("Abrir →", key=f"open_{carpeta['id']}"):
-                        st.session_state.drive_folder_path.append((carpeta['id'], f"�? {carpeta['name']}"))
+                        st.session_state.drive_folder_path.append((carpeta['id'], f" ? {carpeta['name']}"))
                         st.session_state.drive_current_folder_id = carpeta['id']
                         st.session_state.drive_rename_file_id = None
                         st.session_state.drive_confirm_delete_id = None
@@ -6021,7 +6035,7 @@ elif st.session_state.seccion_actual == 'configuracion':
                             if ok:
                                 st.success(f"✅ Renombrado a '{nuevo_nombre}'")
                             else:
-                                st.error("�?� Error al renombrar.")
+                                st.error(" ?  Error al renombrar.")
                             st.session_state.drive_rename_file_id = None
                             st.rerun()
                     with r_col3:
@@ -6031,16 +6045,16 @@ elif st.session_state.seccion_actual == 'configuracion':
 
                 elif is_confirming_delete:
                     # --- MODO CONFIRMACIÓN BORRADO ---
-                    st.warning(f"⚠�? ¿Seguro que querés eliminar **{fname}**? Esta acción es irreversible.")
+                    st.warning(f"⚠️? ¿Seguro que querés eliminar **{fname}**? Esta acción es irreversible.")
                     d_col1, d_col2 = st.columns(2)
                     with d_col1:
-                        if st.button("🗑�? Sí, eliminar", type="primary", key=f"confirm_del_{fid}"):
+                        if st.button("🗑️? Sí, eliminar", type="primary", key=f"confirm_del_{fid}"):
                             with st.spinner("Eliminando..."):
                                 ok = _dapi.delete_file(fid)
                             if ok:
                                 st.success(f"✅ '{fname}' eliminado.")
                             else:
-                                st.error("�?� Error al eliminar.")
+                                st.error(" ?  Error al eliminar.")
                             st.session_state.drive_confirm_delete_id = None
                             st.rerun()
                     with d_col2:
@@ -6058,12 +6072,12 @@ elif st.session_state.seccion_actual == 'configuracion':
                                     f"<br><span style='color:#555; font-size:0.75rem;'>{created}</span>",
                                     unsafe_allow_html=True)
                     with f_col3:
-                        if st.button("�?�? Renombrar", key=f"ren_{fid}"):
+                        if st.button(" ? ? Renombrar", key=f"ren_{fid}"):
                             st.session_state.drive_rename_file_id = fid
                             st.session_state.drive_confirm_delete_id = None
                             st.rerun()
                     with f_col4:
-                        if st.button("🗑�? Eliminar", key=f"del_{fid}"):
+                        if st.button("🗑️? Eliminar", key=f"del_{fid}"):
                             st.session_state.drive_confirm_delete_id = fid
                             st.session_state.drive_rename_file_id = None
                             st.rerun()
@@ -6090,11 +6104,11 @@ elif st.session_state.seccion_actual == 'configuracion':
                     if auth.create_user(new_username, new_password):
                         st.success(f"✅ Usuario '{new_username}' creado exitosamente")
                     else:
-                        st.error(f"�?� El usuario '{new_username}' ya existe")
+                        st.error(f" ?  El usuario '{new_username}' ya existe")
         
         st.info("💡 Los usuarios creados podrán acceder inmediatamente con sus credenciales.")
     else:
-        st.warning("⚠�? Solo el administrador puede gestionar usuarios. Contacte al admin para solicitar acceso.")
+        st.warning("⚠️? Solo el administrador puede gestionar usuarios. Contacte al admin para solicitar acceso.")
 
 
 # Footer
