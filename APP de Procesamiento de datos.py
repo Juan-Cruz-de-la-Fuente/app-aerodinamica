@@ -5283,12 +5283,15 @@ elif st.session_state.seccion_actual == 'animacion_4d':
             st.caption("💡 Matplotlib puro — sin Chrome ni kaleido. Dos modos: 2D suave (contourf) o 4D isométrico con modelo.")
 
             st.info("💡 **Nota de Rendimiento:** Generar el GIF a alta resolución puede ser muy lento en servidores online (Streamlit Cloud) comparado con una ejecución local, debido a las limitaciones de CPU y al pesado procesamiento gráfico. Si usas la app online, prueba resoluciones bajas y menos frames.")
-            c_gif0, c_gif1, c_gif2, c_gif3, c_gif4 = st.columns(5)
+            c_gif0, c_gif1, c_gif2, c_gif3 = st.columns(4)
             tipo_gif  = c_gif0.radio("Tipo:", ["🗺 2D suave", "🚀 4D"], key="tipo_gif_sel")
             fps_gif   = c_gif1.slider("FPS:", 1, 10, 3, key="fps_gif_anim")
             n_pas_gif = c_gif2.slider("N° frames:", 5, 60, 15, key="npasos_gif")
             sc_gif    = c_gif3.slider("× relieve (4D):", 0.1, 10.0, 1.0, 0.1, key="sc_gif_anim")
-            dpi_gif   = c_gif4.selectbox("Resolución (DPI):", [110, 150, 200, 300, 600], index=3, key="dpi_gif_anim", help="Resolución de imagen. Valores altos (ej: 300+) mejoran enormemente la calidad, pero aumentan exponencialmente el tiempo de generación y peso del GIF.")
+            
+            c_opt1, c_opt2 = st.columns(2)
+            dpi_gif   = c_opt1.selectbox("Resolución (DPI):", [110, 150, 200, 300, 600], index=3, key="dpi_gif_anim", help="Resolución de imagen. Valores altos mejoran enormemente la calidad, pero aumentan exponencialmente el tiempo de generación.")
+            formato_anim = c_opt2.selectbox("Formato de Exportación:", ["GIF (Clásico, max 256 colores)", "MP4 (Alta Calidad True Color)"], index=0, key="formato_anim_sel")
 
             elev_gif, azim_gif = 25, -135
             if "4D" in tipo_gif:
@@ -5412,7 +5415,6 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                             if mask_g.any():
                                 Y_ok_g = g['Y'][mask_g]; Z_ok_g = g['Z'][mask_g]; P_ok_g = P_g[mask_g]
                                 # Interpolar a grilla regular para superficie suave
-                                # Optimización: reutilizar triangulación Delaunay para acelerar FPS
                                 current_mask_sum = mask_g.sum()
                                 if current_mask_sum != last_mask_sum or tri_interp is None:
                                     tri_interp = _Del_gif(np.column_stack([Y_ok_g, Z_ok_g]))
@@ -5421,11 +5423,11 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                                 Pr3 = interp_func(Yr, Zr)
                                 P_ref_g = float(np.nanmax(P_g))
                                 Xr3 = x_g - ((Pr3 - P_ref_g) * sc_gif)
-                                valid3 = ~np.isnan(Pr3)
-                                # Renderizar con scatter3D (matplotlib 3D no tiene facecolor map en plot_surface con NaN)
-                                ax3.scatter(Xr3[valid3].ravel(), Yr[valid3].ravel(), Zr[valid3].ravel(),
-                                            c=Pr3[valid3].ravel(), cmap='jet', norm=norm_gif,
-                                            s=4, alpha=0.85, linewidths=0, depthshade=False)
+                                # Renderizar con plot_surface para una superficie perfectamente lisa y sólida
+                                facecolors_surf = _cm.get_cmap('jet')(norm_gif(Pr3))
+                                ax3.plot_surface(Xr3, Yr, Zr, facecolors=facecolors_surf,
+                                                 shade=False, alpha=0.9, antialiased=True, 
+                                                 rstride=1, cstride=1, linewidth=0)
 
                             # Modelo 3D rotado
                             if 'objeto_referencia_4d' in st.session_state:
@@ -5448,7 +5450,7 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                                     try:
                                         triangles = np.column_stack([obj_b['i'], obj_b['j'], obj_b['k']])
                                         ax3.plot_trisurf(xm_g2, ym_g2, zm_g2, triangles=triangles,
-                                                         color=c_mod, alpha=op_mod, shade=True, linewidth=0, antialiased=False)
+                                                         color=c_mod, alpha=op_mod, shade=True, linewidth=0, antialiased=True)
                                     except Exception:
                                         ax3.scatter(xm_g2, ym_g2, zm_g2, c=c_mod, s=1, alpha=op_mod, linewidths=0)
 
@@ -5484,22 +5486,40 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                         status_gif.empty()
                         st.image(frames_gif[0], caption="Previsualización del Frame 1")
                     else:
-                        status_gif.text("Compilando GIF...")
-                        gif_path_anim = os.path.join(temp_dir_gif, "animacion_4d.gif")
+                        status_gif.text("Compilando Animación...")
+                        ext = ".mp4" if "MP4" in formato_anim else ".gif"
+                        gif_path_anim = os.path.join(temp_dir_gif, f"animacion_4d{ext}")
                         images_gif = [imageio.imread(f) for f in frames_gif]
-                        imageio.mimsave(gif_path_anim, images_gif, fps=fps_gif, loop=0)
-                        st.success(f"✅ GIF generado: {n_pas_gif} frames · {fps_gif} FPS · {tipo_gif}")
-                        st.image(gif_path_anim)
-                        nombre_gif = "animacion_2d.gif" if "2D" in tipo_gif else "animacion_4d_iso.gif"
+                        
+                        if ext == ".mp4":
+                            imageio.mimsave(gif_path_anim, images_gif, fps=fps_gif, macro_block_size=None)
+                        else:
+                            imageio.mimsave(gif_path_anim, images_gif, fps=fps_gif, loop=0)
+                        
+                        # Guardar en memoria para que no desaparezca al interactuar con otras cosas
                         with open(gif_path_anim, "rb") as fg:
-                            st.download_button("📥 Descargar GIF", fg, file_name=nombre_gif,
-                                              mime="image/gif", key="dl_gif_anim4d")
+                            st.session_state['ultimo_gif_anim4d'] = fg.read()
+                        st.session_state['ultimo_gif_nombre'] = f"animacion_2d{ext}" if "2D" in tipo_gif else f"animacion_4d_iso{ext}"
+                        st.session_state['ultimo_gif_detalles'] = f"✅ Animación generada: {n_pas_gif} frames · {fps_gif} FPS · {tipo_gif} · {ext.upper()}"
+                        st.session_state['ultimo_gif_ext'] = ext
 
                 except Exception as e_gif:
                     st.error(f"Error generando GIF: {e_gif}")
                     import traceback; st.code(traceback.format_exc())
                 finally:
                     status_gif.empty(); prog_gif.empty()
+
+            # Fuera del botón: Mostrar la animación guardada siempre que exista en la sesión
+            if 'ultimo_gif_anim4d' in st.session_state:
+                st.success(st.session_state['ultimo_gif_detalles'])
+                if st.session_state.get('ultimo_gif_ext') == '.mp4':
+                    st.video(st.session_state['ultimo_gif_anim4d'], format="video/mp4", autoplay=True, loop=True)
+                else:
+                    st.image(st.session_state['ultimo_gif_anim4d'])
+                    
+                st.download_button("📥 Descargar Animación", st.session_state['ultimo_gif_anim4d'], 
+                                  file_name=st.session_state['ultimo_gif_nombre'],
+                                  mime="video/mp4" if st.session_state.get('ultimo_gif_ext') == '.mp4' else "image/gif", key="dl_gif_anim4d_persistent")
 
 
 elif st.session_state.seccion_actual == 'herramientas':
