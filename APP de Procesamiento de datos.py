@@ -5234,7 +5234,7 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                     Y_ok = Y_v[mask_v]
                     Z_ok = Z_v[mask_v]
                     P_ok = P_interp[mask_v]
-                    P_max_ref = float(np.nanmax(P_interp))
+                    P_max_ref = pmax_v # Usar máximo global para no desplazar el plano
                     X_def_v = x_v - ((P_ok - P_max_ref) * sc_anim)
 
                     try:
@@ -5421,7 +5421,7 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                                     last_mask_sum = current_mask_sum
                                 interp_func = _LND(tri_interp, P_ok_g)
                                 Pr3 = interp_func(Yr, Zr)
-                                P_ref_g = float(np.nanmax(P_g))
+                                P_ref_g = pmax_v # Usar máximo global para no desplazar el plano
                                 Xr3 = x_g - ((Pr3 - P_ref_g) * sc_gif)
                                 # Renderizar con plot_surface para una superficie perfectamente lisa y sólida
                                 facecolors_surf = _cm.get_cmap('jet')(norm_gif(Pr3))
@@ -5492,7 +5492,7 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                         images_gif = [imageio.imread(f) for f in frames_gif]
                         
                         if ext == ".mp4":
-                            imageio.mimsave(gif_path_anim, images_gif, fps=fps_gif, macro_block_size=None)
+                            imageio.mimsave(gif_path_anim, images_gif, fps=fps_gif, macro_block_size=2)
                         else:
                             imageio.mimsave(gif_path_anim, images_gif, fps=fps_gif, loop=0)
                         
