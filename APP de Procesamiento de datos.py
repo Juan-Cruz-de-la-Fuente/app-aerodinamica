@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -5284,26 +5284,26 @@ elif st.session_state.seccion_actual == 'animacion_4d':
 
             st.info("💡 **Nota de Rendimiento:** Generar el GIF a alta resolución puede ser muy lento en servidores online (Streamlit Cloud) comparado con una ejecución local, debido a las limitaciones de CPU y al pesado procesamiento gráfico. Si usas la app online, prueba resoluciones bajas y menos frames.")
             c_gif0, c_gif1, c_gif2, c_gif3 = st.columns(4)
-            tipo_gif  = c_gif0.radio("Tipo:", ["🗺 2D suave", "🚀 4D"], key="tipo_gif_sel")
-            fps_gif   = c_gif1.slider("FPS:", 1, 10, 3, key="fps_gif_anim")
-            n_pas_gif = c_gif2.slider("N° frames:", 5, 60, 15, key="npasos_gif")
-            sc_gif    = c_gif3.slider("× relieve (4D):", 0.1, 10.0, 1.0, 0.1, key="sc_gif_anim")
+            tipo_gif  = c_gif0.radio("Tipo:", ["🗺 2D suave", "🚀 4D"], index=1, key="tipo_gif_sel")
+            fps_gif   = c_gif1.slider("FPS:", 1, 60, 18, key="fps_gif_anim")
+            n_pas_gif = c_gif2.slider("N° frames:", 5, 120, 60, key="npasos_gif")
+            sc_gif    = c_gif3.slider("× relieve (4D):", 0.1, 20.0, 8.1, 0.1, key="sc_gif_anim")
             
             c_opt1, c_opt2 = st.columns(2)
-            dpi_gif   = c_opt1.selectbox("Resolución (DPI):", [110, 150, 200, 300, 600], index=3, key="dpi_gif_anim", help="Resolución de imagen. Valores altos mejoran enormemente la calidad, pero aumentan exponencialmente el tiempo de generación.")
-            formato_anim = c_opt2.selectbox("Formato de Exportación:", ["GIF (Clásico, max 256 colores)", "MP4 (Alta Calidad True Color)"], index=0, key="formato_anim_sel")
+            dpi_gif   = c_opt1.selectbox("Resolución (DPI):", [110, 150, 200, 300, 600], index=4, key="dpi_gif_anim", help="Resolución de imagen. Valores altos mejoran enormemente la calidad, pero aumentan exponencialmente el tiempo de generación.")
+            formato_anim = c_opt2.selectbox("Formato de Exportación:", ["GIF (Clásico, max 256 colores)", "MP4 (Alta Calidad True Color)"], index=1, key="formato_anim_sel")
 
             elev_gif, azim_gif = 25, -135
             if "4D" in tipo_gif:
                 st.markdown("##### 📷 Posición de Cámara (Vista 4D)")
                 c_cam1, c_cam2, c_cam3 = st.columns(3)
-                preset_cam = c_cam1.selectbox("Preajustes:", ["Isométrica", "Opuesta a Isométrica", "Frente (aguas abajo)", "Lateral", "Planta", "Personalizada"], key="preset_cam_gif")
+                preset_cam = c_cam1.selectbox("Preajustes:", ["Isométrica", "Opuesta a Isométrica", "Frente (aguas abajo)", "Lateral", "Planta", "Personalizada"], index=5, key="preset_cam_gif")
                 if preset_cam == "Isométrica": elev_def, azim_def = 25, -135
                 elif preset_cam == "Opuesta a Isométrica": elev_def, azim_def = 25, 45
                 elif preset_cam == "Frente (aguas abajo)": elev_def, azim_def = 0, -180
                 elif preset_cam == "Lateral": elev_def, azim_def = 0, -90
                 elif preset_cam == "Planta": elev_def, azim_def = 90, -90
-                else: elev_def, azim_def = 25, -135
+                else: elev_def, azim_def = 25, 45
 
                 elev_gif = c_cam2.slider("Elevación [°]", -90, 90, elev_def, disabled=(preset_cam != "Personalizada"), key="elev_gif_anim")
                 azim_gif = c_cam3.slider("Azimut [°]", -180, 180, azim_def, disabled=(preset_cam != "Personalizada"), key="azim_gif_anim")
@@ -5341,6 +5341,42 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                 y_reg = np.linspace(y_lim[0], y_lim[1], N_GRID)
                 z_reg = np.linspace(z_lim[0], z_lim[1], N_GRID)
                 Yr, Zr = np.meshgrid(y_reg, z_reg)
+
+                # --- LÍMITES GLOBALES (Para fijar cámara 4D y evitar saltos) ---
+                x_lim_min = float(np.min(g['x_arr'])) - ((pmax_v - pmin_v) * sc_gif)
+                x_lim_max = float(np.max(g['x_arr']))
+                y_lim_min, y_lim_max = y_lim
+                z_lim_min, z_lim_max = z_lim
+
+                if "4D" in tipo_gif and 'objeto_referencia_4d' in st.session_state:
+                    obj_lim = st.session_state.get('objeto_referencia_base', st.session_state.objeto_referencia_4d)
+                    cg_lim = st.session_state.get('modelo_cg', {'x': 0.0, 'y': 0.0, 'z': 0.0})
+                    if 'x' in obj_lim and len(obj_lim['x']) > 0:
+                        x_base = np.array(obj_lim['x']) - cg_lim['x']
+                        y_base = np.array(obj_lim['y']) - cg_lim['y']
+                        z_base = np.array(obj_lim['z']) - cg_lim['z']
+                        
+                        x_min_mod, x_max_mod = float('inf'), float('-inf')
+                        y_min_mod, y_max_mod = float('inf'), float('-inf')
+                        z_min_mod, z_max_mod = float('inf'), float('-inf')
+                        
+                        # Muestreamos los límites reales del modelo rotado en lugar de usar un radio esférico máximo
+                        alphas_para_limites = np.linspace(aoa_min_v, aoa_max_v, n_pas_gif)
+                        for a in alphas_para_limites:
+                            xr, yr, zr = rotate_points(x_base, y_base, z_base, 0, a, 0)
+                            x_min_mod = min(x_min_mod, float(np.min(xr)))
+                            x_max_mod = max(x_max_mod, float(np.max(xr)))
+                            y_min_mod = min(y_min_mod, float(np.min(yr)))
+                            y_max_mod = max(y_max_mod, float(np.max(yr)))
+                            z_min_mod = min(z_min_mod, float(np.min(zr)))
+                            z_max_mod = max(z_max_mod, float(np.max(zr)))
+                            
+                        x_lim_min = min(x_lim_min, x_min_mod)
+                        x_lim_max = max(x_lim_max, x_max_mod)
+                        y_lim_min = min(y_lim_min, y_min_mod)
+                        y_lim_max = max(y_lim_max, y_max_mod)
+                        z_lim_min = min(z_lim_min, z_min_mod)
+                        z_lim_max = max(z_lim_max, z_max_mod)
 
                 try:
                     tri_interp = None
@@ -5464,6 +5500,15 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                                 ax3.xaxis.pane.fill = False; ax3.yaxis.pane.fill = False; ax3.zaxis.pane.fill = False
                                 edge_c = '#333' if "Oscuro" in vis_bg_a else '#ddd'
                                 ax3.xaxis.pane.set_edgecolor(edge_c); ax3.yaxis.pane.set_edgecolor(edge_c); ax3.zaxis.pane.set_edgecolor(edge_c)
+                                
+                            # Fijar límites estáticos para que el plano y la cámara no tiemblen en X
+                            ax3.set_xlim(x_lim_min, x_lim_max)
+                            ax3.set_ylim(y_lim_min, y_lim_max)
+                            ax3.set_zlim(z_lim_min, z_lim_max)
+                            try:
+                                ax3.set_box_aspect((x_lim_max - x_lim_min, y_lim_max - y_lim_min, z_lim_max - z_lim_min))
+                            except AttributeError:
+                                pass # Fallback para versiones antiguas de matplotlib
                                 
                             # Vista
                             ax3.view_init(elev=elev_gif, azim=azim_gif)
