@@ -5282,11 +5282,13 @@ elif st.session_state.seccion_actual == 'animacion_4d':
             st.markdown("### 🎥 Paso 4: Generar Animación GIF")
             st.caption("💡 Matplotlib puro — sin Chrome ni kaleido. Dos modos: 2D suave (contourf) o 4D isométrico con modelo.")
 
-            c_gif0, c_gif1, c_gif2, c_gif3 = st.columns(4)
+            st.info("💡 **Nota de Rendimiento:** Generar el GIF a alta resolución puede ser muy lento en servidores online (Streamlit Cloud) comparado con una ejecución local, debido a las limitaciones de CPU y al pesado procesamiento gráfico. Si usas la app online, prueba resoluciones bajas y menos frames.")
+            c_gif0, c_gif1, c_gif2, c_gif3, c_gif4 = st.columns(5)
             tipo_gif  = c_gif0.radio("Tipo:", ["🗺 2D suave", "🚀 4D"], key="tipo_gif_sel")
             fps_gif   = c_gif1.slider("FPS:", 1, 10, 3, key="fps_gif_anim")
             n_pas_gif = c_gif2.slider("N° frames:", 5, 60, 15, key="npasos_gif")
             sc_gif    = c_gif3.slider("× relieve (4D):", 0.1, 10.0, 1.0, 0.1, key="sc_gif_anim")
+            dpi_gif   = c_gif4.selectbox("Resolución (DPI):", [110, 150, 200, 300, 600], index=3, key="dpi_gif_anim", help="Resolución de imagen. Valores altos (ej: 300+) mejoran enormemente la calidad, pero aumentan exponencialmente el tiempo de generación y peso del GIF.")
 
             elev_gif, azim_gif = 25, -135
             if "4D" in tipo_gif:
@@ -5317,6 +5319,7 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                 from mpl_toolkits.mplot3d import Axes3D as _Axes3D  # noqa
                 from scipy.interpolate import griddata as _gd_gif
                 from scipy.spatial import Delaunay as _Del_gif
+                from scipy.interpolate import LinearNDInterpolator as _LND
 
                 alpha_range_gif = np.linspace(aoa_min_v, aoa_max_v, n_pas_gif)
                 if btn_preview:
@@ -5337,6 +5340,8 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                 Yr, Zr = np.meshgrid(y_reg, z_reg)
 
                 try:
+                    tri_interp = None
+                    last_mask_sum = -1
                     for fi, alpha_i in enumerate(alpha_range_gif):
                         if not btn_preview:
                             status_gif.text(f"Frame {fi+1}/{n_pas_gif}  α={alpha_i:.1f}°")
@@ -5361,8 +5366,14 @@ elif st.session_state.seccion_actual == 'animacion_4d':
 
                             if mask_g.any():
                                 # Interpolar puntos reales a grilla regular
-                                Pr = _gd_gif((g['Y'][mask_g], g['Z'][mask_g]), P_g[mask_g],
-                                             (Yr, Zr), method='linear')
+                                # Optimización: reutilizar triangulación Delaunay para acelerar FPS
+                                Y_ok_g, Z_ok_g, P_ok_g = g['Y'][mask_g], g['Z'][mask_g], P_g[mask_g]
+                                current_mask_sum = mask_g.sum()
+                                if current_mask_sum != last_mask_sum or tri_interp is None:
+                                    tri_interp = _Del_gif(np.column_stack([Y_ok_g, Z_ok_g]))
+                                    last_mask_sum = current_mask_sum
+                                interp_func = _LND(tri_interp, P_ok_g)
+                                Pr = interp_func(Yr, Zr)
                                 # Relleno smooth con contourf
                                 cf = ax_mpl.contourf(Yr, Zr, Pr, levels=40, cmap='jet', norm=norm_gif)
                                 # Isolíneas encima
@@ -5401,7 +5412,13 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                             if mask_g.any():
                                 Y_ok_g = g['Y'][mask_g]; Z_ok_g = g['Z'][mask_g]; P_ok_g = P_g[mask_g]
                                 # Interpolar a grilla regular para superficie suave
-                                Pr3 = _gd_gif((Y_ok_g, Z_ok_g), P_ok_g, (Yr, Zr), method='linear')
+                                # Optimización: reutilizar triangulación Delaunay para acelerar FPS
+                                current_mask_sum = mask_g.sum()
+                                if current_mask_sum != last_mask_sum or tri_interp is None:
+                                    tri_interp = _Del_gif(np.column_stack([Y_ok_g, Z_ok_g]))
+                                    last_mask_sum = current_mask_sum
+                                interp_func = _LND(tri_interp, P_ok_g)
+                                Pr3 = interp_func(Yr, Zr)
                                 P_ref_g = float(np.nanmax(P_g))
                                 Xr3 = x_g - ((Pr3 - P_ref_g) * sc_gif)
                                 valid3 = ~np.isnan(Pr3)
@@ -5456,7 +5473,7 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                             fig_mpl.tight_layout()
 
                         fp_gif = os.path.join(temp_dir_gif, f"frame_{fi:03d}.png")
-                        fig_mpl.savefig(fp_gif, dpi=110, bbox_inches='tight', facecolor=bg_color_mpl)
+                        fig_mpl.savefig(fp_gif, dpi=dpi_gif, bbox_inches='tight', facecolor=bg_color_mpl)
                         _plt.close(fig_mpl)
                         frames_gif.append(fp_gif)
                         
