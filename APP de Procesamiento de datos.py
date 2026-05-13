@@ -2,6 +2,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import json
 
 def calcular_variable_atmosferica(df, variable):
     import pandas as pd
