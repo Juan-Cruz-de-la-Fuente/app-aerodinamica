@@ -281,6 +281,93 @@ def rename_user_object(object_id, new_name):
 
 
 # ---------------------------------------------------------------------------
+# ANIMACION  →  usuario / ENSAYO DE ESTELA / ANIMACION / [nombre_sesion] /
+# ---------------------------------------------------------------------------
+
+def save_animation_session(username, session_name, frames_bytes_list, metadata_dict):
+    """
+    Guarda una sesión de animación en Drive.
+
+    Estructura:
+      ANIMACION / session_name /
+          frame_000.png
+          frame_001.png
+          ...
+          _metadata.json   ← planos base, AOAs, variable, fecha, etc.
+
+    Parameters
+    ----------
+    username       : str
+    session_name   : str  — nombre de la carpeta a crear
+    frames_bytes_list : list[bytes]  — frames PNG en orden
+    metadata_dict  : dict  — info de la interpolación (aoas, x_pos, variable, planos usados, etc.)
+
+    Returns
+    -------
+    session_folder_id : str | None
+    """
+    session_folder_id = drive_api.get_or_create_session_folder(username, session_name)
+    if not session_folder_id:
+        return None
+
+    # Subir metadata JSON primero
+    meta_str = json.dumps(metadata_dict, ensure_ascii=False, indent=2)
+    drive_api.upload_file(meta_str.encode('utf-8'), '_metadata.json',
+                          session_folder_id, mimetype='application/json')
+
+    # Subir frames PNG
+    for idx, frame_bytes in enumerate(frames_bytes_list):
+        fname = f"frame_{idx:04d}.png"
+        drive_api.upload_file(frame_bytes, fname, session_folder_id, mimetype='image/png')
+
+    return session_folder_id
+
+
+def list_animation_sessions(username):
+    """
+    Lista las sesiones de animación guardadas del usuario.
+    Devuelve lista de (folder_id, session_name, created_at).
+    """
+    return drive_api.list_animation_sessions(username)
+
+
+def load_animation_session(session_folder_id):
+    """
+    Carga todos los frames y la metadata de una sesión.
+
+    Returns
+    -------
+    frames : list[bytes]   — PNGs ordenados por nombre
+    metadata : dict        — contenido de _metadata.json (o {} si no existe)
+    """
+    files = drive_api.list_session_frames(session_folder_id)
+
+    # Separar metadata de frames
+    meta_file = next((f for f in files if f['name'] == '_metadata.json'), None)
+    frame_files = sorted(
+        [f for f in files if f['name'].startswith('frame_') and f['name'].endswith('.png')],
+        key=lambda f: f['name']
+    )
+
+    metadata = {}
+    if meta_file:
+        raw = drive_api.download_file(meta_file['id'])
+        if raw:
+            try:
+                metadata = json.loads(raw.decode('utf-8'))
+            except Exception:
+                metadata = {}
+
+    frames = []
+    for f in frame_files:
+        raw = drive_api.download_file(f['id'])
+        if raw:
+            frames.append(raw)
+
+    return frames, metadata
+
+
+# ---------------------------------------------------------------------------
 # VTK  →  usuario / HERRAMIENTAS / ARCHIVOS VTK / PLANOS DE PRESION  o  SUPERFICIES 3D
 # ---------------------------------------------------------------------------
 

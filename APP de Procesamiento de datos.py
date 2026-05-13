@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -36,9 +36,7 @@ import random
 import pyvista as pv
 from scipy.interpolate import griddata
 import auth  # Import the new authentication module
-import json
-import imageio
-from PIL import Image
+import itertools
 
 
 def rotate_points(x, y, z, angle_x, angle_y, angle_z):
@@ -375,6 +373,9 @@ def render_navbar():
                         st.rerun()
                     if st.button("🔧 Herramientas", use_container_width=True, type="primary" if st.session_state.seccion_actual == 'herramientas' else "secondary"):
                         st.session_state.seccion_actual = 'herramientas'
+                        st.rerun()
+                    if st.button("📊 INTERPOLACIÖN", use_container_width=True, type="primary" if st.session_state.seccion_actual == 'interpolacion_aoa' else "secondary"):
+                        st.session_state.seccion_actual = 'interpolacion_aoa'
                         st.rerun()
 
             with c3:
@@ -4967,6 +4968,10 @@ elif st.session_state.seccion_actual == 'animacion_4d':
     if 'anim4d_x_range' not in st.session_state: st.session_state.anim4d_x_range = None
     if 'anim4d_pmin' not in st.session_state: st.session_state.anim4d_pmin = 0.0
     if 'anim4d_pmax' not in st.session_state: st.session_state.anim4d_pmax = 1.0
+    # Caché de frames: lista de bytes PNG ya renderizados
+    if 'anim4d_frames_cache' not in st.session_state: st.session_state.anim4d_frames_cache = []
+    # Metadata de la última sesión renderizada
+    if 'anim4d_session_meta' not in st.session_state: st.session_state.anim4d_session_meta = {}
 
     # Helper: extraer AOA del nombre
     def _aoa_from_name_anim(nombre):
@@ -5523,7 +5528,6 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                         fig_mpl.savefig(fp_gif, dpi=dpi_gif, bbox_inches='tight', facecolor=bg_color_mpl)
                         _plt.close(fig_mpl)
                         frames_gif.append(fp_gif)
-                        
                         if not btn_preview:
                             prog_gif.progress((fi + 1) / n_pas_gif)
 
@@ -5541,12 +5545,24 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                         else:
                             imageio.mimsave(gif_path_anim, images_gif, fps=fps_gif, loop=0)
                         
-                        # Guardar en memoria para que no desaparezca al interactuar con otras cosas
+                        # Guardar animación en sesión
                         with open(gif_path_anim, "rb") as fg:
                             st.session_state['ultimo_gif_anim4d'] = fg.read()
                         st.session_state['ultimo_gif_nombre'] = f"animacion_2d{ext}" if "2D" in tipo_gif else f"animacion_4d_iso{ext}"
                         st.session_state['ultimo_gif_detalles'] = f"✅ Animación generada: {n_pas_gif} frames · {fps_gif} FPS · {tipo_gif} · {ext.upper()}"
                         st.session_state['ultimo_gif_ext'] = ext
+                        # Guardar frames en caché de sesión
+                        frames_bytes_cache = []
+                        for fp in frames_gif:
+                            with open(fp, 'rb') as _fb: frames_bytes_cache.append(_fb.read())
+                        st.session_state['anim4d_frames_cache'] = frames_bytes_cache
+                        st.session_state['anim4d_session_meta'] = {
+                            'tipo': tipo_gif, 'n_frames': n_pas_gif, 'fps': fps_gif,
+                            'dpi': dpi_gif, 'aoa_min': aoa_min_v, 'aoa_max': aoa_max_v,
+                            'variable': g.get('var', ''), 'sc_gif': sc_gif,
+                            'planos': [d['name'] for d in g.get('items', [])],
+                            'fecha': datetime.now().isoformat()
+                        }
 
                 except Exception as e_gif:
                     st.error(f"Error generando GIF: {e_gif}")
@@ -5554,19 +5570,440 @@ elif st.session_state.seccion_actual == 'animacion_4d':
                 finally:
                     status_gif.empty(); prog_gif.empty()
 
-            # Fuera del botón: Mostrar la animación guardada siempre que exista en la sesión
+            # ── Fuera del botón: mostrar animación + UI de Drive ──────────────
             if 'ultimo_gif_anim4d' in st.session_state:
                 st.success(st.session_state['ultimo_gif_detalles'])
                 if st.session_state.get('ultimo_gif_ext') == '.mp4':
                     st.video(st.session_state['ultimo_gif_anim4d'], format="video/mp4", autoplay=True, loop=True)
                 else:
                     st.image(st.session_state['ultimo_gif_anim4d'])
+                st.download_button("📥 Descargar Animación", st.session_state['ultimo_gif_anim4d'],
+                                   file_name=st.session_state['ultimo_gif_nombre'],
+                                   mime="video/mp4" if st.session_state.get('ultimo_gif_ext') == '.mp4' else "image/gif",
+                                   key="dl_gif_anim4d_persistent")
+
+            # ── Guardar frames en Drive ────────────────────────────────────────
+            if st.session_state.get('anim4d_frames_cache'):
+                st.markdown("---")
+                st.markdown("### 💾 Paso 5: Guardar Interpolación en Drive")
+                st.info(f"📦 {len(st.session_state['anim4d_frames_cache'])} frames en caché. "
+                        f"Guardálos en Drive para reutilizarlos sin regenerar.")
+                c_save1, c_save2 = st.columns([2, 1])
+                nombre_sesion_drive = c_save1.text_input(
+                    "Nombre de la sesión (carpeta en Drive):",
+                    value=f"Interp_{datetime.now().strftime('%Y%m%d_%H%M')}",
+                    key="nombre_sesion_anim_drive",
+                    help="Será la carpeta: ANIMACION / [nombre] con todos los frames PNG + metadata."
+                )
+                if c_save2.button("☁️ Guardar en Drive", type="primary", use_container_width=True, key="btn_save_sesion_drive"):
+                    if nombre_sesion_drive.strip():
+                        with st.spinner(f"Subiendo {len(st.session_state['anim4d_frames_cache'])} frames a Drive..."):
+                            try:
+                                sid = auth.save_animation_session(
+                                    st.session_state.username,
+                                    nombre_sesion_drive.strip(),
+                                    st.session_state['anim4d_frames_cache'],
+                                    st.session_state.get('anim4d_session_meta', {})
+                                )
+                                if sid:
+                                    st.success(f"✅ Sesión **'{nombre_sesion_drive}'** guardada en Drive "
+                                               f"({len(st.session_state['anim4d_frames_cache'])} frames).")
+                                else:
+                                    st.error("Error al crear la carpeta en Drive.")
+                            except Exception as _e_save:
+                                st.error(f"Error: {_e_save}")
+                    else:
+                        st.warning("Ingresá un nombre para la sesión.")
+
+            # ── Cargar frames desde Drive (recompilar sin regenerar) ───────────
+            st.markdown("---")
+            with st.expander("📂 Cargar Sesión de Frames Guardada (desde Drive)", expanded=False):
+                st.caption("Cargá frames previamente guardados y recompilá el video con distintos FPS, formato o estética.")
+                try:
+                    sesiones_drive = auth.list_animation_sessions(st.session_state.username)
+                except Exception:
+                    sesiones_drive = []
+                if not sesiones_drive:
+                    st.info("No hay sesiones guardadas aún. Generá un GIF completo y guardalo en Drive (Paso 5).")
+                else:
+                    dict_ses = {f"{s[1]} ({s[2][:10] if s[2] else ''})": s for s in sesiones_drive}
+                    sel_ses = st.selectbox("Seleccionar sesión:", list(dict_ses.keys()), key="sel_ses_drive")
+                    c_load1, c_load2 = st.columns(2)
+                    if c_load1.button("⬇️ Cargar frames en memoria", use_container_width=True, key="btn_load_ses"):
+                        with st.spinner("Descargando frames desde Drive..."):
+                            try:
+                                frames_loaded, meta_loaded = auth.load_animation_session(dict_ses[sel_ses][0])
+                                if frames_loaded:
+                                    st.session_state['anim4d_frames_cache'] = frames_loaded
+                                    st.session_state['anim4d_session_meta'] = meta_loaded
+                                    st.success(f"✅ {len(frames_loaded)} frames cargados desde '{dict_ses[sel_ses][1]}'.")
+                                    if meta_loaded:
+                                        st.json(meta_loaded)
+                                else:
+                                    st.warning("La sesión está vacía o no tiene frames.")
+                            except Exception as _e_load:
+                                st.error(f"Error cargando sesión: {_e_load}")
+
+                    # Recompilar desde frames cargados
+                    if st.session_state.get('anim4d_frames_cache') and c_load2.button(
+                        "🎬 Recompilar Video", type="primary", use_container_width=True, key="btn_recompile"
+                    ):
+                        cached = st.session_state['anim4d_frames_cache']
+                        meta_c = st.session_state.get('anim4d_session_meta', {})
+                        fps_rc   = st.slider("FPS (recompilación):", 1, 60, meta_c.get('fps', 18), key="fps_recomp")
+                        fmt_rc   = st.selectbox("Formato:", ["GIF", "MP4"], index=1, key="fmt_recomp")
+                        ext_rc   = ".mp4" if fmt_rc == "MP4" else ".gif"
+                        with st.spinner("Compilando video desde frames en caché..."):
+                            try:
+                                import imageio as _iio
+                                tmp_rc = tempfile.mkdtemp()
+                                # Escribir frames a disco
+                                paths_rc = []
+                                for _idx, _fb in enumerate(cached):
+                                    _fp = os.path.join(tmp_rc, f"frame_{_idx:04d}.png")
+                                    with open(_fp, 'wb') as _fh: _fh.write(_fb)
+                                    paths_rc.append(_fp)
+                                imgs_rc = [_iio.imread(p) for p in paths_rc]
+                                out_rc  = os.path.join(tmp_rc, f"recompilado{ext_rc}")
+                                if ext_rc == ".mp4":
+                                    _iio.mimsave(out_rc, imgs_rc, fps=fps_rc, macro_block_size=2)
+                                else:
+                                    _iio.mimsave(out_rc, imgs_rc, fps=fps_rc, loop=0)
+                                with open(out_rc, 'rb') as _fg:
+                                    vid_rc = _fg.read()
+                                st.session_state['ultimo_gif_anim4d'] = vid_rc
+                                st.session_state['ultimo_gif_ext'] = ext_rc
+                                n_rc = len(cached)
+                                st.session_state['ultimo_gif_nombre'] = f"recompilado{ext_rc}"
+                                st.session_state['ultimo_gif_detalles'] = f"✅ Recompilado desde caché: {n_rc} frames · {fps_rc} FPS · {fmt_rc}"
+                                st.rerun()
+                            except Exception as _e_rc:
+                                st.error(f"Error recompilando: {_e_rc}")
+
+
+elif st.session_state.seccion_actual == 'interpolacion_aoa':
+    st.title("📊 ANÁLISIS DE INTERPOLACIÖN")
+    st.write("Determine la cantidad mínima de planos angulares ($\alpha$) para representar el fenómeno físico.")
+
+    import drive_api as _dapi
+    import json
+    import io
+
+    # Inicializar estados
+    if 'results_interp' not in st.session_state: st.session_state.results_interp = None
+    if 'interp_planos_memoria' not in st.session_state: st.session_state.interp_planos_memoria = []
+    
+    # ── PASO 0: SELECCIÓN DE ORIGEN DE DATOS ──────────────────────────────────
+    st.markdown("### 📥 Paso 0: Cargar Planos para Análisis")
+    
+    modo_carga = st.radio(
+        "Seleccionar origen de datos:",
+        ["🗄️ Base de Datos (Planos Guardados)", "📂 Explorar Google Drive (Archivos CSV)"],
+        horizontal=True, key="modo_carga_interp"
+    )
+
+    if modo_carga == "🗄️ Base de Datos (Planos Guardados)":
+        try:
+            mis_planos_db = auth.get_user_surfaces_4d(st.session_state.username)
+        except:
+            mis_planos_db = []
+            
+        if not mis_planos_db:
+            st.info("No hay planos guardados en la base de datos 4D.")
+        else:
+            estaciones_db = sorted(list(set(p[2] for p in mis_planos_db)))
+            x_est_db = st.selectbox("Seleccionar Estación (X) [mm]:", estaciones_db, key="x_db_interp")
+            
+            planos_db_filtrados = [p for p in mis_planos_db if p[2] == x_est_db]
+            
+            if st.button("📥 Cargar planos de la Base de Datos", use_container_width=True):
+                nuevos_planos = []
+                for p in planos_db_filtrados:
+                    # Extraer AOA del nombre
+                    m = re.search(r'OAO(neg)?(\d+(?:[.,]\d+)?)', str(p[1]), re.IGNORECASE)
+                    aoa_val = ((-1 if m.group(1) else 1) * float(str(m.group(2)).replace(',', '.'))) if m else 0.0
+                    nuevos_planos.append({'name': p[1], 'aoa': aoa_val, 'json': p[4], 'x': p[2]})
+                
+                st.session_state.interp_planos_memoria = nuevos_planos
+                st.success(f"Cargados {len(nuevos_planos)} planos desde la base de datos.")
+
+    else:  # Explorar Google Drive
+        st.markdown("#### 📂 Navegador de Drive")
+        if 'drive_interp_folder_id' not in st.session_state:
+            st.session_state.drive_interp_folder_id = None
+            st.session_state.drive_interp_path = []
+
+        if st.session_state.drive_interp_folder_id is None:
+            with st.spinner("Conectando con carpeta 4D en Drive..."):
+                f4d_id = _dapi.get_folder_4d(st.session_state.username)
+                if f4d_id:
+                    st.session_state.drive_interp_folder_id = f4d_id
+                    st.session_state.drive_interp_path = [(f4d_id, "📁 Carpeta 4D")]
+
+        # Breadcrumbs
+        if st.session_state.drive_interp_path:
+            path_str = " / ".join([p[1] for p in st.session_state.drive_interp_path])
+            st.caption(f"📍 {path_str}")
+        
+        # Botón volver
+        if len(st.session_state.drive_interp_path) > 1:
+            if st.button("⬅️ Subir nivel"):
+                st.session_state.drive_interp_path.pop()
+                st.session_state.drive_interp_folder_id = st.session_state.drive_interp_path[-1][0]
+                st.rerun()
+
+        # Listar carpetas y archivos
+        if st.session_state.drive_interp_folder_id:
+            items = _dapi.list_folder_contents(st.session_state.drive_interp_folder_id)
+            if items:
+                carpetas = [i for i in items if i['mimeType'] == 'application/vnd.google-apps.folder']
+                archivos_csv = [i for i in items if i['name'].lower().endswith('.csv')]
+                
+                if carpetas:
+                    c_sel = st.selectbox("📁 Carpetas:", ["-- Seleccionar carpeta --"] + [f"{c['name']}" for c in carpetas])
+                    if c_sel != "-- Seleccionar carpeta --":
+                        c_id = next(c['id'] for c in carpetas if c['name'] == c_sel)
+                        st.session_state.drive_interp_path.append((c_id, c_sel))
+                        st.session_state.drive_interp_folder_id = c_id
+                        st.rerun()
+
+                if archivos_csv:
+                    st.markdown("---")
+                    sel_files_drv = st.multiselect("📄 Seleccionar archivos CSV para procesar:", [a['name'] for a in archivos_csv])
                     
-                st.download_button("📥 Descargar Animación", st.session_state['ultimo_gif_anim4d'], 
-                                  file_name=st.session_state['ultimo_gif_nombre'],
-                                  mime="video/mp4" if st.session_state.get('ultimo_gif_ext') == '.mp4' else "image/gif", key="dl_gif_anim4d_persistent")
+                    if sel_files_drv:
+                        config_interp = mostrar_configuracion_sensores("interp_drv")
+                        x_pos_drv = st.number_input("Posición X (Estación) para estos archivos [mm]:", value=0.0)
+                        
+                        if st.button("⚙️ Procesar e Importar al Análisis", type="primary", use_container_width=True):
+                            nuevos_planos_drv = []
+                            prog_drv = st.progress(0)
+                            for i, f_name in enumerate(sel_files_drv):
+                                f_id = next(a['id'] for a in archivos_csv if a['name'] == f_name)
+                                content = _dapi.download_file(f_id)
+                                if content:
+                                    try:
+                                        df_p = procesar_promedios(io.BytesIO(content), config_interp.get('orden','asc'))
+                                        if df_p is not None:
+                                            m = re.search(r'OAO(neg)?(\d+(?:[.,]\d+)?)', f_name, re.IGNORECASE)
+                                            aoa_v = ((-1 if m.group(1) else 1) * float(str(m.group(2)).replace(',', '.'))) if m else 0.0
+                                            
+                                            res_p = []
+                                            for _, row in df_p.iterrows():
+                                                y_t = row.get('Pos_Y_Traverser')
+                                                z_b = row.get('Pos_Z_Base')
+                                                for col in df_p.columns:
+                                                    ns = obtener_numero_sensor_desde_columna(col)
+                                                    if ns is not None:
+                                                        vp = row[col]
+                                                        if pd.isna(vp): continue
+                                                        zr = calcular_altura_absoluta_z(ns, z_b, config_interp.get('distancia_toma_12',-120), config_interp.get('distancia_entre_tomas',10.91), 12, config_interp.get('orden','asc'))
+                                                        res_p.append({'Y': y_t, 'Z': zr, 'Presion': vp})
+                                            
+                                            df_final = pd.DataFrame(res_p)
+                                            nuevos_planos_drv.append({
+                                                'name': f_name, 'aoa': aoa_v, 'x': x_pos_drv,
+                                                'json': df_final.to_json(orient='records')
+                                            })
+                                    except Exception as e:
+                                        st.error(f"Error procesando {f_name}: {e}")
+                                prog_drv.progress((i+1)/len(sel_files_drv))
+                            
+                            st.session_state.interp_planos_memoria.extend(nuevos_planos_drv)
+                            st.success(f"Importados {len(nuevos_planos_drv)} planos desde Drive.")
+            else:
+                st.write("Carpeta vacía.")
 
+    # ── PASO 1: GESTIÓN DE PLANOS EN MEMORIA ──────────────────────────────────
+    if st.session_state.interp_planos_memoria:
+        st.markdown("---")
+        st.markdown("### 📋 Planos cargados para el análisis")
+        df_mem = pd.DataFrame([{'Nombre': p['name'], 'AOA [°]': p['aoa'], 'X [mm]': p['x']} for p in st.session_state.interp_planos_memoria])
+        st.dataframe(df_mem, use_container_width=True)
+        
+        if st.button("🗑️ Limpiar todos los planos", type="secondary"):
+            st.session_state.interp_planos_memoria = []
+            st.session_state.results_interp = None
+            st.rerun()
 
+        # ── PASO 2: ANÁLISIS DE CONVERGENCIA ──────────────────────────────────
+        st.markdown("---")
+        st.markdown("### ⚙️ Paso 2: Análisis de Convergencia y Predicción de Ángulos")
+
+        planos_ready = sorted(st.session_state.interp_planos_memoria, key=lambda x: x['aoa'])
+        if len(planos_ready) < 3:
+            st.warning("Se necesitan al menos 3 planos para realizar el análisis.")
+        else:
+            confianza_t = st.slider("Exactitud Objetivo [%]:", 50, 99, 90, key="slider_conf_interp")
+
+            if st.button("🚀 Iniciar Análisis", type="primary", use_container_width=True):
+                with st.spinner("Calculando convergencia de planos angulares..."):
+                    angulos = [p['aoa'] for p in planos_ready]
+                    grillas_full = []
+                    for p in planos_ready:
+                        df_tmp = pd.read_json(io.StringIO(p['json']))
+                        y_lin = np.linspace(df_tmp['Y'].min(), df_tmp['Y'].max(), 100)
+                        z_lin = np.linspace(df_tmp['Z'].min(), df_tmp['Z'].max(), 100)
+                        Ym, Zm = np.meshgrid(y_lin, z_lin)
+                        g_std = griddata((df_tmp['Y'], df_tmp['Z']), df_tmp['Presion'], (Ym, Zm), method='linear')
+                        grillas_full.append(g_std)
+
+                    res_list = []
+                    N = len(grillas_full)
+                    for k in range(1, N):
+                        combs = list(itertools.combinations(range(N), k))
+                        if len(combs) > 100: combs = random.sample(combs, 100)
+                        mejor_acc_k = 0
+                        mejor_cfg_k = ""   # ← bug corregido (era mejor_config_k)
+                        for comb in combs:
+                            idx_k = sorted(list(comb))
+                            acc_list = []
+                            for i in range(N):
+                                if i in idx_k: continue
+                                lo = next((idx for idx in reversed(idx_k) if idx < i), None)
+                                hi = next((idx for idx in idx_k if idx > i), None)
+                                if lo is not None and hi is not None:
+                                    t = (angulos[i] - angulos[lo]) / (angulos[hi] - angulos[lo])
+                                    pred = (1-t)*grillas_full[lo] + t*grillas_full[hi]
+                                elif lo is not None: pred = grillas_full[lo]
+                                elif hi is not None: pred = grillas_full[hi]
+                                else: pred = np.zeros_like(grillas_full[0])
+                                mask = ~np.isnan(grillas_full[i]) & ~np.isnan(pred)
+                                if np.any(mask):
+                                    corr = np.corrcoef(grillas_full[i][mask], pred[mask])[0, 1]
+                                    acc_list.append(max(0, corr))
+                                else:
+                                    acc_list.append(0)
+                            acc_m = np.mean(acc_list) if acc_list else 1.0
+                            if acc_m > mejor_acc_k:
+                                mejor_acc_k = acc_m
+                                mejor_cfg_k = ", ".join([f"{angulos[idx]}°" for idx in idx_k])
+                        res_list.append({'Planos': k, 'Exactitud [%]': round(mejor_acc_k*100, 2), 'Mejor Configuración': mejor_cfg_k})
+
+                    # ── Análisis por intervalos: error de interpolación entre pares de planos ──
+                    gap_errors = []
+                    for i in range(N - 1):
+                        # Interpolar el punto medio entre planos i e i+1
+                        aoa_mid = (angulos[i] + angulos[i+1]) / 2
+                        pred_mid = 0.5 * grillas_full[i] + 0.5 * grillas_full[i+1]
+                        # Error relativo: variación de presión entre ambos extremos del intervalo
+                        diff = np.nanstd(grillas_full[i+1] - grillas_full[i])
+                        gap_errors.append({
+                            'Intervalo': f"{angulos[i]}° → {angulos[i+1]}°",
+                            'α_inicio': angulos[i], 'α_fin': angulos[i+1],
+                            'Δα [°]': round(angulos[i+1] - angulos[i], 2),
+                            'Variación (σ ΔP)': round(float(diff), 4)
+                        })
+
+                    st.session_state.results_interp = {
+                        'tabla': pd.DataFrame(res_list),
+                        'angulos': angulos,
+                        'gap_errors': pd.DataFrame(gap_errors),
+                        'N': N
+                    }
+                    st.rerun()
+
+    # ── Mostrar Resultados ────────────────────────────────────────────────────
+    if st.session_state.results_interp is not None:
+        res = st.session_state.results_interp
+        # Compatibilidad con versión antigua (era un DataFrame directo)
+        if isinstance(res, pd.DataFrame):
+            df_r = res
+            gap_df = None
+            angulos_res = []
+        else:
+            df_r = res['tabla']
+            gap_df = res.get('gap_errors')
+            angulos_res = res.get('angulos', [])
+
+        st.markdown("---")
+        st.subheader("📈 Curva de Convergencia")
+
+        # Gráfico de convergencia
+        fig_conv = go.Figure()
+        fig_conv.add_trace(go.Scatter(
+            x=df_r['Planos'], y=df_r['Exactitud [%]'],
+            mode='lines+markers', name='Exactitud',
+            line=dict(color='#60a5fa', width=2),
+            marker=dict(size=8)
+        ))
+        fig_conv.add_hline(y=confianza_t, line_dash="dash", line_color="#f59e0b",
+                           annotation_text=f"Objetivo: {confianza_t}%")
+        fig_conv.update_layout(
+            title="Exactitud vs N° de Planos Utilizados",
+            xaxis_title="N° de Planos (base de la interpolación)",
+            yaxis_title="Exactitud [%]",
+            paper_bgcolor='#0e1117', plot_bgcolor='#0e1117',
+            font=dict(color='white'), height=350
+        )
+        st.plotly_chart(fig_conv, use_container_width=True)
+
+        # Resultado óptimo
+        opt = df_r[df_r['Exactitud [%]'] >= confianza_t].head(1)
+        if not opt.empty:
+            st.success(
+                f"🎯 **RESULTADO ÓPTIMO:** Con **{opt.iloc[0]['Planos']} planos** "
+                f"(configuración: {opt.iloc[0]['Mejor Configuración']}) "
+                f"se alcanza el **{opt.iloc[0]['Exactitud [%]']}%** de exactitud."
+            )
+        else:
+            max_row = df_r.loc[df_r['Exactitud [%]'].idxmax()]
+            st.warning(
+                f"⚠️ Con los planos actuales el máximo alcanzable es **{max_row['Exactitud [%]']}%** "
+                f"usando {max_row['Planos']} planos. Se necesitan más ángulos de medición."
+            )
+
+        st.dataframe(df_r, use_container_width=True)
+
+        # ── Análisis de intervalos: dónde falta densidad ─────────────────────
+        if gap_df is not None and not gap_df.empty:
+            st.markdown("---")
+            st.subheader("🔍 Análisis de Intervalos: ¿Dónde hay más cambio del fenómeno?")
+            st.caption(
+                "La **Variación (σ ΔP)** mide cuánto cambia el campo de presiones entre cada par de planos. "
+                "Intervalos con mayor variación son los que más necesitan planos intermedios."
+            )
+
+            fig_gaps = go.Figure()
+            fig_gaps.add_trace(go.Bar(
+                x=gap_df['Intervalo'], y=gap_df['Variación (σ ΔP)'],
+                marker_color='#f87171', name='Variación entre planos'
+            ))
+            fig_gaps.update_layout(
+                title="Variación del campo de presiones por intervalo angular",
+                xaxis_title="Intervalo [α° → α°]",
+                yaxis_title="σ(ΔPresión) [Pa]",
+                paper_bgcolor='#0e1117', plot_bgcolor='#0e1117',
+                font=dict(color='white'), height=320
+            )
+            st.plotly_chart(fig_gaps, use_container_width=True)
+
+            # Recomendar ángulos adicionales
+            st.markdown("#### 💡 Ángulos Recomendados para Medir")
+            # Ordenar intervalos por mayor variación → son los que más necesitan refuerzo
+            gaps_ordenados = gap_df.sort_values('Variación (σ ΔP)', ascending=False)
+            rec_rows = []
+            for _, row in gaps_ordenados.iterrows():
+                alpha_mid = round((row['α_inicio'] + row['α_fin']) / 2, 2)
+                rec_rows.append({
+                    'Intervalo Crítico': row['Intervalo'],
+                    'Δα [°]': row['Δα [°]'],
+                    'Variación': row['Variación (σ ΔP)'],
+                    'α Recomendado a Medir [°]': alpha_mid
+                })
+            df_rec = pd.DataFrame(rec_rows)
+            st.dataframe(df_rec, use_container_width=True)
+
+            # Resumen de la recomendación principal
+            if not gaps_ordenados.empty:
+                top_gap = gaps_ordenados.iloc[0]
+                alpha_sug = round((top_gap['α_inicio'] + top_gap['α_fin']) / 2, 2)
+                st.info(
+                    f"📌 **Recomendación principal:** El intervalo más crítico es "
+                    f"**{top_gap['Intervalo']}** (Δα = {top_gap['Δα [°]']}°, "
+                    f"variación = {top_gap['Variación (σ ΔP)']:.4f} Pa). "
+                    f"Se recomienda medir un plano en **α = {alpha_sug}°** para capturar mejor el fenómeno."
+                )
 elif st.session_state.seccion_actual == 'herramientas':
 
     st.markdown("""

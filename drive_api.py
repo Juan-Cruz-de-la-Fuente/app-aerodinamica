@@ -16,6 +16,7 @@ FOLDER_1D            = '1D'
 FOLDER_2D            = '2D'
 FOLDER_3D            = '3D'
 FOLDER_4D            = '4D'
+FOLDER_ANIMACION     = 'ANIMACION'
 FOLDER_HERRAMIENTAS  = 'HERRAMIENTAS'
 FOLDER_VTK           = 'ARCHIVOS VTK'
 FOLDER_VTK_PLANOS    = 'PLANOS DE PRESION'
@@ -96,6 +97,7 @@ def init_user_folders(username):
     folder_2d     = get_or_create_folder(FOLDER_2D, estela_id)
     folder_3d     = get_or_create_folder(FOLDER_3D, estela_id)
     folder_4d     = get_or_create_folder(FOLDER_4D, estela_id)
+    folder_anim   = get_or_create_folder(FOLDER_ANIMACION, estela_id)
 
     vtk_id        = get_or_create_folder(FOLDER_VTK, herr_id)
     vtk_planos_id = get_or_create_folder(FOLDER_VTK_PLANOS, vtk_id)
@@ -108,6 +110,7 @@ def init_user_folders(username):
         '2d':           folder_2d,
         '3d':           folder_3d,
         '4d':           folder_4d,
+        'animacion':    folder_anim,
         'herr':         herr_id,
         'vtk':          vtk_id,
         'vtk_planos':   vtk_planos_id,
@@ -139,6 +142,54 @@ def get_folder_4d(username):
     uid = get_user_root(username)
     eid = get_or_create_folder(FOLDER_ESTELA, uid)
     return get_or_create_folder(FOLDER_4D, eid)
+
+def get_folder_animacion(username):
+    """Devuelve (creando si no existe) la carpeta ANIMACION del usuario.
+    Ruta: root / username / ENSAYO DE ESTELA / ANIMACION
+    """
+    uid = get_user_root(username)
+    eid = get_or_create_folder(FOLDER_ESTELA, uid)
+    return get_or_create_folder(FOLDER_ANIMACION, eid)
+
+def get_or_create_session_folder(username, session_name):
+    """Devuelve (creando si no existe) la carpeta de una sesión de animación.
+    Ruta: root / username / ENSAYO DE ESTELA / ANIMACION / session_name
+    """
+    anim_id = get_folder_animacion(username)
+    if not anim_id:
+        return None
+    safe_name = session_name.strip().replace('/', '-').replace('\\', '-')
+    return get_or_create_folder(safe_name, anim_id)
+
+def list_animation_sessions(username):
+    """Lista las sub-carpetas (sesiones) dentro de ANIMACION. Devuelve [(id, name)]."""
+    anim_id = get_folder_animacion(username)
+    if not anim_id:
+        return []
+    service = get_service()
+    if not service:
+        return []
+    query = (f"'{anim_id}' in parents and "
+             f"mimeType='application/vnd.google-apps.folder' and trashed=false")
+    results = service.files().list(
+        q=query, spaces='drive',
+        supportsAllDrives=True, includeItemsFromAllDrives=True,
+        fields='files(id, name, createdTime)', orderBy='name'
+    ).execute()
+    return [(f['id'], f['name'], f.get('createdTime','')) for f in results.get('files', [])]
+
+def list_session_frames(session_folder_id):
+    """Lista los archivos (frames PNG + metadata JSON) dentro de una carpeta de sesión."""
+    service = get_service()
+    if not service:
+        return []
+    query = f"'{session_folder_id}' in parents and trashed=false"
+    results = service.files().list(
+        q=query, spaces='drive',
+        supportsAllDrives=True, includeItemsFromAllDrives=True,
+        fields='files(id, name, createdTime)', orderBy='name'
+    ).execute()
+    return results.get('files', [])
 
 def get_folder_vtk_planos(username):
     uid    = get_user_root(username)
